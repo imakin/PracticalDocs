@@ -73,6 +73,9 @@
           </div>
           <div class="umo-virtual-group">
             <menus-toolbar-base-markdown v-if="!disableMenu('markdown')" />
+            <menus-toolbar-base-render-markdown
+              v-if="!disableMenu('render-markdown')"
+            />
             <menus-toolbar-base-search-replace />
           </div>
           <div class="umo-virtual-group">
