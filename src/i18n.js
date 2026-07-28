@@ -5,8 +5,8 @@ import zh_CN from './locales/zh-CN.json'
 
 export const i18n = createI18n({
   legacy: false,
-  locale: 'zh-CN',
-  defaultLocale: 'zh-CN',
+  locale: 'en-US',
+  defaultLocale: 'en-US',
   warnHtmlMessage: false,
   messages: {
     'en-US': en_US,
