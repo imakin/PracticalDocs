@@ -51,6 +51,8 @@
     "build": "vite build",
     "dev": "vite --port 9000 --open --force",
     "test:e2e:render-markdown": "node tests/e2e/render-markdown.cdp.mjs",
+    "test:e2e:save-file": "node tests/e2e/save-file.cdp.mjs",
+    "test:unit:document-file": "node --test tests/unit/document-file.test.mjs",
     "format": "oxfmt --write .",
     "lint": "oxlint --fix src",
     "analyzer": "vite-bundle-visualizer",

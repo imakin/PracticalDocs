@@ -27,6 +27,10 @@
       </div>
       <template v-if="currentMenu === 'base'">
         <div class="umo-virtual-group">
+          <menus-toolbar-base-open-json v-if="!disableMenu('open-json')" />
+          <menus-toolbar-base-save-json v-if="!disableMenu('save-json')" />
+        </div>
+        <div class="umo-virtual-group">
           <menus-toolbar-base-undo />
           <menus-toolbar-base-redo />
           <menus-toolbar-base-format-painter />

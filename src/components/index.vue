@@ -61,6 +61,7 @@ import {
 } from '@tool-belt/type-predicates'
 import { AllSelection } from '@tiptap/pm/state'
 import domToImage from 'dom-to-image-more'
+import { saveAs } from 'file-saver'
 import enConfig from 'tdesign-vue-next/esm/locale/en_US'
 import cnConfig from 'tdesign-vue-next/esm/locale/zh_CN'
 
@@ -68,7 +69,16 @@ import { getTypewriterRunState } from '@/extensions/type-writer'
 import { i18n } from '@/i18n'
 import { propsOptions } from '@/options'
 import { contentTransform } from '@/utils/content-transform'
-import { consoleCopyright } from '@/utils/copyright'
+import { consoleCopyright, version } from '@/utils/copyright'
+import {
+  createDocumentSnapshot,
+  DocumentFileError,
+  findBlobUrls,
+  getDocumentFileName,
+  parseDocumentFile,
+  serializeDocumentSnapshot,
+  validateDocumentSnapshot,
+} from '@/utils/document-file'
 import {
   addHistory,
   redoHistoryRecord,
@@ -258,9 +268,9 @@ watch(
 
 // 定时保存
 let contentUpdated = $ref(false)
-let isFirstUpdate = $ref(true)
 let autoSaveInterval = $ref(null)
 let isSaving = $ref(false)
+let applyingDocumentFile = $ref(false)
 const shouldBlockUnload = () => isSaving || contentUpdated
 const handleBeforeUnload = (event) => {
   if (!shouldBlockUnload()) {
@@ -282,13 +292,6 @@ watch(
     if (!autoSave?.enabled) {
       return
     }
-    if (isFirstUpdate) {
-      isFirstUpdate = false
-      setTimeout(() => {
-        contentUpdated = false
-      })
-      return
-    }
     if (!val) {
       clearAutoSaveInterval()
       return
@@ -299,6 +302,27 @@ watch(
       clearAutoSaveInterval()
     }, autoSave.interval)
   },
+)
+watch(
+  () => ({
+    title: options.value.document?.title,
+    layout: page.value.layout,
+    size: page.value.size,
+    margin: page.value.margin,
+    orientation: page.value.orientation,
+    background: page.value.background,
+    watermark: page.value.watermark,
+    showBreakMarks: page.value.showBreakMarks,
+    showLineNumber: page.value.showLineNumber,
+    showBookmark: page.value.showBookmark,
+    showToc: page.value.showToc,
+  }),
+  () => {
+    if (!applyingDocumentFile) {
+      contentUpdated = true
+    }
+  },
+  { deep: true },
 )
 
 watch(
@@ -1150,6 +1174,202 @@ const saveContent = async (showMessage = true) => {
     isSaving = false
   }
 }
+const showDocumentFileMessage = (type, content) => {
+  useMessage(type, {
+    attach: container,
+    content,
+    placement: 'bottom',
+    offset: [0, -20],
+  })
+}
+
+const confirmDocumentFileAction = ({
+  header,
+  body,
+  confirmText,
+  theme = 'warning',
+}) =>
+  new Promise((resolve) => {
+    let settled = false
+    let dialog
+    const finish = (result) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      dialog?.destroy()
+      resolve(result)
+    }
+    dialog = useConfirm({
+      attach: container,
+      theme,
+      header,
+      body,
+      confirmBtn: {
+        theme,
+        content: confirmText,
+      },
+      onConfirm: () => finish(true),
+      onCancel: () => finish(false),
+      onClose: () => finish(false),
+    })
+  })
+
+const getDocumentSnapshot = (savedAt = new Date().toISOString()) => {
+  if (!editor.value) {
+    throw new Error('editor is not ready!')
+  }
+  return createDocumentSnapshot({
+    content: editor.value.getJSON(),
+    document: options.value.document,
+    page: page.value,
+    editorVersion: version,
+    savedAt,
+  })
+}
+
+const resetDocumentHistory = () => {
+  if (editor.value) {
+    const { state, view } = editor.value
+    const historyPlugin = state.plugins.find(
+      (plugin) => plugin.key === 'history$',
+    )
+    if (historyPlugin) {
+      const historyState = historyPlugin.spec.state.init({}, state)
+      view.dispatch(state.tr.setMeta(historyPlugin, { historyState }))
+    }
+  }
+  historyRecords.value = {
+    done: [],
+    undone: [],
+    isUndoRedo: false,
+    editorCount: 0,
+  }
+}
+
+const applyDocumentSnapshot = async (snapshot) => {
+  const previousSnapshot = getDocumentSnapshot()
+  applyingDocumentFile = true
+  const apply = async (value) => {
+    historyRecords.value.isUndoRedo = true
+    setContent(value.content, {
+      emitUpdate: false,
+      focusPosition: 'start',
+      focusOptions: { scrollIntoView: false },
+    })
+    setDocument({ title: value.document.title })
+    page.value = {
+      ...page.value,
+      ...value.page,
+      size: { ...value.page.size },
+      margin: { ...value.page.margin },
+      watermark: { ...value.page.watermark },
+    }
+    editor.value?.commands.showInvisibleCharacters(value.page.showBreakMarks)
+    await nextTick()
+  }
+
+  try {
+    try {
+      await apply(snapshot)
+    } catch (error) {
+      await apply(previousSnapshot)
+      resetDocumentHistory()
+      throw error
+    }
+
+    resetDocumentHistory()
+    $document.value.content = editor.value.getHTML()
+    contentUpdated = false
+    savedAt.value = Date.parse(snapshot.savedAt)
+  } finally {
+    applyingDocumentFile = false
+  }
+}
+const saveDocumentFile = async ({ skipBlobWarning = false } = {}) => {
+  if (!editor.value) {
+    return false
+  }
+
+  try {
+    const snapshot = getDocumentSnapshot()
+    const blobUrls = findBlobUrls(snapshot.content)
+    if (blobUrls.length > 0 && !skipBlobWarning) {
+      const confirmed = await confirmDocumentFileAction({
+        header: t('documentFile.blobWarning.title'),
+        body: t('documentFile.blobWarning.message', {
+          count: blobUrls.length,
+        }),
+        confirmText: t('documentFile.blobWarning.confirm'),
+      })
+      if (!confirmed) {
+        return false
+      }
+    }
+
+    const blob = new Blob([serializeDocumentSnapshot(snapshot)], {
+      type: 'application/json;charset=utf-8',
+    })
+    saveAs(
+      blob,
+      getDocumentFileName(snapshot.document.title, t('document.untitled')),
+    )
+    $document.value.content = editor.value.getHTML()
+    contentUpdated = false
+    savedAt.value = Date.parse(snapshot.savedAt)
+    emits('saved')
+    showDocumentFileMessage('success', t('documentFile.saveSuccess'))
+    return snapshot
+  } catch (error) {
+    console.error('Unable to save the document file.', error)
+    showDocumentFileMessage('error', t('documentFile.saveError'))
+    return false
+  }
+}
+
+const openDocumentFile = async (source, { skipConfirmation = false } = {}) => {
+  if (!editor.value) {
+    return false
+  }
+
+  try {
+    const snapshot =
+      typeof source === 'string'
+        ? parseDocumentFile(source)
+        : typeof source?.text === 'function'
+          ? parseDocumentFile(await source.text())
+          : validateDocumentSnapshot(source)
+
+    const contentNode = editor.value.schema.nodeFromJSON(snapshot.content)
+    contentNode.check()
+
+    if (contentUpdated && !skipConfirmation) {
+      const confirmed = await confirmDocumentFileAction({
+        header: t('documentFile.openConfirm.title'),
+        body: t('documentFile.openConfirm.message'),
+        confirmText: t('documentFile.openConfirm.confirm'),
+      })
+      if (!confirmed) {
+        return false
+      }
+    }
+
+    await applyDocumentSnapshot(snapshot)
+    showDocumentFileMessage('success', t('documentFile.openSuccess'))
+    return snapshot
+  } catch (error) {
+    const errorKey =
+      error instanceof DocumentFileError
+        ? error.code
+        : error instanceof SyntaxError || error instanceof RangeError
+          ? 'invalidContent'
+          : 'openError'
+    console.error('Unable to open the document file.', error)
+    showDocumentFileMessage('error', t(`documentFile.errors.${errorKey}`))
+    return false
+  }
+}
+
 const getAllBookmarks = () => {
   let bookmarkData
   editor.value?.commands.getAllBookmarks(function (_data) {
@@ -1279,6 +1499,8 @@ watch(
 
 // Methods Exposed to Descendants
 provide('saveContent', saveContent)
+provide('saveDocumentFile', saveDocumentFile)
+provide('openDocumentFile', openDocumentFile)
 
 provide('setTheme', setTheme)
 provide('setSkin', setSkin)
@@ -1312,6 +1534,9 @@ defineExpose({
   getJSON,
   getVanillaHTML,
   saveContent,
+  getDocumentSnapshot,
+  saveDocumentFile,
+  openDocumentFile,
   getContentExcerpt,
   getEditor: () => editor,
   useEditor: () => editor.value,

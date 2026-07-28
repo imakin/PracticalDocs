@@ -829,6 +829,33 @@
     "loading": "正在查询",
     "noResult": "没有找到匹配结果"
   },
+  "documentFile": {
+    "open": "打开 JSON",
+    "openTip": "打开 Umo Editor JSON 文档",
+    "save": "保存为 JSON",
+    "saveTip": "将当前文档下载为 JSON",
+    "saveSuccess": "文档已下载。",
+    "saveError": "无法下载文档。",
+    "openSuccess": "文档已打开。",
+    "openConfirm": {
+      "title": "替换当前文档？",
+      "message": "当前文档有未保存的更改。打开此文件将替换这些更改。",
+      "confirm": "打开文档"
+    },
+    "blobWarning": {
+      "title": "部分媒体不可移植",
+      "message": "此文档包含 {count} 个临时 blob URL。浏览器会话结束后，这些媒体将无法使用。",
+      "confirm": "仍然保存"
+    },
+    "errors": {
+      "invalidJson": "所选文件不是有效的 JSON。",
+      "unknownFormat": "所选文件不是 Umo Editor 文档。",
+      "unsupportedVersion": "此文档使用了不受支持的文件格式版本。",
+      "invalidFile": "所选文档文件不完整或无效。",
+      "invalidContent": "文档包含当前编辑器无法加载的内容。",
+      "openError": "无法打开文档。"
+    }
+  },
   "save": {
     "text": "保存文档",
     "saved": "文档已保存",

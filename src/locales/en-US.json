@@ -827,6 +827,33 @@
     "loading": "Searching",
     "noResult": "No result"
   },
+  "documentFile": {
+    "open": "Open JSON",
+    "openTip": "Open a Umo Editor JSON document",
+    "save": "Save to JSON",
+    "saveTip": "Download the current document as JSON",
+    "saveSuccess": "Document downloaded.",
+    "saveError": "The document could not be downloaded.",
+    "openSuccess": "Document opened.",
+    "openConfirm": {
+      "title": "Replace the current document?",
+      "message": "The current document has unsaved changes. Opening this file will replace them.",
+      "confirm": "Open Document"
+    },
+    "blobWarning": {
+      "title": "Some media is not portable",
+      "message": "This document contains {count} temporary blob URL(s). That media will not work after the browser session ends.",
+      "confirm": "Save Anyway"
+    },
+    "errors": {
+      "invalidJson": "The selected file is not valid JSON.",
+      "unknownFormat": "The selected file is not a Umo Editor document.",
+      "unsupportedVersion": "This document was created with an unsupported file format version.",
+      "invalidFile": "The selected document file is incomplete or invalid.",
+      "invalidContent": "The document contains content that this editor cannot load.",
+      "openError": "The document could not be opened."
+    }
+  },
   "save": {
     "text": "Save",
     "saved": "Saved",
