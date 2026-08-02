@@ -19,8 +19,8 @@ const normalizeMargin = (options) => {
   const top = normalizeMarginValue(options.top)
   const bottom = normalizeMarginValue(options.bottom)
   const next = {}
-  if (top !== null && top !== '' && top !== '0') next.top = top
-  if (bottom !== null && bottom !== '' && bottom !== '0') next.bottom = bottom
+  if (top !== null && top !== '') next.top = top
+  if (bottom !== null && bottom !== '') next.bottom = bottom
   return Object.keys(next).length ? next : null
 }
 
@@ -93,24 +93,21 @@ export default Extension.create({
             default: null,
             parseHTML: (element) => {
               const { marginTop, marginBottom } = element.style
-              if (
-                (marginTop === '' && marginBottom === '') ||
-                (marginTop === '0px' && marginBottom === '0px')
-              ) {
+              if (marginTop === '' && marginBottom === '') {
                 return null
               }
               const styleMargin = {}
-              if (marginTop && marginTop !== '0px') {
+              if (marginTop !== '') {
                 const top = normalizeMarginValue(marginTop.replace(/px/g, ''))
-                if (top !== null && top !== '' && top !== '0') {
+                if (top !== null && top !== '') {
                   styleMargin.top = top
                 }
               }
-              if (marginBottom && marginBottom !== '0px') {
+              if (marginBottom !== '') {
                 const bottom = normalizeMarginValue(
                   marginBottom.replace(/px/g, ''),
                 )
-                if (bottom !== null && bottom !== '' && bottom !== '0') {
+                if (bottom !== null && bottom !== '') {
                   styleMargin.bottom = bottom
                 }
               }

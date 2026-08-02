@@ -6,15 +6,20 @@
     :disabled="!editor?.isEditable"
   >
     <div class="umo-heading-container">
-      <template v-for="(item, index) in options" :key="item.value">
+      <template v-for="(item, index) in headingCards" :key="item.key">
         <div
           v-if="index < 4"
           class="card"
-          :class="{ active: item.value === currentValue && editor?.isEditable }"
-          @click="setHeading(item.value)"
+          :class="{
+            active: isCardActive(item) && editor?.isEditable,
+            disabled: !item.enabled,
+          }"
+          @click="selectHeadingProfile(item)"
         >
-          <div class="title" :class="item.desc">{{ item.label }}</div>
-          <div class="subtitle">{{ item.desc }}</div>
+          <div class="title" :class="item.desc" :title="item.name">{{ item.name }}</div>
+          <div class="subtitle">
+            {{ item.desc }}<template v-if="!item.enabled"> (OFF)</template>
+          </div>
         </div>
       </template>
       <t-popup
@@ -29,46 +34,167 @@
           <icon name="arrow-down" />
         </div>
         <template #content>
-          <div ref="popupContentRef" class="umo-heading-container">
-            <template v-for="(item, index) in options" :key="item.value">
+          <div ref="popupContentRef" class="umo-heading-container popup-content">
+            <template v-for="(item, index) in headingCards" :key="item.key">
               <div
                 v-if="index >= 4"
                 class="card"
                 :class="{
-                  active: item.value === currentValue && editor?.isEditable,
+                  active: isCardActive(item) && editor?.isEditable,
+                  disabled: !item.enabled,
                 }"
-                @click="setHeading(item.value)"
+                @click="selectHeadingProfile(item)"
               >
-                <div class="title" :class="item.desc">{{ item.label }}</div>
-                <div class="subtitle">{{ item.desc }}</div>
+                <div class="title" :class="item.desc" :title="item.name">{{ item.name }}</div>
+                <div class="subtitle">
+                  {{ item.desc }}<template v-if="!item.enabled"> (OFF)</template>
+                </div>
               </div>
             </template>
+
+            <div v-if="customProfileCards.length > 0" class="block-profiles-section">
+              <div class="section-title">{{ t('references.numbering.manageProfiles') }}</div>
+              <div class="block-cards-list">
+                <div
+                  v-for="item in customProfileCards"
+                  :key="item.key"
+                  class="card"
+                  :class="{
+                    active: isCardActive(item) && editor?.isEditable,
+                    disabled: !item.enabled,
+                  }"
+                  @click="selectHeadingProfile(item)"
+                >
+                  <div class="title" :class="item.desc" :title="item.name">{{ item.name }}</div>
+                  <div class="subtitle">
+                    {{ item.desc }}<template v-if="!item.enabled"> (OFF)</template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-action-bar" @click="openProfileModal">
+              <icon name="setting" />
+              <span>{{ t('references.numbering.manageProfiles') }}</span>
+            </div>
           </div>
         </template>
       </t-popup>
     </div>
   </div>
-  <menus-button
-    v-else
-    :text="t('base.heading.tip')"
-    hide-text
-    menu-type="select"
-    :style="{ width: '76px' }"
-    :placeholder="t('base.heading.text')"
-    borderless
-    :select-value="currentValue"
-    @menu-click="setHeading"
-  >
-    <t-option
-      v-for="item in options"
-      :key="item.value"
-      class="umo-heading-select-option"
-      :value="item.value"
-      :label="item.label"
+  <div v-else class="umo-heading-classic-wrap">
+    <menus-button
+      :text="t('base.heading.tip')"
+      hide-text
+      menu-type="select"
+      :style="{ width: '120px' }"
+      :placeholder="t('base.heading.text')"
+      borderless
+      :select-value="currentValue"
+      @menu-click="setHeading"
     >
-      <div class="heading-size" :class="item.desc">{{ item.label }}</div>
-    </t-option>
-  </menus-button>
+      <t-option
+        v-for="item in allCards"
+        :key="item.key"
+        class="umo-heading-select-option"
+        :value="item.value"
+        :label="item.name"
+      >
+        <div class="heading-size" :class="item.desc">
+          {{ item.name }}
+          <span v-if="!item.enabled" class="off-badge">(OFF)</span>
+        </div>
+      </t-option>
+    </menus-button>
+    <t-button variant="text" shape="square" size="small" @click="openProfileModal">
+      <icon name="setting" />
+    </t-button>
+  </div>
+
+  <modal
+    :visible="profileModalVisible"
+    width="640px"
+    draggable
+    destroy-on-close
+    :confirm-btn="t('references.numbering.close')"
+    @confirm="profileModalVisible = false"
+    @close="profileModalVisible = false"
+  >
+    <template #header>
+      <icon name="list-ordered" />
+      {{ t('references.numbering.manageProfiles') }}
+    </template>
+    <div class="umo-profiles-manager">
+      <div class="profile-list-header">
+        <div class="profile-title">{{ t('references.numbering.profilesList') }}</div>
+        <t-button size="small" theme="primary" @click="openCreateProfile">
+          + {{ t('references.numbering.addProfile') }}
+        </t-button>
+      </div>
+
+      <div class="profile-cards">
+        <div v-for="profile in profiles" :key="profile.id" class="profile-card">
+          <div class="profile-info">
+            <div class="profile-name">{{ profile.name }}</div>
+            <div class="profile-details">
+              <span>{{ profile.targetType }}</span>
+              <span v-if="profile.level"> (H{{ profile.level }})</span>
+              <span> &bull; {{ profile.style }}</span>
+              <span> &bull; {{ profile.template }}</span>
+            </div>
+          </div>
+          <div class="profile-actions">
+            <t-switch
+              :value="profile.enabled !== false"
+              size="small"
+              @change="(val) => toggleProfileEnabled(profile.id, val)"
+            />
+            <t-button size="small" variant="outline" @click="applyProfile(profile.id)">
+              {{ t('references.numbering.applyToBlock') }}
+            </t-button>
+            <t-button size="small" variant="text" @click="editProfile(profile)">
+              <icon name="edit" />
+            </t-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </modal>
+
+  <modal
+    :visible="editModalVisible"
+    width="480px"
+    draggable
+    destroy-on-close
+    :confirm-btn="t('references.numbering.saveProfile')"
+    @confirm="saveEditingProfile"
+    @close="editModalVisible = false"
+  >
+    <template #header>
+      <icon name="edit" />
+      {{ activeEditingProfile?.id ? t('references.numbering.editProfile') : t('references.numbering.addProfile') }}
+    </template>
+    <t-form v-if="activeEditingProfile" label-align="top">
+      <t-form-item :label="t('references.numbering.profileName')">
+        <t-input v-model="activeEditingProfile.name" />
+      </t-form-item>
+      <t-form-item :label="t('references.numbering.toggleLabel')">
+        <t-switch v-model="activeEditingProfile.enabled" />
+      </t-form-item>
+      <t-form-item :label="t('references.numbering.targetType')">
+        <t-select v-model="activeEditingProfile.targetType" :options="targetTypeOptions" />
+      </t-form-item>
+      <t-form-item v-if="activeEditingProfile.targetType === 'heading'" :label="t('references.numbering.level')">
+        <t-input-number v-model="activeEditingProfile.level" :min="1" :max="6" />
+      </t-form-item>
+      <t-form-item :label="t('references.numbering.style')">
+        <t-select v-model="activeEditingProfile.style" :options="styleOptions" />
+      </t-form-item>
+      <t-form-item :label="t('references.numbering.template')">
+        <t-input v-model="activeEditingProfile.template" placeholder="e.g. BAB {number} or {number}" />
+      </t-form-item>
+    </t-form>
+  </modal>
 </template>
 
 <script setup>
@@ -78,54 +204,190 @@ const editor = inject('editor')
 const $toolbar = useState('toolbar', inject('options'))
 const popupContentRef = ref(null)
 
-const options = $ref([
-  { label: t('base.heading.paragraph'), desc: 'text', value: 'paragraph' },
-])
-for (const i of Array.from({ length: 6 }).keys()) {
-  const level = i + 1
-  options.push({
-    label: `${t('base.heading.text', { level })}`,
-    desc: `h${level}`,
-    value: level,
-  })
+let profileModalVisible = $ref(false)
+let editModalVisible = $ref(false)
+let profiles = $ref([])
+let activeEditingProfile = $ref(null)
+
+const headingCards = computed(() => {
+  const items = [
+    {
+      key: 'paragraph',
+      name: t('base.heading.paragraph'),
+      desc: 'text',
+      value: 'paragraph',
+      targetType: 'paragraph',
+      enabled: true,
+    },
+  ]
+  for (let level = 1; level <= 6; level += 1) {
+    items.push({
+      key: `std-h${level}`,
+      name: t('base.heading.text', { level }),
+      desc: `h${level}`,
+      value: level,
+      targetType: 'heading',
+      level,
+      enabled: true,
+    })
+  }
+  return items
+})
+
+const customProfileCards = computed(() => {
+  if (!Array.isArray(profiles)) return []
+  return profiles.map((p) => ({
+    key: p.id,
+    id: p.id,
+    name: p.name || p.id,
+    desc: p.targetType === 'heading' ? `h${p.level || 1}` : p.targetType,
+    value: p.level || p.targetType,
+    targetType: p.targetType,
+    level: p.level,
+    enabled: p.enabled !== false,
+    style: p.style,
+    template: p.template,
+  }))
+})
+
+const allCards = computed(() => [...headingCards.value, ...customProfileCards.value])
+
+const isCardActive = (item) => {
+  if (!editor.value) return false
+  if (item.value === 'paragraph') return editor.value.isActive('paragraph')
+
+  const { $from } = editor.value.state.selection
+  let currentProfileId = null
+  for (let d = $from.depth; d >= 0; d -= 1) {
+    const node = $from.node(d)
+    if (['heading', 'image', 'table'].includes(node.type.name)) {
+      currentProfileId = node.attrs.numberingProfileId || null
+      break
+    }
+  }
+
+  if (item.id) {
+    return item.id === currentProfileId
+  }
+
+  if (item.targetType === 'heading' && item.level) {
+    return (
+      editor.value.isActive('heading', { level: item.level }) &&
+      !currentProfileId
+    )
+  }
+
+  return editor.value.isActive(item.targetType) && !currentProfileId
 }
 
 const currentValue = computed(() => {
-  const heading = (level) => editor.value?.isActive('heading', { level })
   if (editor.value) {
-    if (editor.value?.isActive('paragraph')) {
-      return 'paragraph'
-    }
-    if (heading(1)) {
-      return 1
-    }
-    if (heading(2)) {
-      return 2
-    }
-    if (heading(3)) {
-      return 3
-    }
-    if (heading(4)) {
-      return 4
-    }
-    if (heading(5)) {
-      return 5
-    }
-    if (heading(6)) {
-      return 6
+    if (editor.value.isActive('paragraph')) return 'paragraph'
+    for (let l = 1; l <= 6; l += 1) {
+      if (editor.value.isActive('heading', { level: l })) return l
     }
   }
   return ''
 })
 
 const setHeading = (value) => {
+  if (!editor.value) return
   if (value === 'paragraph') {
-    editor.value?.chain().focus().setParagraph().run()
-  } else {
-    editor.value?.chain().focus().toggleHeading({ level: value }).run()
+    editor.value.chain().focus().setParagraph().run()
+  } else if (typeof value === 'number') {
+    editor.value.chain().focus().toggleHeading({ level: value }).run()
   }
   popupVisible.value = false
 }
+
+const selectHeadingProfile = (item) => {
+  if (!editor.value) return
+  if (item.value === 'paragraph') {
+    editor.value.chain().focus().setParagraph().run()
+    editor.value.commands.applyNumberingProfile(null)
+  } else {
+    if (item.targetType === 'heading' && item.level) {
+      editor.value.chain().focus().toggleHeading({ level: item.level }).run()
+    }
+    editor.value.commands.applyNumberingProfile(item.id || null)
+  }
+  popupVisible.value = false
+}
+
+const styleOptions = $computed(() => [
+  { label: t('references.numbering.styles.numeric'), value: 'numeric' },
+  { label: t('references.numbering.styles.romanUpper'), value: 'roman-upper' },
+  { label: t('references.numbering.styles.romanLower'), value: 'roman-lower' },
+  { label: t('references.numbering.styles.alphaUpper'), value: 'alpha-upper' },
+  { label: t('references.numbering.styles.alphaLower'), value: 'alpha-lower' },
+])
+
+const targetTypeOptions = $computed(() => [
+  { label: t('references.labels.section'), value: 'heading' },
+  { label: t('references.labels.table'), value: 'table' },
+  { label: t('references.labels.figure'), value: 'figure' },
+])
+
+const loadProfiles = () => {
+  editor.value?.commands.getNumberingProfiles((data) => {
+    profiles = Array.isArray(data) ? [...data] : []
+  })
+}
+
+const openProfileModal = () => {
+  loadProfiles()
+  popupVisible.value = false
+  profileModalVisible = true
+}
+
+const toggleProfileEnabled = (id, enabled) => {
+  editor.value?.commands.updateNumberingProfile(id, { enabled })
+  loadProfiles()
+}
+
+const applyProfile = (id) => {
+  const prof = profiles.find((p) => p.id === id)
+  if (prof && prof.targetType === 'heading' && prof.level) {
+    editor.value?.chain().focus().toggleHeading({ level: prof.level }).run()
+  }
+  editor.value?.commands.applyNumberingProfile(id)
+  profileModalVisible = false
+}
+
+const editProfile = (profile) => {
+  activeEditingProfile = { ...profile }
+  editModalVisible = true
+}
+
+const openCreateProfile = () => {
+  activeEditingProfile = {
+    name: 'Profil Baru',
+    enabled: true,
+    targetType: 'heading',
+    level: 1,
+    style: 'numeric',
+    template: '{number}',
+  }
+  editModalVisible = true
+}
+
+const saveEditingProfile = () => {
+  if (!activeEditingProfile) return
+  if (activeEditingProfile.id) {
+    editor.value?.commands.updateNumberingProfile(
+      activeEditingProfile.id,
+      activeEditingProfile,
+    )
+  } else {
+    editor.value?.commands.addNumberingProfile(activeEditingProfile)
+  }
+  editModalVisible = false
+  loadProfiles()
+}
+
+onMounted(() => {
+  loadProfiles()
+})
 
 onClickOutside(
   popupContentRef,
@@ -172,43 +434,57 @@ onClickOutside(
   box-sizing: border-box;
   border: solid 1px transparent;
   white-space: nowrap;
+  &.popup-content {
+    flex-direction: column;
+  }
   .card {
     background-color: var(--umo-color-white);
     border: solid 1px var(--umo-border-color-light);
     border-radius: var(--umo-radius);
     margin: 4px 2px;
     text-align: center;
-    padding: 5px 10px;
+    padding: 5px 6px;
     box-sizing: border-box;
     cursor: pointer;
     flex: 0 0 68px;
+    width: 68px;
+    max-width: 68px;
     height: 42px;
+    overflow: hidden;
     &:hover,
     &.active {
       border-color: var(--umo-primary-color);
     }
+    &.disabled {
+      opacity: 0.7;
+    }
     .title {
-      font-size: 14px;
-      line-height: 18px;
+      font-size: 12px;
+      line-height: 16px;
       font-weight: 600;
+      max-width: 54px;
+      margin: 0 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       &.text {
         font-size: 12px;
         font-weight: 400;
       }
       &.h1 {
-        font-size: 16px;
-      }
-      &.h2 {
         font-size: 14px;
       }
-      &.h3 {
+      &.h2 {
         font-size: 13px;
       }
-      &.h4 {
+      &.h3 {
         font-size: 12px;
       }
-      &.h5 {
+      &.h4 {
         font-size: 11px;
+      }
+      &.h5 {
+        font-size: 10px;
       }
       &.h6 {
         font-size: 10px;
@@ -220,6 +496,9 @@ onClickOutside(
       text-transform: capitalize;
       margin-top: 3px;
       line-height: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
   .arrow {
@@ -241,63 +520,93 @@ onClickOutside(
       color: var(--umo-text-color-light);
     }
   }
-}
-.unfold {
-  .arrow {
-    :deep(.umo-icon) {
-      transform: rotate(-180deg);
+  .block-profiles-section {
+    width: 100%;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: solid 1px var(--umo-border-color-light);
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--umo-text-color-light);
+      margin-bottom: 4px;
+      padding-left: 4px;
+      text-transform: uppercase;
+    }
+    .block-cards-list {
+      display: flex;
+      flex-wrap: wrap;
+    }
+  }
+  .profile-action-bar {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px 12px;
+    background-color: var(--umo-color-white);
+    border: dashed 1px var(--umo-primary-color);
+    border-radius: var(--umo-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--umo-primary-color);
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.02);
     }
   }
 }
-</style>
-
-<style lang="less">
-.umo-heading-container-popup {
-  .umo-popup__content {
-    box-shadow: none;
-    border: solid 1px var(--umo-border-color);
-    border-top: none;
-    border-top-right-radius: 0;
-    border-top-left-radius: 0;
-    margin: 1px -8px 0 0 !important;
-    padding: 0;
-    width: 318px;
-    .heading-container {
-      border-top-right-radius: 0;
-      border-top-left-radius: 0;
+.umo-heading-classic-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.umo-profiles-manager {
+  .profile-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    .profile-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+  }
+  .profile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+  .profile-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background-color: var(--umo-button-hover-background);
+    border-radius: var(--umo-radius);
+    border: solid 1px var(--umo-border-color-light);
+    .profile-name {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .profile-details {
+      font-size: 11px;
+      color: var(--umo-text-color-light);
+      margin-top: 2px;
+    }
+    .profile-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
   }
 }
-.umo-heading-select-option {
-  height: auto !important;
-  .heading-size {
-    line-height: 2em;
-    font-weight: 600;
-    min-width: 100px;
-    color: var(--umo-text-color);
-  }
-  .text {
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 2.4em;
-  }
-  .h1 {
-    font-size: 24px;
-  }
-  .h2 {
-    font-size: 20px;
-  }
-  .h3 {
-    font-size: 18px;
-  }
-  .h4 {
-    font-size: 16px;
-  }
-  .h5 {
-    font-size: 14px;
-  }
-  .h6 {
-    font-size: 12px;
-  }
+.off-badge {
+  font-size: 10px;
+  color: var(--umo-text-color-light);
+  margin-left: 4px;
 }
 </style>

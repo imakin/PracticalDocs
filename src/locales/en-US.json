@@ -827,6 +827,77 @@
     "loading": "Searching",
     "noResult": "No result"
   },
+  "references": {
+    "numbering": {
+      "text": "Numbering",
+      "tip": "Configure automatic numbering profiles, styles, and templates",
+      "toggleLabel": "Enable numbering for this profile",
+      "manageProfiles": "Numbering Profiles",
+      "profilesList": "Configured Profiles",
+      "addProfile": "Add Profile",
+      "editProfile": "Edit Profile",
+      "saveProfile": "Save Profile",
+      "close": "Close",
+      "applyToBlock": "Apply to Active Block",
+      "profileName": "Profile Name",
+      "targetType": "Target Element Type",
+      "level": "Heading Level (1-6)",
+      "style": "Numbering Style",
+      "template": "Placement Template",
+      "headingStyle": "Heading numbering style",
+      "headingTemplate": "Heading prefix template",
+      "headingTemplatePlaceholder": "e.g. BAB {number} or {number}",
+      "figureStyle": "Figure numbering style",
+      "figureTemplate": "Figure label template",
+      "figureTemplatePlaceholder": "e.g. Gambar {number} or {label} {number}",
+      "tableStyle": "Table numbering style",
+      "tableTemplate": "Table label template",
+      "tableTemplatePlaceholder": "e.g. Tabel {number} or {label} {number}",
+      "apply": "Apply Settings",
+      "styles": {
+        "numeric": "Numeric (1, 2, 3)",
+        "romanUpper": "Roman Uppercase (I, II, III)",
+        "romanLower": "Roman Lowercase (i, ii, iii)",
+        "alphaUpper": "Alphabet Uppercase (A, B, C)",
+        "alphaLower": "Alphabet Lowercase (a, b, c)"
+      }
+    },
+    "caption": {
+      "text": "Caption",
+      "tip": "Edit the active figure or table caption",
+      "field": "Caption text",
+      "placeholder": "Enter a caption",
+      "save": "Apply Caption"
+    },
+    "crossReference": {
+      "text": "Cross-reference",
+      "tip": "Insert a dynamic reference to a document target",
+      "target": "Target",
+      "targetPlaceholder": "Select a heading, figure, table, or citation",
+      "display": "Display",
+      "insert": "Insert Reference",
+      "empty": "No reference targets are available.",
+      "modes": {
+        "label": "Numbered label",
+        "title": "Title only",
+        "labelTitle": "Numbered label and title"
+      }
+    },
+    "citation": {
+      "text": "Citation",
+      "tip": "Insert a numbered citation",
+      "source": "Source text",
+      "placeholder": "Enter the source or citation details",
+      "insert": "Insert Citation",
+      "empty": "Enter source text before inserting the citation."
+    },
+    "labels": {
+      "section": "Section",
+      "figure": "Figure",
+      "table": "Table"
+    },
+    "missing": "Reference unavailable"
+  },
   "documentFile": {
     "open": "Open JSON",
     "openTip": "Open a Umo Editor JSON document",

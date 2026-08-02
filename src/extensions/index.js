@@ -38,6 +38,7 @@ import Callout from './callout'
 import CodeBlock from './code-block'
 import Columns from './columns'
 import Datetime from './datetime'
+import { CrossReference, DocumentReferences } from './document-references'
 import Echarts from './echarts'
 import File from './file'
 import FileHandler from './file-handler'
@@ -160,6 +161,8 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     'date-time': Datetime,
     'option-box': OptionBox,
     bookmark: Bookmark,
+    crossReference: CrossReference,
+    documentReferences: DocumentReferences,
     footnote: [Footnotes, FootnoteReference, Footnote],
     'hard-break': BreakMarks.configure({
       visible: page?.showBreakMarks,

@@ -241,7 +241,10 @@ export default Node.create({
   },
 })
 
+let isUpdatingWithoutHistory = false
+
 export const updateAttributesWithoutHistory = (editor, attrs, pos) => {
+  if (isUpdatingWithoutHistory) return
   const { state, view } = editor
 
   if (typeof pos !== 'number') return
@@ -249,11 +252,21 @@ export const updateAttributesWithoutHistory = (editor, attrs, pos) => {
   const node = state.doc.nodeAt(pos)
   if (!node) return
 
-  const tr = state.tr.setNodeMarkup(pos, undefined, {
-    ...node.attrs,
-    ...attrs,
+  const hasChange = Object.keys(attrs).some((key) => {
+    return String(node.attrs[key] ?? '') !== String(attrs[key] ?? '')
   })
+  if (!hasChange) return
 
-  tr.setMeta('addToHistory', false)
-  view.dispatch(tr)
+  isUpdatingWithoutHistory = true
+  try {
+    const tr = state.tr.setNodeMarkup(pos, undefined, {
+      ...node.attrs,
+      ...attrs,
+    })
+
+    tr.setMeta('addToHistory', false)
+    view.dispatch(tr)
+  } finally {
+    isUpdatingWithoutHistory = false
+  }
 }

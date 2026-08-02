@@ -216,8 +216,11 @@ try {
 
   const currentBlock = await evaluate(`(() => {
     const editor = document.querySelector('.ProseMirror')
+    const h1 = editor.querySelector('h1')
+    const clone = h1?.cloneNode(true)
+    clone?.querySelectorAll('.umo-heading-number').forEach((n) => n.remove())
     return {
-      heading: editor.querySelector('h1')?.textContent,
+      heading: clone?.textContent?.trim() || '',
       text: editor.innerText,
     }
   })()`)
@@ -238,9 +241,16 @@ try {
 
   const entireDocument = await evaluate(`(() => {
     const editor = document.querySelector('.ProseMirror')
+    const getCleanText = (sel) => {
+      const el = editor.querySelector(sel)
+      if (!el) return ''
+      const clone = el.cloneNode(true)
+      clone.querySelectorAll('.umo-heading-number').forEach((n) => n.remove())
+      return clone.textContent.trim()
+    }
     return {
-      h1: editor.querySelector('h1')?.textContent,
-      h2: editor.querySelector('h2')?.textContent,
+      h1: getCleanText('h1'),
+      h2: getCleanText('h2'),
     }
   })()`)
   assert.deepEqual(entireDocument, {

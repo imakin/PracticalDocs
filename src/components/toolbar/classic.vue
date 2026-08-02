@@ -109,6 +109,11 @@
           <menus-toolbar-insert-hr v-if="!disableMenu('hr')" />
           <menus-toolbar-insert-bookmark v-if="!disableMenu('bookmark')" />
           <menus-toolbar-insert-footnote v-if="!disableMenu('footnote')" />
+          <menus-toolbar-insert-caption v-if="!disableMenu('caption')" />
+          <menus-toolbar-insert-cross-reference
+            v-if="!disableMenu('cross-reference')"
+          />
+          <menus-toolbar-insert-citation v-if="!disableMenu('citation')" />
           <menus-toolbar-insert-toc v-if="!disableMenu('toc')" />
         </div>
         <div class="umo-virtual-group">

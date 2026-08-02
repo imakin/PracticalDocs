@@ -1,15 +1,15 @@
 ### Render Markdown Changes
 
 - `Render Markdown`: Adds a toolbar dropdown for explicit Markdown rendering.
-    - `Current Block`: Renders only the active ProseMirror text block.
-    - `Entire Document`: Renders all document text after a replacement warning.
+  - `Current Block`: Renders only the active ProseMirror text block.
+  - `Entire Document`: Renders all document text after a replacement warning.
 - `Test script`: `render-markdown.cdp.mjs` verifies both render scopes and undo through CDP.
 
-    Start the editor and Chrome with remote debugging enabled, then run:
+  Start the editor and Chrome with remote debugging enabled, then run:
 
-    ```bash
-    npm run test:e2e:render-markdown
-    ```
+  ```bash
+  npm run test:e2e:render-markdown
+  ```
 
 ### JSON Document File Changes
 
@@ -25,4 +25,20 @@
   ```bash
   npm run test:unit:document-file
   npm run test:e2e:save-file
+  ```
+
+### Automatic Numbering and Document Reference Changes
+
+- `Heading numbering`: Adds automatic hierarchical numbers to headings.
+- `Figure and table labels`: Adds independent automatic labels and editable captions.
+- `Cross-reference`: Adds dynamic references that follow target renumbering and report deleted targets.
+- `Citation`: Adds source-backed numeric citations using the existing footnote system.
+- `JSON persistence`: Preserves stable IDs, numbers, captions, citations, and cross-references in `.umodoc.json` files.
+- `Test scripts`: `document-references.test.mjs` verifies numbering and reference planning, and `document-references.cdp.mjs` verifies the browser workflow and JSON round trip.
+
+  Start the editor and Chrome with remote debugging enabled, then run:
+
+  ```bash
+  npm run test:unit:document-references
+  npm run test:e2e:document-references
   ```

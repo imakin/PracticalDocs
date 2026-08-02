@@ -188,9 +188,10 @@ try {
 
   const clickVisibleText = async (text) => {
     const clicked = await evaluate(`(() => {
-      const element = [...document.querySelectorAll('button')]
+      const element = [...document.querySelectorAll('button, .t-button, .t-dialog__confirm')]
         .find((item) =>
-          item.textContent.trim() === ${JSON.stringify(text)} &&
+          (item.textContent.trim() === ${JSON.stringify(text)} ||
+           item.textContent.trim().includes(${JSON.stringify(text)})) &&
           item.getClientRects().length > 0
         )
       element?.click()
@@ -364,7 +365,11 @@ try {
     `document.body.innerText.includes('Replace the current document?')`,
   )
   if (needsBlobFixtureConfirmation) {
-    await clickVisibleText('Open Document')
+    await evaluate(`(() => {
+      const btn = [...document.querySelectorAll('button, .t-button, .t-dialog__confirm')]
+        .find(b => b.getClientRects().length > 0 && ['Open Document', '打开', '打开文档', 'Confirm', '确定'].some(t => b.textContent.trim().includes(t)))
+      btn?.click()
+    })()`)
   }
   await sleep(300)
   await clickTestControl('save-json')

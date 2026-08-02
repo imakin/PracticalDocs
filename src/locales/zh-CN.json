@@ -829,6 +829,77 @@
     "loading": "正在查询",
     "noResult": "没有找到匹配结果"
   },
+  "references": {
+    "numbering": {
+      "text": "自动编号",
+      "tip": "配置自动编号预设、开关、样式与前缀模板",
+      "toggleLabel": "在此预设中启用自动编号",
+      "manageProfiles": "编号预设/Profil Penomoran",
+      "profilesList": "已配置预设",
+      "addProfile": "添加预设",
+      "editProfile": "编辑预设",
+      "saveProfile": "保存预设",
+      "close": "关闭",
+      "applyToBlock": "应用到当前块",
+      "profileName": "预设名称",
+      "targetType": "目标元素类型",
+      "level": "标题层级 (1-6)",
+      "style": "编号样式",
+      "template": "前缀/标签模板",
+      "headingStyle": "标题编号样式",
+      "headingTemplate": "标题编号模板",
+      "headingTemplatePlaceholder": "例如 BAB {number} 或 {number}",
+      "figureStyle": "图片编号样式",
+      "figureTemplate": "图片标签模板",
+      "figureTemplatePlaceholder": "例如 图 {number} 或 {label} {number}",
+      "tableStyle": "表格编号样式",
+      "tableTemplate": "表格标签模板",
+      "tableTemplatePlaceholder": "例如 表 {number} 或 {label} {number}",
+      "apply": "应用设置",
+      "styles": {
+        "numeric": "阿拉伯数字 (1, 2, 3)",
+        "romanUpper": "大写罗马数字 (I, II, III)",
+        "romanLower": "小写罗马数字 (i, ii, iii)",
+        "alphaUpper": "大写英文字母 (A, B, C)",
+        "alphaLower": "小写英文字母 (a, b, c)"
+      }
+    },
+    "caption": {
+      "text": "题注",
+      "tip": "编辑当前图片或表格的题注",
+      "field": "题注文本",
+      "placeholder": "输入题注",
+      "save": "应用题注"
+    },
+    "crossReference": {
+      "text": "交叉引用",
+      "tip": "插入指向文档目标的动态引用",
+      "target": "目标",
+      "targetPlaceholder": "选择标题、图片、表格或引文",
+      "display": "显示方式",
+      "insert": "插入引用",
+      "empty": "当前没有可引用的目标。",
+      "modes": {
+        "label": "编号标签",
+        "title": "仅标题",
+        "labelTitle": "编号标签和标题"
+      }
+    },
+    "citation": {
+      "text": "引文",
+      "tip": "插入编号引文",
+      "source": "来源文本",
+      "placeholder": "输入来源或引文信息",
+      "insert": "插入引文",
+      "empty": "请先输入来源文本。"
+    },
+    "labels": {
+      "section": "章节",
+      "figure": "图",
+      "table": "表"
+    },
+    "missing": "引用目标不可用"
+  },
   "documentFile": {
     "open": "打开 JSON",
     "openTip": "打开 Umo Editor JSON 文档",

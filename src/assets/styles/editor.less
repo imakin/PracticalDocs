@@ -5,7 +5,7 @@
 
   &.show-line-number {
     .umo-editor {
-      >*:not([data-line-number='false'], div) {
+      > *:not([data-line-number='false'], div) {
         position: relative;
 
         &::before {
@@ -46,25 +46,27 @@
     -webkit-font-variant-ligatures: none;
     font-variant-ligatures: none;
     font-feature-settings: 'liga' 0;
-    min-height: calc(var(--umo-page-height) - var(--umo-page-margin-top) - var(--umo-page-margin-bottom));
+    min-height: calc(
+      var(--umo-page-height) - var(--umo-page-margin-top) -
+        var(--umo-page-margin-bottom)
+    );
     float: left;
     font-family: var(--umo-font-family);
     font-size: var(--umo-font-size);
     font-display: swap;
 
-    >h1[data-placeholder],
+    > h1[data-placeholder],
     h2[data-placeholder],
     h3[data-placeholder],
     h4[data-placeholder],
     h5[data-placeholder],
     h6[data-placeholder],
-    >h1+p[data-placeholder],
-    h2+p[data-placeholder],
-    h3+p[data-placeholder],
-    h4+p[data-placeholder],
-    h5+p[data-placeholder],
-    h6+p[data-placeholder] {
-
+    > h1 + p[data-placeholder],
+    h2 + p[data-placeholder],
+    h3 + p[data-placeholder],
+    h4 + p[data-placeholder],
+    h5 + p[data-placeholder],
+    h6 + p[data-placeholder] {
       .tiptap-invisible-character,
       .ProseMirror-separator,
       .ProseMirror-trailingBreak {
@@ -78,29 +80,30 @@
       }
     }
 
-    >* {
+    > * {
       position: relative;
       z-index: 1;
 
-      +*:not(.umo-floating-node) {
+      + *:not(.umo-floating-node) {
         margin-top: var(--umo-content-node-bottom);
       }
 
       &.umo-node-focused,
       &.ProseMirror-selectednoderange {
         @media screen {
-
-          &:not(.is-editor-empty,
-            hr,
-            table,
-            .tableWrapper,
-            .umo-page-break,
-            .umo-code-block,
-            .umo-node-footnotes,
-            .umo-node-details,
-            .umo-node-column-container,
-            .umo-node-column,
-            .umo-floating-node):before {
+          &:not(
+              .is-editor-empty,
+              hr,
+              table,
+              .tableWrapper,
+              .umo-page-break,
+              .umo-code-block,
+              .umo-node-footnotes,
+              .umo-node-details,
+              .umo-node-column-container,
+              .umo-node-column,
+              .umo-floating-node
+            ):before {
             content: '';
             display: block;
             position: absolute;
@@ -116,10 +119,14 @@
 
           &.umo-floating-node {
             outline: solid 1px var(--umo-primary-color);
-            transform: translateY(calc(var(--umo-content-node-bottom) / 2 - 1px));
+            transform: translateY(
+              calc(var(--umo-content-node-bottom) / 2 - 1px)
+            );
 
-            &>* {
-              transform: translateY(calc(-1 * (var(--umo-content-node-bottom) / 2 - 1px)));
+            & > * {
+              transform: translateY(
+                calc(-1 * (var(--umo-content-node-bottom) / 2 - 1px))
+              );
             }
           }
         }
@@ -206,32 +213,35 @@
     }
 
     &.umo-insert-newline-active {
-
-      >*.umo-node-focused,
-      >*.ProseMirror-selectednoderange {
-
-        &:not(.is-editor-empty,
-          hr,
-          table,
-          .tableWrapper,
-          .umo-page-break,
-          .umo-code-block,
-          .umo-node-footnotes,
-          .umo-node-details,
-          .umo-node-column-container,
-          .umo-node-column,
-          .umo-floating-node)::before {
+      > *.umo-node-focused,
+      > *.ProseMirror-selectednoderange {
+        &:not(
+            .is-editor-empty,
+            hr,
+            table,
+            .tableWrapper,
+            .umo-page-break,
+            .umo-code-block,
+            .umo-node-footnotes,
+            .umo-node-details,
+            .umo-node-column-container,
+            .umo-node-column,
+            .umo-floating-node
+          )::before {
           display: none;
         }
       }
     }
   }
 
-  &.is-empty .is-editor-empty:not(.umo-node-view,
-    .tableWrapper,
-    .umo-column-block,
-    ul,
-    ol) {
+  &.is-empty
+    .is-editor-empty:not(
+      .umo-node-view,
+      .tableWrapper,
+      .umo-column-block,
+      ul,
+      ol
+    ) {
     &::after {
       display: inline-block;
       vertical-align: text-top;
@@ -243,7 +253,7 @@
     }
 
     &:first-child {
-      >*:not(table) {
+      > *:not(table) {
         display: none;
       }
 
@@ -325,7 +335,7 @@
       box-sizing: border-box;
       position: relative;
 
-      >* {
+      > * {
         margin-bottom: 0;
       }
 
@@ -512,6 +522,39 @@
     }
   }
 
+  .umo-heading-number {
+    display: inline;
+    margin-right: 0.4em;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+    white-space: pre-wrap;
+    line-height: inherit;
+    font-size: inherit;
+    font-family: inherit;
+    font-weight: inherit;
+    color: inherit;
+  }
+
+  .umo-cross-reference {
+    color: var(--umo-primary-color);
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+
+    &[data-missing='true'] {
+      color: var(--umo-error-color);
+      text-decoration-style: wavy;
+    }
+  }
+
+  .umo-node-table-caption {
+    padding: 4px 8px 8px;
+    color: var(--umo-text-color-secondary);
+    font-size: 0.9em;
+    text-align: center;
+  }
+
   // 插件样式
   .ProseMirror-gapcursor {
     height: 24px;
@@ -547,7 +590,7 @@
       width: calc(100% - 15px);
     }
 
-    >button {
+    > button {
       align-items: center;
       background: transparent;
       border-radius: 4px;
@@ -570,11 +613,11 @@
       }
     }
 
-    &.is-open>button::before {
+    &.is-open > button::before {
       transform: rotate(90deg);
     }
 
-    >div {
+    > div {
       display: flex;
       flex-direction: column;
       gap: 0.5em;
@@ -674,7 +717,7 @@
     }
 
     > :not(div.grid-resize-handle):nth-child(1),
-    >div.grid-resize-handle+ :nth-child(2) {
+    > div.grid-resize-handle + :nth-child(2) {
       margin-top: 0;
     }
 

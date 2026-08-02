@@ -32,9 +32,14 @@ export default Node.create({
           }
           const id = anchor.getAttribute('data-fn-id')
           const ref = anchor.getAttribute(REFNUM_ATTR)
+          const caption =
+            anchor.getAttribute('data-caption') ||
+            anchor.getAttribute('title') ||
+            ''
           return {
             'data-fn-id': id || shortId(10),
             referenceNumber: ref || anchor.innerText,
+            caption,
           }
         },
         contentElement(node) {
@@ -58,6 +63,19 @@ export default Node.create({
       referenceNumber: {},
       caption: {
         default: '',
+        parseHTML: (element) =>
+          element
+            .querySelector(`a.${REF_CLASS}:first-child`)
+            ?.getAttribute('data-caption') || '',
+        renderHTML: (attributes) => {
+          const caption = normalizeHoverTitle(attributes.caption)
+          return caption
+            ? {
+                'data-caption': caption,
+                title: caption,
+              }
+            : {}
+        },
       },
       href: {
         renderHTML(attributes) {
@@ -182,10 +200,11 @@ export default Node.create({
   addCommands() {
     return {
       addFootnote:
-        () =>
+        (caption = '') =>
         ({ state, tr }) => {
           const node = this.type.create({
             'data-fn-id': shortId(10),
+            caption: normalizeHoverTitle(caption),
           })
           tr.insert(state.selection.anchor, node)
           return true

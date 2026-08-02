@@ -6,6 +6,9 @@
     :class="wrapperClass"
     :style="nodeStyle"
     data-type="image"
+    :data-reference-id="attrs.referenceId"
+    :data-reference-number="attrs.referenceNumber"
+    :data-reference-label="attrs.referenceLabel"
     @dblclick="openImageViewer"
     @click.capture="wrapperClick"
     @dragstart.prevent="onNativeDragstart"
@@ -108,7 +111,14 @@
         v-show="showAlt"
         as="figcaption"
         class="umo-node-image-alt umo-node-image-alt-content"
-        :class="[altContainerClass, { 'is-empty': isAltEmpty }]"
+        :class="[
+          altContainerClass,
+          {
+            'is-empty': isAltEmpty,
+            'has-reference-label': !!attrs.referenceLabel,
+          },
+        ]"
+        :data-reference-label="attrs.referenceLabel"
         :data-placeholder="altPlaceholder"
         :data-empty="isAltEmpty ? '' : null"
         @focusin="altFocusIn"
@@ -231,8 +241,8 @@ const altPlaceholder = $computed(() => t('node.image.altPlaceholder'))
 const showAlt = $computed(
   () =>
     !attrs.inline &&
-    attrs.showTitle !== false &&
-    (!isReadonlyAlt || hasRichAltContent),
+    (!!attrs.referenceLabel ||
+      (attrs.showTitle !== false && (!isReadonlyAlt || hasRichAltContent))),
 )
 const isImageLoading = $computed(() => !!attrs.src && isLoading)
 const shouldHandleOutside = $computed(
@@ -1377,6 +1387,9 @@ onMounted(async () => {
       cursor: text;
 
       &.is-empty {
+        &.has-reference-label::after {
+          display: none;
+        }
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1386,6 +1399,15 @@ onMounted(async () => {
           color: var(--umo-text-color-light);
           pointer-events: none;
         }
+      }
+
+      &[data-reference-label]::before {
+        content: attr(data-reference-label);
+        font-weight: 600;
+      }
+
+      &[data-reference-label]:not(.is-empty)::before {
+        content: attr(data-reference-label) ': ';
       }
 
       .tiptap-invisible-character {
