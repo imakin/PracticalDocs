@@ -12,7 +12,7 @@ import {
 import { shortId } from '@/utils/short-id'
 
 const SYNC_META = 'documentReferencesSync'
-const TARGET_NODE_TYPES = new Set(['heading', 'image', 'table'])
+const TARGET_NODE_TYPES = new Set(['heading', 'image', 'table', 'paragraph'])
 
 const normalizeText = (value) =>
   String(value || '')
@@ -29,6 +29,9 @@ const getLabels = () => ({
 const getTargetType = (node) => {
   if (node.type.name === 'heading') {
     return 'heading'
+  }
+  if (node.type.name === 'paragraph') {
+    return 'paragraph'
   }
   if (node.type.name === 'image') {
     return 'figure'
@@ -342,8 +345,16 @@ export const DocumentReferences = Extension.create({
       },
       profiles: [
         {
+          id: 'profile-paragraph',
+          name: 'Normal (Text)',
+          enabled: false,
+          style: 'numeric',
+          template: '',
+          targetType: 'paragraph',
+        },
+        {
           id: 'profile-h1',
-          name: 'Heading 1 (BAB)',
+          name: 'Title 1 (H1)',
           enabled: true,
           style: 'roman-upper',
           template: 'BAB {number}',
@@ -352,12 +363,48 @@ export const DocumentReferences = Extension.create({
         },
         {
           id: 'profile-h2',
-          name: 'Heading 2',
+          name: 'Title 2 (H2)',
           enabled: true,
           style: 'numeric',
           template: '{number}',
           targetType: 'heading',
           level: 2,
+        },
+        {
+          id: 'profile-h3',
+          name: 'Title 3 (H3)',
+          enabled: true,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 3,
+        },
+        {
+          id: 'profile-h4',
+          name: 'Title 4 (H4)',
+          enabled: false,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 4,
+        },
+        {
+          id: 'profile-h5',
+          name: 'Title 5 (H5)',
+          enabled: false,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 5,
+        },
+        {
+          id: 'profile-h6',
+          name: 'Title 6 (H6)',
+          enabled: false,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 6,
         },
         {
           id: 'profile-table',
@@ -714,7 +761,7 @@ export const DocumentReferences = Extension.create({
           let targetNode = null
           for (let { depth } = $from; depth >= 0; depth -= 1) {
             const node = $from.node(depth)
-            if (['heading', 'image', 'table'].includes(node.type.name)) {
+            if (['heading', 'image', 'table', 'paragraph'].includes(node.type.name)) {
               targetPos = $from.before(depth)
               targetNode = node
               break

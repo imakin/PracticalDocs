@@ -175,6 +175,7 @@ export const validateDocumentSnapshot = (value) => {
 
   const document = requireRecord(snapshot.document, 'document')
   const title = requireString(document.title, 'document.title')
+  const profiles = Array.isArray(snapshot.profiles) ? snapshot.profiles : []
 
   return {
     format: DOCUMENT_FILE_FORMAT,
@@ -184,6 +185,7 @@ export const validateDocumentSnapshot = (value) => {
     document: { title },
     content: validateContent(snapshot.content),
     page: validatePage(snapshot.page),
+    profiles,
   }
 }
 
@@ -191,6 +193,7 @@ export const createDocumentSnapshot = ({
   content,
   document,
   page,
+  profiles,
   editorVersion,
   savedAt = new Date().toISOString(),
 }) =>
@@ -204,6 +207,7 @@ export const createDocumentSnapshot = ({
     },
     content,
     page,
+    profiles,
   })
 
 export const parseDocumentFile = (source) => {

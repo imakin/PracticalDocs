@@ -69,6 +69,17 @@ test('serializes and parses the snapshot without changing its data', () => {
   assert.deepEqual(parsed, snapshot)
 })
 
+test('preserves block style profiles in document snapshots', () => {
+  const fixture = createFixture()
+  fixture.profiles = [
+    { id: 'profile-h1', name: 'Title 1', enabled: true, style: 'roman-upper', template: 'BAB {number}' },
+  ]
+  const snapshot = createDocumentSnapshot(fixture)
+  const parsed = parseDocumentFile(serializeDocumentSnapshot(snapshot))
+
+  assert.deepEqual(parsed.profiles, fixture.profiles)
+})
+
 test('rejects malformed JSON, unknown formats, and unsupported versions', () => {
   assert.throws(
     () => parseDocumentFile('{'),

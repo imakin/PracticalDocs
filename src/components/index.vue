@@ -1219,10 +1219,12 @@ const getDocumentSnapshot = (savedAt = new Date().toISOString()) => {
   if (!editor.value) {
     throw new Error('editor is not ready!')
   }
+  const refStorage = editor.value.extensionStorage['document-references']
   return createDocumentSnapshot({
     content: editor.value.getJSON(),
     document: options.value.document,
     page: page.value,
+    profiles: refStorage?.profiles || [],
     editorVersion: version,
     savedAt,
   })
@@ -1264,6 +1266,13 @@ const applyDocumentSnapshot = async (snapshot) => {
       size: { ...value.page.size },
       margin: { ...value.page.margin },
       watermark: { ...value.page.watermark },
+    }
+    if (value.profiles && Array.isArray(value.profiles) && value.profiles.length > 0) {
+      const refStorage = editor.value?.extensionStorage['document-references']
+      if (refStorage) {
+        refStorage.profiles = value.profiles
+        localStorage.setItem('umo-editor:profiles', JSON.stringify(value.profiles))
+      }
     }
     editor.value?.commands.showInvisibleCharacters(value.page.showBreakMarks)
     await nextTick()

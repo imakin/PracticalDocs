@@ -6,7 +6,7 @@
     :disabled="!editor?.isEditable"
   >
     <div class="umo-heading-container">
-      <template v-for="(item, index) in headingCards" :key="item.key">
+      <template v-for="(item, index) in allCards" :key="item.key">
         <div
           v-if="index < 4"
           class="card"
@@ -35,29 +35,10 @@
         </div>
         <template #content>
           <div ref="popupContentRef" class="umo-heading-container popup-content">
-            <template v-for="(item, index) in headingCards" :key="item.key">
-              <div
-                v-if="index >= 4"
-                class="card"
-                :class="{
-                  active: isCardActive(item) && editor?.isEditable,
-                  disabled: !item.enabled,
-                }"
-                @click="selectHeadingProfile(item)"
-              >
-                <div class="title" :class="item.desc" :title="item.name">{{ item.name }}</div>
-                <div class="subtitle">
-                  {{ item.desc }}<template v-if="!item.enabled"> (OFF)</template>
-                </div>
-              </div>
-            </template>
-
-            <div v-if="customProfileCards.length > 0" class="block-profiles-section">
-              <div class="section-title">{{ t('references.numbering.manageProfiles') }}</div>
-              <div class="block-cards-list">
+            <div class="block-cards-list">
+              <template v-for="(item, index) in allCards" :key="item.key">
                 <div
-                  v-for="item in customProfileCards"
-                  :key="item.key"
+                  v-if="index >= 4"
                   class="card"
                   :class="{
                     active: isCardActive(item) && editor?.isEditable,
@@ -70,7 +51,7 @@
                     {{ item.desc }}<template v-if="!item.enabled"> (OFF)</template>
                   </div>
                 </div>
-              </div>
+              </template>
             </div>
 
             <div class="profile-action-bar" @click="openProfileModal">
@@ -219,38 +200,13 @@ let editModalVisible = $ref(false)
 let profiles = $ref([])
 let activeEditingProfile = $ref(null)
 
-const headingCards = computed(() => {
-  const items = [
-    {
-      key: 'paragraph',
-      name: t('base.heading.paragraph'),
-      desc: 'text',
-      value: 'paragraph',
-      targetType: 'paragraph',
-      enabled: true,
-    },
-  ]
-  for (let level = 1; level <= 6; level += 1) {
-    items.push({
-      key: `std-h${level}`,
-      name: t('base.heading.text', { level }),
-      desc: `h${level}`,
-      value: level,
-      targetType: 'heading',
-      level,
-      enabled: true,
-    })
-  }
-  return items
-})
-
-const customProfileCards = computed(() => {
+const allCards = computed(() => {
   if (!Array.isArray(profiles)) return []
   return profiles.map((p) => ({
     key: p.id,
     id: p.id,
     name: p.name || p.id,
-    desc: p.targetType === 'heading' ? `h${p.level || 1}` : p.targetType,
+    desc: p.targetType === 'heading' ? `h${p.level || 1}` : p.targetType === 'paragraph' ? 'text' : p.targetType,
     value: p.level || p.targetType,
     targetType: p.targetType,
     level: p.level,
@@ -260,34 +216,32 @@ const customProfileCards = computed(() => {
   }))
 })
 
-const allCards = computed(() => [...headingCards.value, ...customProfileCards.value])
-
 const isCardActive = (item) => {
   if (!editor.value) return false
-  if (item.value === 'paragraph') return editor.value.isActive('paragraph')
 
   const { $from } = editor.value.state.selection
   let currentProfileId = null
   for (let d = $from.depth; d >= 0; d -= 1) {
     const node = $from.node(d)
-    if (['heading', 'image', 'table'].includes(node.type.name)) {
+    if (['heading', 'image', 'table', 'paragraph'].includes(node.type.name)) {
       currentProfileId = node.attrs.numberingProfileId || null
       break
     }
   }
 
-  if (item.id) {
+  if (item.id && currentProfileId) {
     return item.id === currentProfileId
   }
 
-  if (item.targetType === 'heading' && item.level) {
-    return (
-      editor.value.isActive('heading', { level: item.level }) &&
-      !currentProfileId
-    )
+  if (item.targetType === 'paragraph') {
+    return editor.value.isActive('paragraph')
   }
 
-  return editor.value.isActive(item.targetType) && !currentProfileId
+  if (item.targetType === 'heading' && item.level) {
+    return editor.value.isActive('heading', { level: item.level })
+  }
+
+  return editor.value.isActive(item.targetType)
 }
 
 const currentValue = computed(() => {
@@ -333,6 +287,7 @@ const styleOptions = $computed(() => [
 ])
 
 const targetTypeOptions = $computed(() => [
+  { label: t('base.heading.paragraph'), value: 'paragraph' },
   { label: t('references.labels.section'), value: 'heading' },
   { label: t('references.labels.table'), value: 'table' },
   { label: t('references.labels.figure'), value: 'figure' },
