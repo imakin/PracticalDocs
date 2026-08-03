@@ -183,25 +183,25 @@
         <t-switch v-model="activeEditingProfile.enabled" />
       </t-form-item>
       <t-form-item :label="t('references.numbering.targetType')">
-        <t-select v-model="activeEditingProfile.targetType" :options="targetTypeOptions" />
+        <t-select v-model="activeEditingProfile.targetType" :options="targetTypeOptions" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item v-if="activeEditingProfile.targetType === 'heading'" :label="t('references.numbering.level')">
         <t-input-number v-model="activeEditingProfile.level" :min="1" :max="6" />
       </t-form-item>
       <t-form-item :label="t('references.numbering.style')">
-        <t-select v-model="activeEditingProfile.style" :options="styleOptions" />
+        <t-select v-model="activeEditingProfile.style" :options="styleOptions" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item :label="t('references.numbering.template')">
         <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. BAB {number}&#10;or {number}" />
       </t-form-item>
       <t-form-item label="Font Size">
-        <t-select v-model="activeEditingProfile.fontSize" :options="fontSizeOptions" clearable placeholder="Default" />
+        <t-select v-model="activeEditingProfile.fontSize" :options="fontSizeOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item label="Line Height">
-        <t-select v-model="activeEditingProfile.lineHeight" :options="lineHeightOptions" clearable placeholder="Default" />
+        <t-select v-model="activeEditingProfile.lineHeight" :options="lineHeightOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item label="Bottom Margin">
-        <t-select v-model="activeEditingProfile.marginBottom" :options="marginBottomOptions" clearable placeholder="Default" />
+        <t-select v-model="activeEditingProfile.marginBottom" :options="marginBottomOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
     </t-form>
   </modal>
