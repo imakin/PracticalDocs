@@ -53,7 +53,29 @@ const disableMenu = (name) => {
 }
 
 const fontSizes = [
-  { label: t('base.fontSize.default'), value: '14px', order: 4 },
+  { label: t('base.fontSize.default'), value: '14px', order: 6 },
+  { label: '8', value: '8px', order: 0 },
+  { label: '9', value: '9px', order: 1 },
+  { label: '10', value: '10px', order: 2 },
+  { label: '11', value: '11px', order: 3 },
+  { label: '12', value: '12px', order: 4 },
+  { label: '13', value: '13px', order: 5 },
+  { label: '14', value: '14px', order: 6 },
+  { label: '15', value: '15px', order: 7 },
+  { label: '16', value: '16px', order: 8 },
+  { label: '17', value: '17px', order: 9 },
+  { label: '18', value: '18px', order: 10 },
+  { label: '20', value: '20px', order: 11 },
+  { label: '22', value: '22px', order: 12 },
+  { label: '24', value: '24px', order: 13 },
+  { label: '26', value: '26px', order: 14 },
+  { label: '28', value: '28px', order: 15 },
+  { label: '32', value: '32px', order: 16 },
+  { label: '36', value: '36px', order: 17 },
+  { label: '42', value: '42px', order: 18 },
+  { label: '48', value: '48px', order: 19 },
+  { label: '72', value: '72px', order: 20 },
+  { label: '96', value: '96px', order: 21 },
   { label: t('base.fontSize.42pt'), value: '42pt', order: 20 }, // 56
   { label: t('base.fontSize.36pt'), value: '36pt', order: 19 }, // 48
   { label: t('base.fontSize.26pt'), value: '26pt', order: 16 }, // 35
@@ -68,22 +90,6 @@ const fontSizes = [
   { label: t('base.fontSize.9pt'), value: '9pt', order: 3 }, // 12
   { label: t('base.fontSize.7_5pt'), value: '7.5pt', order: 1 }, // 10
   { label: t('base.fontSize.6_5pt'), value: '6.5pt', order: 0 }, // 9
-  { label: '10', value: '10px', order: 1 },
-  { label: '11', value: '11px', order: 2 },
-  { label: '12', value: '12px', order: 3 },
-  { label: '16', value: '16px', order: 5 },
-  { label: '18', value: '18px', order: 6 },
-  { label: '20', value: '20px', order: 8 },
-  { label: '22', value: '22px', order: 10 },
-  { label: '24', value: '24px', order: 11 },
-  { label: '26', value: '26px', order: 12 },
-  { label: '28', value: '28px', order: 13 },
-  { label: '32', value: '32px', order: 15 },
-  { label: '36', value: '36px', order: 17 },
-  { label: '42', value: '42px', order: 18 },
-  { label: '48', value: '48px', order: 19 },
-  { label: '72', value: '72px', order: 21 },
-  { label: '96', value: '96px', order: 22 },
 ]
 
 // 设置字体大小

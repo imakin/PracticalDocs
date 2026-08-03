@@ -439,6 +439,16 @@ export const DocumentReferences = Extension.create({
                   }
                 : {},
           },
+          fontSize: {
+            default: null,
+            parseHTML: (element) => element.style.fontSize || null,
+            renderHTML: ({ fontSize }) =>
+              fontSize
+                ? {
+                    style: `font-size: ${fontSize}`,
+                  }
+                : {},
+          },
           numberTemplate: {
             default: null,
             parseHTML: (element) =>
@@ -636,6 +646,12 @@ export const DocumentReferences = Extension.create({
                   nextAttrs.lineHeight = updatedProfile.lineHeight
                 }
                 if (
+                  updatedProfile.fontSize !== undefined &&
+                  updatedProfile.fontSize !== ''
+                ) {
+                  nextAttrs.fontSize = updatedProfile.fontSize
+                }
+                if (
                   updatedProfile.marginBottom !== undefined &&
                   updatedProfile.marginBottom !== ''
                 ) {
@@ -716,6 +732,9 @@ export const DocumentReferences = Extension.create({
           if (profile) {
             if (profile.lineHeight !== undefined && profile.lineHeight !== '') {
               nextAttrs.lineHeight = profile.lineHeight
+            }
+            if (profile.fontSize !== undefined && profile.fontSize !== '') {
+              nextAttrs.fontSize = profile.fontSize
             }
             if (
               profile.marginBottom !== undefined &&

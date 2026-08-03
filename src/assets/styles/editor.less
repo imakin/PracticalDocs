@@ -643,8 +643,16 @@
     }
   }
 
+  .ProseMirror-trailingBreak,
+  .ProseMirror-separator {
+    font-size: inherit;
+    line-height: inherit;
+  }
+
   .tiptap-invisible-character {
     text-indent: 0;
+    font-size: inherit;
+    line-height: inherit;
 
     &--break::before {
       content: '↓';

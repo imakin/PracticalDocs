@@ -340,14 +340,32 @@ const targetTypeOptions = $computed(() => [
 
 const fontSizeOptions = [
   { label: 'Default', value: '' },
+  { label: '8px', value: '8px' },
+  { label: '9px', value: '9px' },
+  { label: '10px', value: '10px' },
+  { label: '11px', value: '11px' },
   { label: '12px', value: '12px' },
+  { label: '13px', value: '13px' },
   { label: '14px', value: '14px' },
+  { label: '15px', value: '15px' },
   { label: '16px', value: '16px' },
   { label: '18px', value: '18px' },
   { label: '20px', value: '20px' },
+  { label: '22px', value: '22px' },
   { label: '24px', value: '24px' },
+  { label: '26px', value: '26px' },
   { label: '28px', value: '28px' },
   { label: '32px', value: '32px' },
+  { label: '36px', value: '36px' },
+  { label: '42px', value: '42px' },
+  { label: '48px', value: '48px' },
+  { label: '72px', value: '72px' },
+  { label: '12pt', value: '12pt' },
+  { label: '14pt', value: '14pt' },
+  { label: '16pt', value: '16pt' },
+  { label: '18pt', value: '18pt' },
+  { label: '24pt', value: '24pt' },
+  { label: '36pt', value: '36pt' },
 ]
 
 const lineHeightOptions = [
