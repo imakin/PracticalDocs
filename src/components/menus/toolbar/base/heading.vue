@@ -178,6 +178,9 @@
       <t-form-item label="Font Size">
         <t-select v-model="activeEditingProfile.fontSize" :options="fontSizeOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
+      <t-form-item label="Font Weight">
+        <t-select v-model="activeEditingProfile.fontWeight" :options="fontWeightOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+      </t-form-item>
       <t-form-item label="Line Height">
         <t-select v-model="activeEditingProfile.lineHeight" :options="lineHeightOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
@@ -266,13 +269,13 @@ const setHeading = (value) => {
 
 const selectHeadingProfile = (item) => {
   if (!editor.value) return
-  if (item.value === 'paragraph') {
+  if (item.targetType === 'paragraph') {
     editor.value.chain().focus().setParagraph().run()
-    editor.value.commands.applyNumberingProfile(null)
+    editor.value.commands.applyNumberingProfile(item.id || null)
+  } else if (item.targetType === 'heading' && item.level) {
+    editor.value.chain().focus().toggleHeading({ level: item.level }).run()
+    editor.value.commands.applyNumberingProfile(item.id || null)
   } else {
-    if (item.targetType === 'heading' && item.level) {
-      editor.value.chain().focus().toggleHeading({ level: item.level }).run()
-    }
     editor.value.commands.applyNumberingProfile(item.id || null)
   }
   popupVisible.value = false
@@ -321,6 +324,13 @@ const fontSizeOptions = [
   { label: '18pt', value: '18pt' },
   { label: '24pt', value: '24pt' },
   { label: '36pt', value: '36pt' },
+]
+
+const fontWeightOptions = [
+  { label: 'Default / Inherit', value: '' },
+  { label: 'Normal (400)', value: 'normal' },
+  { label: 'Bold (700)', value: 'bold' },
+  { label: 'Semi-Bold (600)', value: '600' },
 ]
 
 const lineHeightOptions = [

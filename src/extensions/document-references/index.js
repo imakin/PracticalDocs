@@ -496,6 +496,16 @@ export const DocumentReferences = Extension.create({
                   }
                 : {},
           },
+          fontWeight: {
+            default: null,
+            parseHTML: (element) => element.style.fontWeight || null,
+            renderHTML: ({ fontWeight }) =>
+              fontWeight
+                ? {
+                    style: `font-weight: ${fontWeight}`,
+                  }
+                : {},
+          },
           numberTemplate: {
             default: null,
             parseHTML: (element) =>
@@ -783,6 +793,11 @@ export const DocumentReferences = Extension.create({
             if (profile.fontSize !== undefined && profile.fontSize !== '') {
               nextAttrs.fontSize = profile.fontSize
             }
+            if (profile.fontWeight !== undefined && profile.fontWeight !== '') {
+              nextAttrs.fontWeight = profile.fontWeight
+            } else if (profile.targetType === 'paragraph') {
+              nextAttrs.fontWeight = 'normal'
+            }
             if (
               profile.marginBottom !== undefined &&
               profile.marginBottom !== ''
@@ -794,6 +809,20 @@ export const DocumentReferences = Extension.create({
             }
           }
           tr.setNodeMarkup(targetPos, undefined, nextAttrs)
+
+          if (
+            profile &&
+            (profile.targetType === 'paragraph' || profile.fontWeight === 'normal')
+          ) {
+            const boldMarkType = state.schema.marks.bold
+            if (boldMarkType && targetNode.nodeSize > 2) {
+              tr.removeMark(
+                targetPos + 1,
+                targetPos + targetNode.nodeSize - 1,
+                boldMarkType,
+              )
+            }
+          }
 
           if (profile && (profile.fontSize || profile.fontFamily)) {
             const textStyleType = state.schema.marks.textStyle
