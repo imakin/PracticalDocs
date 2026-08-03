@@ -4,6 +4,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { encryptPayload, decryptPayload } from './crypto-utils.js'
 
+
+// example run:
+// PORT=3001 ENCRYPTION_SECRET="your-custom-key" node server.js
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
