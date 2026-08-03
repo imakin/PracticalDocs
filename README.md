@@ -4,7 +4,7 @@ A document editor application based on Vue 3 and Tiptap with an integrated AES-2
 
 ---
 
-## 🚀 Quick Start (Development)
+## Quick Start (Development)
 
 ### 1. Run Storage Server
 ```bash
@@ -20,7 +20,7 @@ npm run dev
 
 ---
 
-## 📦 Deployment Guide
+## Deployment Guide
 
 ### Step 1: Build Frontend Assets
 ```bash
@@ -64,7 +64,7 @@ sudo caddy reload
 
 ---
 
-## 🔐 Key Features
+## Key Features
 - **AES-256-GCM Encrypted Storage**: Documents saved to `storage-server/data/` are encrypted at rest.
 - **Save Target Selector**: Switch between `practical-umodoc-server`, `Local Storage`, and `Google Drive`.
 - **Unified Block Style Profiles**: Unified Paragraph and Heading profiles with ON/OFF auto-numbering toggles.
