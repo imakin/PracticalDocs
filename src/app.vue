@@ -121,15 +121,46 @@ const options = $ref({
   // https://dev.umodoc.com/cn/docs/options/extensions#disableextensions
   disableExtensions: [],
   async onSave(content, page, document) {
-    // 将文档和评论线程保存到 localStorage
-    localStorage.setItem('document.content', content.html)
-    // 模拟保存等待过程
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log('onSave', { content, page, document })
-        resolve('文档保存成功')
-      }, 2000)
-    })
+    const saveTarget = localStorage.getItem('umo-editor:save-target') || 'practical-umodoc-server'
+    const serverUrl = localStorage.getItem('umo-editor:server-url') || 'http://localhost:3001/api/documents/save'
+
+    if (saveTarget === 'practical-umodoc-server') {
+      try {
+        const response = await fetch(serverUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: document.id || 'doc-default',
+            title: document.title || 'Untitled Document',
+            html: content.html,
+            json: content.json,
+            pageSettings: page,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+
+        const resData = await response.json()
+        return resData.message || 'Dokumen berhasil dienskripsi & disimpan ke practical-umodoc-server!'
+      } catch (error) {
+        return {
+          status: 'error',
+          message: `Gagal simpan ke server (${serverUrl}): ${error.message}`,
+        }
+      }
+    } else if (saveTarget === 'google-drive') {
+      return {
+        status: 'error',
+        message: 'Integrasi Google Drive akan hadir segera (Coming Soon)',
+      }
+    } else {
+      localStorage.setItem('document.content', content.html)
+      return t('save.success')
+    }
   },
   async onFileUpload(file) {
     if (!file) {

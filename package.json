@@ -50,6 +50,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite --port 9000 --open --force",
+    "server": "npm --prefix storage-server start",
+    "server:dev": "npm --prefix storage-server run dev",
     "test:e2e:render-markdown": "node tests/e2e/render-markdown.cdp.mjs",
     "test:e2e:save-file": "node tests/e2e/save-file.cdp.mjs",
     "test:e2e:document-references": "node tests/e2e/document-references.cdp.mjs",

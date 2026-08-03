@@ -90,6 +90,18 @@
               >
               </t-button>
             </div>
+            <div class="umo-save-target-container">
+              <div class="umo-save-target-title">Simpan Ke (Save Target):</div>
+              <t-radio-group v-model="saveTarget" size="small" class="umo-save-target-group">
+                <t-radio value="practical-umodoc-server">practical-umodoc-server (Encrypted)</t-radio>
+                <t-radio value="local-storage">Local Storage</t-radio>
+                <t-radio value="google-drive" disabled>Google Drive (Coming Soon)</t-radio>
+              </t-radio-group>
+              <div v-if="saveTarget === 'practical-umodoc-server'" class="umo-server-url-field">
+                <div class="umo-server-url-label">Server API URL:</div>
+                <t-input v-model="serverUrl" placeholder="http://localhost:3001/api/documents/save" size="small" />
+              </div>
+            </div>
           </div>
         </template>
       </t-popup>
@@ -147,6 +159,9 @@ const options = inject('options')
 const $toolbar = useState('toolbar', options)
 let statusPopup = $ref(false)
 const online = useOnline()
+
+const saveTarget = useStorage('umo-editor:save-target', 'practical-umodoc-server')
+const serverUrl = useStorage('umo-editor:server-url', 'http://localhost:3001/api/documents/save')
 
 // 工具栏菜单
 const defaultToolbarMenus = [
@@ -325,13 +340,37 @@ const setContentFromCache = () => {
   align-items: unset;
   padding: 12px 16px;
   color: var(--umo-text-color);
-  min-width: 150px;
+  min-width: 260px;
   cursor: default;
   .umo-document-button-container {
     margin: 8px 0 4px;
     display: flex;
     gap: 8px;
   }
+}
+.umo-save-target-container {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--umo-border-color-light);
+}
+.umo-save-target-title {
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: var(--umo-text-color);
+}
+.umo-save-target-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.umo-server-url-field {
+  margin-top: 8px;
+}
+.umo-server-url-label {
+  font-size: 11px;
+  color: var(--umo-text-color-secondary);
+  margin-bottom: 4px;
 }
 </style>
 
