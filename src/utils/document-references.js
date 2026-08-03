@@ -142,7 +142,7 @@ export const getReferenceLabel = (
   const template = templates[targetType] || DEFAULT_TEMPLATES[targetType] || '{label} {number}'
   const style = styles[targetType] || 'numeric'
   const formattedNumber = formatSingleNumber(number, style)
-  return applyTemplate(template, targetType === 'heading' ? number : formattedNumber, defaultLabel, title).trim()
+  return applyTemplate(template, targetType === 'heading' ? number : formattedNumber, defaultLabel, title)
 }
 
 const createUniqueId = (targetType, seenIds, createId) => {
@@ -251,7 +251,7 @@ export const buildReferencePlan = (
       '{label} {number}'
 
     const label = profileEnabled
-      ? applyTemplate(template, number, defaultLabel, title).trim()
+      ? applyTemplate(template, number, defaultLabel, title)
       : ''
 
     const target = {

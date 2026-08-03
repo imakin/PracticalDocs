@@ -498,9 +498,37 @@ export const DocumentReferences = Extension.create({
                   pos + 1,
                   () => {
                     const number = document.createElement('span')
-                    number.className = 'umo-heading-number'
+                    const hasNewline = displayLabel.includes('\n')
+                    const lines = displayLabel.split('\n')
+
+                    if (hasNewline) {
+                      number.className =
+                        'umo-heading-number umo-heading-number-block'
+                      number.style.display = 'block'
+                      number.style.width = '100%'
+                      number.style.marginBottom = '0'
+                      number.style.lineHeight = 'inherit'
+                    } else {
+                      number.className = 'umo-heading-number'
+                    }
+
                     number.contentEditable = 'false'
-                    number.textContent = displayLabel
+
+                    if (!hasNewline) {
+                      number.textContent = displayLabel
+                    } else {
+                      number.textContent = ''
+                      lines.forEach((lineText, idx) => {
+                        if (idx > 0) {
+                          number.appendChild(document.createElement('br'))
+                        }
+                        if (lineText) {
+                          const lineSpan = document.createElement('span')
+                          lineSpan.textContent = lineText
+                          number.appendChild(lineSpan)
+                        }
+                      })
+                    }
 
                     for (const mark of marks) {
                       if (mark.type.name === 'textStyle') {
@@ -588,16 +616,66 @@ export const DocumentReferences = Extension.create({
       updateNumberingProfile:
         (id, updates) =>
         ({ state, dispatch }) => {
-          this.storage.profiles = this.storage.profiles.map((p) =>
-            p.id === id ? { ...p, ...updates } : p,
-          )
-          const tr = createSyncTransaction(state, this.storage)
-          if (tr) {
-            dispatch?.(tr)
+          let updatedProfile = null
+          this.storage.profiles = this.storage.profiles.map((p) => {
+            if (p.id === id) {
+              updatedProfile = { ...p, ...updates }
+              return updatedProfile
+            }
+            return p
+          })
+          const { tr } = state
+          if (updatedProfile) {
+            state.doc.descendants((node, pos) => {
+              if (node.attrs?.numberingProfileId === id) {
+                const nextAttrs = { ...node.attrs }
+                if (
+                  updatedProfile.lineHeight !== undefined &&
+                  updatedProfile.lineHeight !== ''
+                ) {
+                  nextAttrs.lineHeight = updatedProfile.lineHeight
+                }
+                if (
+                  updatedProfile.marginBottom !== undefined &&
+                  updatedProfile.marginBottom !== ''
+                ) {
+                  nextAttrs.margin = {
+                    ...(node.attrs.margin || {}),
+                    bottom: updatedProfile.marginBottom.replace(/px/g, ''),
+                  }
+                }
+                tr.setNodeMarkup(pos, undefined, nextAttrs)
+
+                if (updatedProfile.fontSize || updatedProfile.fontFamily) {
+                  const textStyleType = state.schema.marks.textStyle
+                  if (textStyleType && node.content) {
+                    node.content.forEach((child, offset) => {
+                      if (child.isText) {
+                        const from = pos + 1 + offset
+                        const to = from + child.nodeSize
+                        const attrs = {
+                          ...(child.marks.find((m) => m.type === textStyleType)
+                            ?.attrs || {}),
+                        }
+                        if (updatedProfile.fontSize)
+                          attrs.fontSize = updatedProfile.fontSize
+                        if (updatedProfile.fontFamily)
+                          attrs.fontFamily = updatedProfile.fontFamily
+                        tr.addMark(from, to, textStyleType.create(attrs))
+                      }
+                    })
+                  }
+                }
+              }
+            })
+          }
+          const planTr = createSyncTransaction(state, this.storage)
+          if (planTr) {
+            dispatch?.(planTr)
           } else {
-            const emptyTr = state.tr.setMeta(SYNC_META, true)
-            emptyTr.setMeta('addToHistory', false)
-            dispatch?.(emptyTr)
+            tr.setMeta(SYNC_META, true)
+            tr.setMeta('addToHistory', false)
+            dispatch?.(tr)
           }
           return true
         },
@@ -618,7 +696,7 @@ export const DocumentReferences = Extension.create({
           const { $from } = selection
           let targetPos = null
           let targetNode = null
-          for (let {depth} = $from; depth >= 0; depth -= 1) {
+          for (let { depth } = $from; depth >= 0; depth -= 1) {
             const node = $from.node(depth)
             if (['heading', 'image', 'table'].includes(node.type.name)) {
               targetPos = $from.before(depth)
@@ -630,10 +708,46 @@ export const DocumentReferences = Extension.create({
             return false
           }
           const { tr } = state
-          tr.setNodeMarkup(targetPos, undefined, {
+          const profile = this.storage.profiles.find((p) => p.id === profileId)
+          const nextAttrs = {
             ...targetNode.attrs,
             numberingProfileId: profileId,
-          })
+          }
+          if (profile) {
+            if (profile.lineHeight !== undefined && profile.lineHeight !== '') {
+              nextAttrs.lineHeight = profile.lineHeight
+            }
+            if (
+              profile.marginBottom !== undefined &&
+              profile.marginBottom !== ''
+            ) {
+              nextAttrs.margin = {
+                ...(targetNode.attrs.margin || {}),
+                bottom: profile.marginBottom.replace(/px/g, ''),
+              }
+            }
+          }
+          tr.setNodeMarkup(targetPos, undefined, nextAttrs)
+
+          if (profile && (profile.fontSize || profile.fontFamily)) {
+            const textStyleType = state.schema.marks.textStyle
+            if (textStyleType && targetNode.content) {
+              targetNode.content.forEach((child, offset) => {
+                if (child.isText) {
+                  const from = targetPos + 1 + offset
+                  const to = from + child.nodeSize
+                  const attrs = {
+                    ...(child.marks.find((m) => m.type === textStyleType)
+                      ?.attrs || {}),
+                  }
+                  if (profile.fontSize) attrs.fontSize = profile.fontSize
+                  if (profile.fontFamily) attrs.fontFamily = profile.fontFamily
+                  tr.addMark(from, to, textStyleType.create(attrs))
+                }
+              })
+            }
+          }
+
           const { targets, updates } = createPlan(tr.doc, this.storage)
           applyTargetUpdates(tr, updates)
           applyCrossReferenceUpdates(tr, targets)

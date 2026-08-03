@@ -167,6 +167,7 @@
     draggable
     destroy-on-close
     :confirm-btn="t('references.numbering.saveProfile')"
+    :cancel-btn="t('references.numbering.cancel')"
     @confirm="saveEditingProfile"
     @close="editModalVisible = false"
   >
@@ -191,7 +192,16 @@
         <t-select v-model="activeEditingProfile.style" :options="styleOptions" />
       </t-form-item>
       <t-form-item :label="t('references.numbering.template')">
-        <t-input v-model="activeEditingProfile.template" placeholder="e.g. BAB {number} or {number}" />
+        <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. BAB {number}&#10;or {number}" />
+      </t-form-item>
+      <t-form-item label="Font Size">
+        <t-select v-model="activeEditingProfile.fontSize" :options="fontSizeOptions" clearable placeholder="Default" />
+      </t-form-item>
+      <t-form-item label="Line Height">
+        <t-select v-model="activeEditingProfile.lineHeight" :options="lineHeightOptions" clearable placeholder="Default" />
+      </t-form-item>
+      <t-form-item label="Bottom Margin">
+        <t-select v-model="activeEditingProfile.marginBottom" :options="marginBottomOptions" clearable placeholder="Default" />
       </t-form-item>
     </t-form>
   </modal>
@@ -327,6 +337,37 @@ const targetTypeOptions = $computed(() => [
   { label: t('references.labels.table'), value: 'table' },
   { label: t('references.labels.figure'), value: 'figure' },
 ])
+
+const fontSizeOptions = [
+  { label: 'Default', value: '' },
+  { label: '12px', value: '12px' },
+  { label: '14px', value: '14px' },
+  { label: '16px', value: '16px' },
+  { label: '18px', value: '18px' },
+  { label: '20px', value: '20px' },
+  { label: '24px', value: '24px' },
+  { label: '28px', value: '28px' },
+  { label: '32px', value: '32px' },
+]
+
+const lineHeightOptions = [
+  { label: 'Default', value: '' },
+  { label: '1.0 (Single)', value: '1' },
+  { label: '1.25', value: '1.25' },
+  { label: '1.5', value: '1.5' },
+  { label: '1.75', value: '1.75' },
+  { label: '2.0 (Double)', value: '2' },
+]
+
+const marginBottomOptions = [
+  { label: 'Default (0px)', value: '' },
+  { label: '0px', value: '0px' },
+  { label: '4px', value: '4px' },
+  { label: '8px', value: '8px' },
+  { label: '12px', value: '12px' },
+  { label: '16px', value: '16px' },
+  { label: '24px', value: '24px' },
+]
 
 const loadProfiles = () => {
   editor.value?.commands.getNumberingProfiles((data) => {

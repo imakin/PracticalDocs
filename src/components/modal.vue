@@ -3,7 +3,13 @@
     :is="
       h(
         Dialog,
-        { placement: 'center', attach: container, ...$attrs, ref: changeRef },
+        {
+          placement: 'center',
+          attach: container,
+          cancelBtn: $attrs['cancel-btn'] ?? $attrs.cancelBtn ?? 'Cancel',
+          ...$attrs,
+          ref: changeRef,
+        },
         $slots,
       )
     "

@@ -55,6 +55,16 @@
     font-size: var(--umo-font-size);
     font-display: swap;
 
+    *[data-placeholder],
+    .is-empty,
+    .is-editor-empty {
+      .tiptap-invisible-character,
+      .ProseMirror-separator,
+      .ProseMirror-trailingBreak {
+        display: none !important;
+      }
+    }
+
     > h1[data-placeholder],
     h2[data-placeholder],
     h3[data-placeholder],
@@ -533,6 +543,14 @@
     font-family: inherit;
     font-weight: inherit;
     color: inherit;
+
+    &.umo-heading-number-block {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 0;
+      width: 100%;
+      line-height: inherit;
+    }
   }
 
   .umo-cross-reference {

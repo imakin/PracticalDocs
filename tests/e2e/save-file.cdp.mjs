@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -14,13 +15,35 @@ const downloadPath = await mkdtemp(path.join(tmpdir(), 'umodoc-save-file-'))
 const sleep = (duration) =>
   new Promise((resolve) => setTimeout(resolve, duration))
 
-const versionResponse = await fetch(`${cdpUrl}/json/version`)
-if (!versionResponse.ok) {
-  throw new Error(
-    `Unable to reach Chrome DevTools Protocol at ${cdpUrl}: HTTP ${versionResponse.status}`,
+const ensureCdpServer = async () => {
+  try {
+    const res = await fetch(`${cdpUrl}/json/version`)
+    if (res.ok) return null
+  } catch {}
+  const chromeBin = process.env.CHROME_BIN || 'google-chrome'
+  const proc = spawn(
+    chromeBin,
+    [
+      '--remote-debugging-port=9222',
+      '--headless=new',
+      '--no-first-run',
+      '--no-default-browser-check',
+    ],
+    { stdio: 'ignore' },
   )
+  proc.on('error', () => {})
+  for (let i = 0; i < 50; i += 1) {
+    await sleep(100)
+    try {
+      const res = await fetch(`${cdpUrl}/json/version`)
+      if (res.ok) return proc
+    } catch {}
+  }
+  return proc
 }
 
+const spawnedProc = await ensureCdpServer()
+const versionResponse = await fetch(`${cdpUrl}/json/version`)
 const { webSocketDebuggerUrl } = await versionResponse.json()
 if (!webSocketDebuggerUrl) {
   throw new Error(
@@ -74,26 +97,31 @@ const call = (method, params = {}, sessionId) =>
 
 await opened
 
-let browserContextId
 let targetId
+let isNewTargetCreated = false
 
 try {
-  ;({ browserContextId } = await call('Target.createBrowserContext'))
   await call('Browser.setDownloadBehavior', {
     behavior: 'allow',
-    browserContextId,
     downloadPath,
     eventsEnabled: true,
-  })
-  ;({ targetId } = await call('Target.createTarget', {
-    url: editorUrl,
-    browserContextId,
-  }))
+  }).catch(() => {})
+
+  ;({ targetId } = await call('Target.createTarget', { url: editorUrl }))
 
   const { sessionId } = await call('Target.attachToTarget', {
     targetId,
     flatten: true,
   })
+
+  await call(
+    'Page.setDownloadBehavior',
+    {
+      behavior: 'allow',
+      downloadPath,
+    },
+    sessionId,
+  )
 
   const evaluate = async (expression) => {
     const { result, exceptionDetails } = await call(
@@ -423,14 +451,6 @@ try {
     }),
   )
 } finally {
-  if (targetId) {
-    await call('Target.closeTarget', { targetId }).catch(() => {})
-  }
-  if (browserContextId) {
-    await call('Target.disposeBrowserContext', { browserContextId }).catch(
-      () => {},
-    )
-  }
   browser.close()
-  await rm(downloadPath, { recursive: true, force: true })
+  await rm(downloadPath, { recursive: true, force: true }).catch(() => {})
 }

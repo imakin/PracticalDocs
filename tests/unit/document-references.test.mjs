@@ -115,6 +115,25 @@ test('supports custom placement templates and styles', () => {
   )
 })
 
+test('preserves explicit newlines in placement templates', () => {
+  const { targets } = buildReferencePlan(
+    [{ pos: 0, targetType: 'heading', level: 1, title: 'PENDAHULUAN' }],
+    {
+      profiles: [
+        {
+          id: 'profile-h1',
+          targetType: 'heading',
+          level: 1,
+          template: 'BAB {number}\n',
+          style: 'roman-upper',
+        },
+      ],
+    },
+  )
+
+  assert.equal(targets[0].label, 'BAB I\n')
+})
+
 test('respects global ON/OFF numbering toggle', () => {
   const { targets } = buildReferencePlan(
     [
