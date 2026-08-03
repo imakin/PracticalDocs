@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 package/
+storage-server/data/
 
 # Editor directories and files
 .idea/
