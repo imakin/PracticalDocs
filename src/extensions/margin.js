@@ -4,14 +4,18 @@ import { NodeSelection } from '@tiptap/pm/state'
 const normalizeMarginValue = (value) => {
   if (value === null || value === undefined) return null
   if (typeof value === 'number') {
-    return Number.isFinite(value) ? String(value) : null
+    return Number.isFinite(value) ? `${value}px` : null
   }
   if (typeof value !== 'string') return null
-  const trimmed = value.trim().replace(/px$/i, '')
+  const trimmed = value.trim()
   if (!trimmed) return null
-  const num = Number.parseFloat(trimmed)
-  if (!Number.isFinite(num)) return null
-  return String(num)
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    return `${trimmed}px`
+  }
+  if (/^-?\d+(\.\d+)?(px|pt|em|rem|cm|mm|in|pc|ex|vh|vw|%)$/i.test(trimmed)) {
+    return trimmed
+  }
+  return null
 }
 
 const normalizeMargin = (options) => {
@@ -93,20 +97,18 @@ export default Extension.create({
             default: null,
             parseHTML: (element) => {
               const { marginTop, marginBottom } = element.style
-              if (marginTop === '' && marginBottom === '') {
+              if (!marginTop && !marginBottom) {
                 return null
               }
               const styleMargin = {}
-              if (marginTop !== '') {
-                const top = normalizeMarginValue(marginTop.replace(/px/g, ''))
+              if (marginTop) {
+                const top = normalizeMarginValue(marginTop)
                 if (top !== null && top !== '') {
                   styleMargin.top = top
                 }
               }
-              if (marginBottom !== '') {
-                const bottom = normalizeMarginValue(
-                  marginBottom.replace(/px/g, ''),
-                )
+              if (marginBottom) {
+                const bottom = normalizeMarginValue(marginBottom)
                 if (bottom !== null && bottom !== '') {
                   styleMargin.bottom = bottom
                 }
@@ -120,10 +122,12 @@ export default Extension.create({
               const { top, bottom } = margin
               let styleMargin = ''
               if (top !== null && top !== undefined && top !== '') {
-                styleMargin += `margin-top: ${top}px;`
+                const formattedTop = normalizeMarginValue(top)
+                if (formattedTop) styleMargin += `margin-top: ${formattedTop};`
               }
               if (bottom !== null && bottom !== undefined && bottom !== '') {
-                styleMargin += `margin-bottom: ${bottom}px;`
+                const formattedBottom = normalizeMarginValue(bottom)
+                if (formattedBottom) styleMargin += `margin-bottom: ${formattedBottom};`
               }
               if (!styleMargin) return {}
               return { style: styleMargin }

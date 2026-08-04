@@ -176,16 +176,16 @@
         <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. BAB {number}&#10;or {number}" />
       </t-form-item>
       <t-form-item label="Font Size">
-        <t-select v-model="activeEditingProfile.fontSize" :options="fontSizeOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+        <t-select v-model="activeEditingProfile.fontSize" :options="fontSizeOptions" filterable creatable clearable placeholder="e.g. 12pt or 16px" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item label="Font Weight">
-        <t-select v-model="activeEditingProfile.fontWeight" :options="fontWeightOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+        <t-select v-model="activeEditingProfile.fontWeight" :options="fontWeightOptions" filterable creatable clearable placeholder="e.g. normal or bold or 600" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item label="Line Height">
-        <t-select v-model="activeEditingProfile.lineHeight" :options="lineHeightOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+        <t-select v-model="activeEditingProfile.lineHeight" :options="lineHeightOptions" filterable creatable clearable placeholder="e.g. 1.5 or 1.25" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item label="Bottom Margin">
-        <t-select v-model="activeEditingProfile.marginBottom" :options="marginBottomOptions" clearable placeholder="Default" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+        <t-select v-model="activeEditingProfile.marginBottom" :options="marginBottomOptions" filterable creatable clearable placeholder="e.g. 8px or 12px" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
     </t-form>
   </modal>
@@ -407,6 +407,7 @@ const saveEditingProfile = () => {
   }
   editModalVisible = false
   loadProfiles()
+  editor.value?.commands.syncDocumentReferences()
 }
 
 onMounted(() => {

@@ -1,4 +1,4 @@
-export const REFERENCE_TARGET_TYPES = ['heading', 'figure', 'table', 'citation']
+export const REFERENCE_TARGET_TYPES = ['heading', 'paragraph', 'figure', 'table', 'citation']
 
 export const REFERENCE_DISPLAY_MODES = ['label', 'title', 'label-title']
 
@@ -198,6 +198,7 @@ export const buildReferencePlan = (
         })()
   const headingCounters = [0, 0, 0, 0, 0, 0]
   const counters = {
+    paragraph: 0,
     figure: 0,
     table: 0,
     citation: 0,
@@ -263,6 +264,7 @@ export const buildReferencePlan = (
       title,
       enabled: profileEnabled,
       numberingProfileId: profile ? profile.id : descriptor.numberingProfileId,
+      profile,
     }
     targets.push(target)
     updates.push({

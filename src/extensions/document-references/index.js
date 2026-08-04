@@ -133,6 +133,67 @@ const applyTargetUpdates = (tr, updates) => {
         nodeChanged = true
         changed = true
       }
+      if (update.profile) {
+        if (
+          update.profile.template &&
+          hasDifferentValue(attrs, 'numberTemplate', update.profile.template)
+        ) {
+          // If existing node attribute has explicit newline \n, preserve it unless profile also defines newline or is forced
+          const isCurrentMultiline = attrs.numberTemplate && attrs.numberTemplate.includes('\n')
+          const isProfileMultiline = update.profile.template.includes('\n')
+          if (!isCurrentMultiline || isProfileMultiline) {
+            attrs.numberTemplate = update.profile.template
+            nodeChanged = true
+            changed = true
+          }
+        }
+        if (
+          update.profile.style &&
+          hasDifferentValue(attrs, 'numberStyle', update.profile.style)
+        ) {
+          attrs.numberStyle = update.profile.style
+          nodeChanged = true
+          changed = true
+        }
+        if (
+          !attrs.fontSize &&
+          update.profile.fontSize &&
+          hasDifferentValue(attrs, 'fontSize', update.profile.fontSize)
+        ) {
+          attrs.fontSize = update.profile.fontSize
+          nodeChanged = true
+          changed = true
+        }
+        if (
+          !attrs.fontWeight &&
+          update.profile.fontWeight &&
+          hasDifferentValue(attrs, 'fontWeight', update.profile.fontWeight)
+        ) {
+          attrs.fontWeight = update.profile.fontWeight
+          nodeChanged = true
+          changed = true
+        }
+        if (
+          !attrs.lineHeight &&
+          update.profile.lineHeight &&
+          hasDifferentValue(attrs, 'lineHeight', update.profile.lineHeight)
+        ) {
+          attrs.lineHeight = update.profile.lineHeight
+          nodeChanged = true
+          changed = true
+        }
+        if (
+          update.profile.marginBottom &&
+          (!attrs.margin || attrs.margin.bottom === undefined || attrs.margin.bottom === '')
+        ) {
+          attrs.margin = {
+            ...(attrs.margin || {}),
+            bottom: update.profile.marginBottom,
+          }
+          nodeChanged = true
+          changed = true
+        }
+      }
     }
     if (nodeChanged) {
       tr.setNodeMarkup(update.pos, undefined, attrs)
@@ -357,7 +418,7 @@ export const DocumentReferences = Extension.create({
           name: 'Title 1 (H1)',
           enabled: true,
           style: 'roman-upper',
-          template: 'BAB {number}',
+          template: 'BAB {number}\n',
           targetType: 'heading',
           level: 1,
         },
@@ -523,6 +584,15 @@ export const DocumentReferences = Extension.create({
   },
 
   onCreate() {
+    try {
+      const savedProfiles = typeof localStorage !== 'undefined' ? localStorage.getItem('umo-editor:profiles') : null
+      if (savedProfiles) {
+        const parsed = JSON.parse(savedProfiles)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.storage.profiles = parsed
+        }
+      }
+    } catch {}
     setTimeout(() => {
       if (!this.editor.isDestroyed) {
         this.editor.commands.syncDocumentReferences()
@@ -547,7 +617,7 @@ export const DocumentReferences = Extension.create({
           decorations: (state) => {
             const decorations = []
             state.doc.descendants((node, pos) => {
-              if (node.type.name !== 'heading') {
+              if (!['heading', 'paragraph', 'table', 'image'].includes(node.type.name)) {
                 return
               }
               const displayLabel = node.attrs.referenceLabel
@@ -674,8 +744,16 @@ export const DocumentReferences = Extension.create({
             template: profile.template || '{number}',
             targetType: profile.targetType || 'heading',
             level: profile.level || 1,
+            fontSize: profile.fontSize,
+            fontWeight: profile.fontWeight,
+            lineHeight: profile.lineHeight,
+            marginBottom: profile.marginBottom,
+            fontFamily: profile.fontFamily,
           }
           this.storage.profiles = [...this.storage.profiles, newProfile]
+          try {
+            localStorage.setItem('umo-editor:profiles', JSON.stringify(this.storage.profiles))
+          } catch {}
           const tr = createSyncTransaction(state, this.storage)
           if (tr) dispatch?.(tr)
           return true
@@ -691,11 +769,21 @@ export const DocumentReferences = Extension.create({
             }
             return p
           })
+          try {
+            localStorage.setItem('umo-editor:profiles', JSON.stringify(this.storage.profiles))
+          } catch {}
+
           const { tr } = state
           if (updatedProfile) {
             state.doc.descendants((node, pos) => {
               if (node.attrs?.numberingProfileId === id) {
                 const nextAttrs = { ...node.attrs }
+                if (updatedProfile.template !== undefined) {
+                  nextAttrs.numberTemplate = updatedProfile.template
+                }
+                if (updatedProfile.style !== undefined) {
+                  nextAttrs.numberStyle = updatedProfile.style
+                }
                 if (
                   updatedProfile.lineHeight !== undefined &&
                   updatedProfile.lineHeight !== ''
@@ -709,12 +797,18 @@ export const DocumentReferences = Extension.create({
                   nextAttrs.fontSize = updatedProfile.fontSize
                 }
                 if (
+                  updatedProfile.fontWeight !== undefined &&
+                  updatedProfile.fontWeight !== ''
+                ) {
+                  nextAttrs.fontWeight = updatedProfile.fontWeight
+                }
+                if (
                   updatedProfile.marginBottom !== undefined &&
                   updatedProfile.marginBottom !== ''
                 ) {
                   nextAttrs.margin = {
                     ...(node.attrs.margin || {}),
-                    bottom: updatedProfile.marginBottom.replace(/px/g, ''),
+                    bottom: updatedProfile.marginBottom,
                   }
                 }
                 tr.setNodeMarkup(pos, undefined, nextAttrs)
@@ -758,6 +852,9 @@ export const DocumentReferences = Extension.create({
           this.storage.profiles = this.storage.profiles.filter(
             (p) => p.id !== id,
           )
+          try {
+            localStorage.setItem('umo-editor:profiles', JSON.stringify(this.storage.profiles))
+          } catch {}
           const tr = createSyncTransaction(state, this.storage)
           if (tr) dispatch?.(tr)
           return true
@@ -787,6 +884,12 @@ export const DocumentReferences = Extension.create({
             numberingProfileId: profileId,
           }
           if (profile) {
+            if (profile.template !== undefined && profile.template !== '') {
+              nextAttrs.numberTemplate = profile.template
+            }
+            if (profile.style !== undefined && profile.style !== '') {
+              nextAttrs.numberStyle = profile.style
+            }
             if (profile.lineHeight !== undefined && profile.lineHeight !== '') {
               nextAttrs.lineHeight = profile.lineHeight
             }
@@ -804,7 +907,7 @@ export const DocumentReferences = Extension.create({
             ) {
               nextAttrs.margin = {
                 ...(targetNode.attrs.margin || {}),
-                bottom: profile.marginBottom.replace(/px/g, ''),
+                bottom: profile.marginBottom,
               }
             }
           }

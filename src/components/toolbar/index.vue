@@ -32,6 +32,15 @@
       class="umo-toolbar-actions"
       :class="`umo-toolbar-actions-${$toolbar.mode}`"
     >
+      <t-button
+        class="umo-toolbar-actions-button"
+        variant="text"
+        size="small"
+        @click="triggerLoadModal"
+      >
+        <icon name="file-view" />
+        <span class="button-text">Buka / Load</span>
+      </t-button>
       <t-popup
         v-if="
           options.toolbar.showSaveLabel && options.document.readOnly !== true
@@ -76,18 +85,20 @@
               ></span>
               <span v-else v-text="t('save.unsaved')"></span>
             </div>
-            <div class="umo-document-button-container">
+            <div class="umo-document-button-container" style="display: flex; gap: 6px;">
               <t-button
                 size="small"
+                theme="primary"
                 @click="saveContent"
                 v-text="t('save.text')"
               ></t-button>
               <t-button
                 size="small"
+                theme="default"
                 variant="outline"
-                @click="setContentFromCache"
-                v-text="t('save.cache.text')"
+                @click="triggerLoadModal"
               >
+                Load / Buka...
               </t-button>
             </div>
             <div class="umo-save-target-container">
@@ -97,6 +108,10 @@
                 <t-radio value="local-storage">Local Storage</t-radio>
                 <t-radio value="google-drive" disabled>Google Drive (Coming Soon)</t-radio>
               </t-radio-group>
+              <div class="umo-server-url-field">
+                <div class="umo-server-url-label">Nama File / Judul Dokumen:</div>
+                <t-input v-model="documentTitle" placeholder="e.g. laporan_bab1" size="small" />
+              </div>
               <div v-if="saveTarget === 'practical-umodoc-server'" class="umo-server-url-field">
                 <div class="umo-server-url-label">Server API URL:</div>
                 <t-input v-model="serverUrl" placeholder="http://localhost:3001/api/documents/save" size="small" />
@@ -160,8 +175,32 @@ const $toolbar = useState('toolbar', options)
 let statusPopup = $ref(false)
 const online = useOnline()
 
+const $document = useState('document', options)
+
+const documentTitle = computed({
+  get() {
+    const raw = options.value?.document?.title || $document.value?.title
+    return (raw && String(raw).trim() && String(raw).trim() !== '测试文档') ? String(raw).trim() : 'file-identifier'
+  },
+  set(val) {
+    const clean = (val && String(val).trim()) ? String(val).trim() : 'file-identifier'
+    if (options.value?.document) {
+      options.value.document.title = clean
+    }
+    if ($document.value) {
+      $document.value.title = clean
+    }
+  },
+})
+
 const saveTarget = useStorage('umo-editor:save-target', 'practical-umodoc-server')
 const serverUrl = useStorage('umo-editor:server-url', 'http://localhost:3001/api/documents/save')
+
+const triggerLoadModal = () => {
+  statusPopup = false
+  const btn = document.querySelector('[data-testid="open-json"]')
+  if (btn) btn.click()
+}
 
 // 工具栏菜单
 const defaultToolbarMenus = [

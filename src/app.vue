@@ -54,15 +54,22 @@ const templates = [
   },
 ]
 const options = $ref({
-  // theme: 'auto',
-  // skin: 'modern',
+  locale: 'en-US',
   toolbar: {
     // defaultMode: 'classic',
     // menus: ['base'],
   },
   document: {
-    title: '测试文档',
-    content: localStorage.getItem('document.content') || '<p>测试文档</p>',
+    title: 'file-identifier',
+    content: (() => {
+      const cachedJson = localStorage.getItem('document.json')
+      if (cachedJson) {
+        try {
+          return JSON.parse(cachedJson)
+        } catch {}
+      }
+      return localStorage.getItem('document.content') || ''
+    })(),
     // structure: 'heading block*',
   },
   page: {
@@ -121,21 +128,52 @@ const options = $ref({
   // https://dev.umodoc.com/cn/docs/options/extensions#disableextensions
   disableExtensions: [],
   async onSave(content, page, document) {
+    if (content.html) localStorage.setItem('document.content', content.html)
+    if (content.json) {
+      try {
+        localStorage.setItem('document.json', JSON.stringify(content.json))
+      } catch {}
+    }
+    if (content.snapshot) {
+      try {
+        localStorage.setItem('document.snapshot', JSON.stringify(content.snapshot))
+      } catch {}
+    }
+    if (content.profiles && content.profiles.length > 0) {
+      try {
+        localStorage.setItem('umo-editor:profiles', JSON.stringify(content.profiles))
+      } catch {}
+    }
+
     const saveTarget = localStorage.getItem('umo-editor:save-target') || 'practical-umodoc-server'
     const serverUrl = localStorage.getItem('umo-editor:server-url') || 'http://localhost:3001/api/documents/save'
 
     if (saveTarget === 'practical-umodoc-server') {
       try {
+        let rawTitle = (document?.title && String(document.title).trim()) ? String(document.title).trim() : (content?.snapshot?.document?.title || 'file-identifier')
+        if (rawTitle === '测试文档') rawTitle = 'file-identifier'
+        let baseName = rawTitle
+        if (baseName.toLowerCase().endsWith('.enc')) baseName = baseName.slice(0, -4)
+        if (baseName.toLowerCase().endsWith('.json')) baseName = baseName.slice(0, -5)
+        if (baseName.toLowerCase().endsWith('.umodoc')) baseName = baseName.slice(0, -7)
+
+        const cleanFilename = baseName.replaceAll(/[^a-zA-Z0-9_\-.]/g, '_').replaceAll(/_+/g, '_').replaceAll(/^_+|_+$/g, '')
+        const filename = cleanFilename || 'file-identifier'
+        const title = rawTitle
+
         const response = await fetch(serverUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            id: document.id || 'doc-default',
-            title: document.title || 'Untitled Document',
+            id: filename,
+            filename,
+            title,
             html: content.html,
             json: content.json,
+            snapshot: content.snapshot,
+            profiles: content.profiles || [],
             pageSettings: page,
           }),
         })
@@ -145,7 +183,14 @@ const options = $ref({
         }
 
         const resData = await response.json()
-        return resData.message || 'Dokumen berhasil dienskripsi & disimpan ke practical-umodoc-server!'
+        if (resData.success === false) {
+          return {
+            status: 'error',
+            message: resData.message || 'Gagal menyimpan dokumen ke server.',
+          }
+        }
+
+        return resData.message || `Dokumen '${filename}' berhasil dienskripsi & disimpan ke practical-umodoc-server!`
       } catch (error) {
         return {
           status: 'error',
@@ -158,8 +203,7 @@ const options = $ref({
         message: 'Integrasi Google Drive akan hadir segera (Coming Soon)',
       }
     } else {
-      localStorage.setItem('document.content', content.html)
-      return t('save.success')
+      return 'Dokumen berhasil disimpan ke Local Storage!'
     }
   },
   async onFileUpload(file) {

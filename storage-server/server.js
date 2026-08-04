@@ -4,10 +4,6 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { encryptPayload, decryptPayload } from './crypto-utils.js'
 
-
-// example run:
-// PORT=3001 ENCRYPTION_SECRET="your-custom-key" node server.js
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -46,10 +42,20 @@ function parseRequestBody(req) {
   })
 }
 
+function sanitizeFilename(input) {
+  let str = String(input || 'file-identifier').trim()
+  if (str === '测试文档') str = 'file-identifier'
+  const cleaned = str
+    .replaceAll(/[^a-zA-Z0-9_\-\.]/g, '_')
+    .replaceAll(/_+/g, '_')
+    .replaceAll(/^_+|_+$/g, '')
+  const finalName = cleaned || 'file-identifier'
+  return finalName.endsWith('.enc') ? finalName.slice(0, -4) : finalName
+}
+
 const server = http.createServer(async (req, res) => {
   setCorsHeaders(res)
 
-  // Handle Preflight OPTIONS
   if (req.method === 'OPTIONS') {
     res.writeHead(204)
     res.end()
@@ -70,37 +76,48 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
-    // Save Document (Encrypted)
+    // Save Document (Encrypted Multi-file by filename/id)
     if (req.method === 'POST' && pathname === '/api/documents/save') {
       const body = await parseRequestBody(req)
-      const docId = body.id || body.docId || `doc_${Date.now()}`
-      const title = body.title || 'Untitled Document'
+      const rawTitle = (body.title && body.title.trim() && body.title.trim() !== '测试文档') ? body.title.trim() : 'file-identifier'
+      const filename = sanitizeFilename(body.filename || body.id || rawTitle)
+      const title = (rawTitle === 'file-identifier' && filename !== 'file-identifier') ? filename : rawTitle
+      const docId = filename
 
       const documentPayload = {
         id: docId,
+        filename,
         title,
         html: body.html || '',
         json: body.json || null,
+        snapshot: body.snapshot || null,
+        profiles: body.profiles || [],
         pageSettings: body.pageSettings || null,
         savedAt: new Date().toISOString(),
       }
 
       // Encrypt document before saving to disk
       const encryptedData = encryptPayload(documentPayload)
-      const filePath = path.join(DATA_DIR, `${docId}.enc`)
+      const filePath = path.join(DATA_DIR, `${filename}.enc`)
       await fs.writeFile(filePath, encryptedData, 'utf8')
+
+      // DEBUG MODE: Save human-readable unencrypted JSON file alongside .enc file
+      const debugJsonPath = path.join(DATA_DIR, `${filename}.json`)
+      await fs.writeFile(debugJsonPath, JSON.stringify(documentPayload, null, 2), 'utf8')
 
       sendJson(res, 200, {
         success: true,
         id: docId,
-        message: 'Document encrypted and saved successfully to practical-umodoc-server',
+        filename,
+        title,
+        message: `Dokumen '${filename}' berhasil dienskripsi & disimpan ke practical-umodoc-server!`,
         savedAt: documentPayload.savedAt,
       })
       return
     }
 
     // List Saved Documents
-    if (req.method === 'GET' && pathname === '/api/documents') {
+    if (req.method === 'GET' && (pathname === '/api/documents/list' || pathname === '/api/documents')) {
       const files = await fs.readdir(DATA_DIR)
       const documents = []
 
@@ -109,10 +126,15 @@ const server = http.createServer(async (req, res) => {
           try {
             const rawContent = await fs.readFile(path.join(DATA_DIR, file), 'utf8')
             const decrypted = decryptPayload(rawContent)
+            let rawFilename = decrypted.filename || file.replace(/\.enc$/, '')
+            if (!rawFilename || rawFilename.replaceAll('_', '') === '') rawFilename = 'file-identifier'
+            let rawTitle = decrypted.title || 'file-identifier'
+            if (!rawTitle || rawTitle === '测试文档' || rawTitle.replaceAll('_', '') === '') rawTitle = rawFilename
             documents.push({
-              id: decrypted.id,
-              title: decrypted.title,
-              savedAt: decrypted.savedAt,
+              id: rawFilename,
+              filename: rawFilename,
+              title: rawTitle,
+              savedAt: decrypted.savedAt || new Date().toISOString(),
             })
           } catch (e) {
             console.error(`Failed to decrypt ${file}:`, e.message)
@@ -120,19 +142,53 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
+      // Sort newest saved first
+      documents.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))
+
       sendJson(res, 200, { success: true, documents })
       return
     }
 
-    // Get Single Document by ID
-    if (req.method === 'GET' && pathname.startsWith('/api/documents/')) {
-      const docId = pathname.replace('/api/documents/', '')
+    // Load Single Document by query param or pathname (/api/documents/load?id=... or /api/documents/:id)
+    if (req.method === 'GET' && (pathname === '/api/documents/load' || pathname.startsWith('/api/documents/'))) {
+      let targetName = url.searchParams.get('id') || url.searchParams.get('filename')
+      if (!targetName && pathname.startsWith('/api/documents/')) {
+        targetName = pathname.replace('/api/documents/', '')
+      }
+
+      if (!targetName) {
+        sendJson(res, 400, { success: false, message: 'Filename or document ID is required.' })
+        return
+      }
+
+      const safeName = sanitizeFilename(targetName)
+      let filePath = path.join(DATA_DIR, `${safeName}.enc`)
+
+      try {
+        let rawContent
+        try {
+          rawContent = await fs.readFile(filePath, 'utf8')
+        } catch {
+          const rawName = String(targetName).trim().replace(/\.enc$/i, '')
+          const altPath = path.join(DATA_DIR, `${rawName}.enc`)
+          rawContent = await fs.readFile(altPath, 'utf8')
+        }
+        const decrypted = decryptPayload(rawContent)
+        sendJson(res, 200, { success: true, document: decrypted })
+      } catch {
+        sendJson(res, 404, { success: false, message: `Document '${safeName}' not found on server.` })
+      }
+      return
+    }
+
+    // Delete Document
+    if (req.method === 'DELETE' && pathname.startsWith('/api/documents/')) {
+      const docId = sanitizeFilename(pathname.replace('/api/documents/', ''))
       const filePath = path.join(DATA_DIR, `${docId}.enc`)
 
       try {
-        const rawContent = await fs.readFile(filePath, 'utf8')
-        const decrypted = decryptPayload(rawContent)
-        sendJson(res, 200, { success: true, document: decrypted })
+        await fs.unlink(filePath)
+        sendJson(res, 200, { success: true, message: `Document '${docId}' deleted successfully.` })
       } catch {
         sendJson(res, 404, { success: false, message: `Document '${docId}' not found.` })
       }
@@ -148,6 +204,5 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, () => {
-  console.log(`[practical-umodoc-server] Running on http://localhost:${PORT}`)
-  console.log(`[practical-umodoc-server] Encrypted storage dir: ${DATA_DIR}`)
+  console.log(`practical-umodoc-server running on http://localhost:${PORT}`)
 })

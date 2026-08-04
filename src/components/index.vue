@@ -1105,14 +1105,29 @@ const saveContent = async (showMessage = true) => {
       },
       getCurrentInstance(),
     )
+    const refStorage = editor.value?.extensionStorage['document-references']
+    const profiles = refStorage?.profiles || []
+    if (profiles.length > 0) {
+      try {
+        localStorage.setItem('umo-editor:profiles', JSON.stringify(profiles))
+      } catch {}
+    }
+    const snapshot = getDocumentSnapshot()
+    const currentDoc = {
+      ...options.value?.document,
+      ...$document.value,
+      title: options.value?.document?.title || $document.value?.title || 'file-identifier',
+    }
     const _saveBack = await options.value?.onSave?.(
       {
         html: editor.value?.getHTML(),
         json: editor.value?.getJSON(),
         text: editor.value?.getText(),
+        snapshot,
+        profiles,
       },
       page.value,
-      $document.value,
+      currentDoc,
     )
     if (!_saveBack) {
       throw new Error('`onSave` callback must return a value.')
@@ -1254,11 +1269,23 @@ const applyDocumentSnapshot = async (snapshot) => {
   applyingDocumentFile = true
   const apply = async (value) => {
     historyRecords.value.isUndoRedo = true
+    if (value.profiles && Array.isArray(value.profiles) && value.profiles.length > 0) {
+      const refStorage = editor.value?.extensionStorage['document-references']
+      if (refStorage) {
+        refStorage.profiles = value.profiles
+        try {
+          localStorage.setItem('umo-editor:profiles', JSON.stringify(value.profiles))
+        } catch {}
+      }
+    }
     setContent(value.content, {
       emitUpdate: false,
       focusPosition: 'start',
       focusOptions: { scrollIntoView: false },
     })
+    if (editor.value?.commands.syncDocumentReferences) {
+      editor.value.commands.syncDocumentReferences()
+    }
     setDocument({ title: value.document.title })
     page.value = {
       ...page.value,
@@ -1266,13 +1293,6 @@ const applyDocumentSnapshot = async (snapshot) => {
       size: { ...value.page.size },
       margin: { ...value.page.margin },
       watermark: { ...value.page.watermark },
-    }
-    if (value.profiles && Array.isArray(value.profiles) && value.profiles.length > 0) {
-      const refStorage = editor.value?.extensionStorage['document-references']
-      if (refStorage) {
-        refStorage.profiles = value.profiles
-        localStorage.setItem('umo-editor:profiles', JSON.stringify(value.profiles))
-      }
     }
     editor.value?.commands.showInvisibleCharacters(value.page.showBreakMarks)
     await nextTick()

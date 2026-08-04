@@ -39,7 +39,7 @@ export default {
     },
   },
   document: {
-    title: '',
+    title: 'file-identifier',
     content: '',
     placeholder: {
       en_US: 'Please enter the document content...',
