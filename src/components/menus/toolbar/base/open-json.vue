@@ -11,29 +11,29 @@
 
   <modal
     :visible="modalVisible"
-    header="Buka & Load Dokumen"
+    header="Open & Load Document"
     width="680px"
     :confirm-btn="null"
-    cancel-btn="Tutup"
+    cancel-btn="Close"
     @confirm="modalVisible = false"
     @close="modalVisible = false"
   >
     <t-tabs v-model="activeTab">
-      <t-tab-panel value="server" label="Dari Server (practical-umodoc-server)">
+      <t-tab-panel value="server" label="From Server (practical-umodoc-server)">
         <div style="margin-top: 16px;">
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <t-input v-model="searchQuery" placeholder="Cari nama file atau judul..." clearable />
+            <t-input v-model="searchQuery" placeholder="Search filename or title..." clearable />
             <t-button theme="default" variant="outline" @click="fetchServerDocuments">
               Refresh List
             </t-button>
           </div>
 
           <div v-if="loadingServerDocs" style="padding: 24px; text-align: center;">
-            <t-loading text="Memuat daftar dokumen server..." size="small" />
+            <t-loading text="Loading server document list..." size="small" />
           </div>
 
           <div v-else-if="filteredDocuments.length === 0" style="padding: 24px; text-align: center; color: var(--umo-text-color-muted, #999);">
-            Belum ada dokumen tersimpan di server.
+            No documents stored on the server yet.
           </div>
 
           <t-list v-else stripe size="small" style="max-height: 320px; overflow-y: auto;">
@@ -42,17 +42,17 @@
                 <div style="display: flex; flex-direction: column;">
                   <strong style="font-size: 14px;">{{ doc.title || doc.filename }}</strong>
                   <span style="font-size: 12px; color: var(--umo-text-color-muted, #888);">
-                    File: <code>{{ doc.filename }}.enc</code> &bull; Tersimpan: {{ formatDate(doc.savedAt) }}
+                    File: <code>{{ doc.filename }}.enc</code> &bull; Saved: {{ formatDate(doc.savedAt) }}
                   </span>
                 </div>
               </template>
               <template #action>
                 <div style="display: flex; gap: 8px;">
                   <t-button theme="primary" size="small" @click="loadDocumentFromServer(doc)">
-                    Buka / Load
+                    Open Document
                   </t-button>
                   <t-button theme="danger" variant="text" size="small" @click="deleteDocumentFromServer(doc)">
-                    Hapus
+                    Delete
                   </t-button>
                 </div>
               </template>
@@ -61,13 +61,13 @@
         </div>
       </t-tab-panel>
 
-      <t-tab-panel value="local" label="Dari File Komputer (.json / .umodoc)">
+      <t-tab-panel value="local" label="From Local File (.json / .umodoc)">
         <div style="padding: 24px; text-align: center;">
           <p style="margin-bottom: 16px; color: var(--umo-text-color-muted, #666);">
-            Pilih file dokumen <code>.umodoc.json</code> dari komputer Anda untuk dibuka.
+            Select a document file <code>.umodoc.json</code> from your computer to open.
           </p>
           <t-button theme="primary" size="large" @click="fileInput?.click()">
-            Pilih File Dokumen...
+            Choose Document File...
           </t-button>
         </div>
       </t-tab-panel>
@@ -103,7 +103,7 @@ const getServerBaseUrl = () => {
 const formatDate = (isoString) => {
   if (!isoString) return '-'
   try {
-    return new Date(isoString).toLocaleString('id-ID', {
+    return new Date(isoString).toLocaleString('en-US', {
       dateStyle: 'medium',
       timeStyle: 'short',
     })

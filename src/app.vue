@@ -186,24 +186,24 @@ const options = $ref({
         if (resData.success === false) {
           return {
             status: 'error',
-            message: resData.message || 'Gagal menyimpan dokumen ke server.',
+            message: resData.message || 'Failed to save document to server.',
           }
         }
 
-        return resData.message || `Dokumen '${filename}' berhasil dienskripsi & disimpan ke practical-umodoc-server!`
+        return resData.message || `Document '${filename}' encrypted & saved to practical-umodoc-server successfully!`
       } catch (error) {
         return {
           status: 'error',
-          message: `Gagal simpan ke server (${serverUrl}): ${error.message}`,
+          message: `Failed to save to server (${serverUrl}): ${error.message}`,
         }
       }
     } else if (saveTarget === 'google-drive') {
       return {
         status: 'error',
-        message: 'Integrasi Google Drive akan hadir segera (Coming Soon)',
+        message: 'Google Drive integration is coming soon',
       }
     } else {
-      return 'Dokumen berhasil disimpan ke Local Storage!'
+      return 'Document saved to Local Storage successfully!'
     }
   },
   async onFileUpload(file) {

@@ -110,7 +110,7 @@ const server = http.createServer(async (req, res) => {
         id: docId,
         filename,
         title,
-        message: `Dokumen '${filename}' berhasil dienskripsi & disimpan ke practical-umodoc-server!`,
+        message: `Document '${filename}' encrypted & saved to practical-umodoc-server successfully!`,
         savedAt: documentPayload.savedAt,
       })
       return

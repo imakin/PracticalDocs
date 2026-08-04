@@ -98,19 +98,19 @@
                 variant="outline"
                 @click="triggerLoadModal"
               >
-                Load / Buka...
+                Open Document...
               </t-button>
             </div>
             <div class="umo-save-target-container">
-              <div class="umo-save-target-title">Simpan Ke (Save Target):</div>
+              <div class="umo-save-target-title">Save Destination:</div>
               <t-radio-group v-model="saveTarget" size="small" class="umo-save-target-group">
                 <t-radio value="practical-umodoc-server">practical-umodoc-server (Encrypted)</t-radio>
                 <t-radio value="local-storage">Local Storage</t-radio>
                 <t-radio value="google-drive" disabled>Google Drive (Coming Soon)</t-radio>
               </t-radio-group>
               <div class="umo-server-url-field">
-                <div class="umo-server-url-label">Nama File / Judul Dokumen:</div>
-                <t-input v-model="documentTitle" placeholder="e.g. laporan_bab1" size="small" />
+                <div class="umo-server-url-label">File Name / Document Title:</div>
+                <t-input v-model="documentTitle" placeholder="e.g. report_chapter1" size="small" />
               </div>
               <div v-if="saveTarget === 'practical-umodoc-server'" class="umo-server-url-field">
                 <div class="umo-server-url-label">Server API URL:</div>
