@@ -156,7 +156,6 @@ const applyTargetUpdates = (tr, updates) => {
           changed = true
         }
         if (
-          !attrs.fontSize &&
           update.profile.fontSize &&
           hasDifferentValue(attrs, 'fontSize', update.profile.fontSize)
         ) {
@@ -165,7 +164,6 @@ const applyTargetUpdates = (tr, updates) => {
           changed = true
         }
         if (
-          !attrs.fontWeight &&
           update.profile.fontWeight &&
           hasDifferentValue(attrs, 'fontWeight', update.profile.fontWeight)
         ) {
@@ -174,7 +172,6 @@ const applyTargetUpdates = (tr, updates) => {
           changed = true
         }
         if (
-          !attrs.lineHeight &&
           update.profile.lineHeight &&
           hasDifferentValue(attrs, 'lineHeight', update.profile.lineHeight)
         ) {
@@ -183,7 +180,6 @@ const applyTargetUpdates = (tr, updates) => {
           changed = true
         }
         if (
-          !attrs.fontFamily &&
           update.profile.fontFamily &&
           hasDifferentValue(attrs, 'fontFamily', update.profile.fontFamily)
         ) {
@@ -193,7 +189,7 @@ const applyTargetUpdates = (tr, updates) => {
         }
         if (
           update.profile.marginBottom &&
-          (!attrs.margin || attrs.margin.bottom === undefined || attrs.margin.bottom === '')
+          hasDifferentValue(attrs.margin?.bottom, 'bottom', update.profile.marginBottom)
         ) {
           attrs.margin = {
             ...(attrs.margin || {}),
@@ -204,7 +200,6 @@ const applyTargetUpdates = (tr, updates) => {
         }
         if (
           update.profile.indent !== undefined &&
-          (isProfileOwner || !attrs.indent) &&
           hasDifferentValue(attrs, 'indent', update.profile.indent)
         ) {
           attrs.indent = update.profile.indent
@@ -213,7 +208,6 @@ const applyTargetUpdates = (tr, updates) => {
         }
         if (
           update.profile.textAlign &&
-          (isProfileOwner || !attrs.textAlign) &&
           hasDifferentValue(attrs, 'textAlign', update.profile.textAlign)
         ) {
           attrs.textAlign = update.profile.textAlign

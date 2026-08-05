@@ -143,13 +143,14 @@
   </modal>
 
   <modal
-    :visible="editModalVisible"
+    v-model:visible="editModalVisible"
     width="480px"
     draggable
     destroy-on-close
     :confirm-btn="t('references.numbering.saveProfile')"
     :cancel-btn="t('references.numbering.cancel')"
     @confirm="saveEditingProfile"
+    @cancel="editModalVisible = false"
     @close="editModalVisible = false"
   >
     <template #header>
@@ -438,6 +439,7 @@ const openCreateProfile = () => {
 }
 
 import { ensureFontFamilyLoaded } from '@/utils/load-resource'
+import { useMessage } from '@/composables/dialog'
 
 const saveEditingProfile = () => {
   if (!activeEditingProfile) return
@@ -455,6 +457,7 @@ const saveEditingProfile = () => {
   editModalVisible = false
   loadProfiles()
   editor.value?.commands.syncDocumentReferences()
+  useMessage('success', 'Profile saved successfully!')
 }
 
 onMounted(() => {
