@@ -11,28 +11,20 @@
   >
     <template #content>
       <div class="umo-node-margin-input">
-        <t-input-number
+        <t-input
           v-model="marginTop"
-          theme="column"
-          align="left"
           size="small"
           :label="`↥${t('base.margin.top')}:`"
-          :placeholder="t('base.margin.default')"
-          :input-props="{ clearable: true }"
-          :max="500"
-          :min="0"
+          placeholder="e.g. 0.25em, 12px"
+          clearable
           @change="setMargin"
         />
-        <t-input-number
+        <t-input
           v-model="marginBottom"
-          theme="column"
-          align="left"
           size="small"
           :label="`↧${t('base.margin.bottom')}:`"
-          :placeholder="t('base.margin.default')"
-          :input-props="{ clearable: true }"
-          :max="500"
-          :min="0"
+          placeholder="e.g. 0.25em, 12px"
+          clearable
           @change="setMargin"
         />
         <div class="umo-margin-presets">
@@ -43,7 +35,7 @@
               :key="preset"
               size="small"
               variant="outline"
-              :theme="marginBottom === String(preset) ? 'primary' : 'default'"
+              :theme="marginBottom === `${preset}px` || marginBottom === String(preset) ? 'primary' : 'default'"
               @click="applyBottomMarginPreset(preset)"
             >
               {{ preset }}px
@@ -78,11 +70,11 @@ const setMarginValue = () => {
     const { margin } = node.attrs
     marginTop =
       margin?.top !== undefined && margin?.top !== null
-        ? String(margin.top).replace(/px/g, '')
+        ? String(margin.top)
         : ''
     marginBottom =
       margin?.bottom !== undefined && margin?.bottom !== null
-        ? String(margin.bottom).replace(/px/g, '')
+        ? String(margin.bottom)
         : ''
   } else {
     marginTop = ''
@@ -101,7 +93,7 @@ const setMargin = () => {
 }
 
 const applyBottomMarginPreset = (value) => {
-  marginBottom = String(value)
+  marginBottom = `${value}px`
   setMargin()
 }
 
@@ -130,7 +122,7 @@ const resetMargin = () => {
   gap: 10px;
   --td-comp-size-xs: 26px;
   width: 170px;
-  :deep(.umo-input-number) {
+  :deep(.t-input) {
     width: 100%;
   }
 
