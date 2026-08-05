@@ -2,7 +2,12 @@
 
 ## Goal
 
-Provide per-profile font family, font size, font weight, line height, bottom margin, first-line indent (`text-indent`), text alignment (`text-align`), and placement template settings with Google Fonts auto-loading, smooth modal interaction, and full backward compatibility.
+Provide per-profile font family, font size, font weight, line height, bottom margin, first-line indent (`text-indent`), text alignment (`text-align`), and placement template settings with Google Fonts auto-loading, non-overwriting inline style rendering, smooth modal interaction, and full backward compatibility.
+
+## Key Root-Cause Fix: Inline Style Overwrite Prevention
+
+- **Problem Identified**: Previously, separate extensions (`fontSize`, `fontWeight`, `fontFamily`, `lineHeight`, `indent`, `textAlign`) each returned `{ style: '...' }` in their `renderHTML` hooks. Because Tiptap's internal `mergeAttributes()` does `Object.assign()`, the last attribute (`textAlign`) was overwriting the single `style` key in `HTMLAttributes`, stripping away font size, font weight, line height, font family, and margin attributes during DOM rendering and document file reloads.
+- **Resolution**: Unified inline style rendering under a single combined `style` attribute builder in `document-references/index.js`. The single renderer formats all active attributes into a clean, complete style string (e.g. `style="font-family: Arial; font-size: 20pt; font-weight: bold; line-height: 2; text-indent: 2em; text-align: justify; margin-bottom: 24px"`). Individual extensions delegate rendering to `{}` so no style property is overwritten.
 
 ## Key Features
 
@@ -18,6 +23,6 @@ Provide per-profile font family, font size, font weight, line height, bottom mar
    - Fixed modal reactivity `v-model:visible="editModalVisible"` ensuring modal auto-closes smoothly on save.
    - Added instant success toast feedback (`useMessage('success', 'Profile saved successfully!')`).
 
-3. **Full Backward Compatibility**:
+3. **Full Lossless Save & Load Persistence**:
+   - Verified via `tests/e2e/test-full-profile-save-load.mjs` that all 7 profile styling properties persist losslessly through `createDocumentSnapshot` -> `JSON.stringify` -> `parseDocumentFile` round trips.
    - Seamlessly loads older document files (`.enc` / `.json`) created before profile updates.
-   - Automatically maps existing document nodes to matching profiles and applies complete styling specs without data loss.
