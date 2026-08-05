@@ -1079,6 +1079,17 @@ const destroy = () => {
 }
 
 // Content Saving Methods
+const getRefStorage = () => {
+  if (!editor.value) return null
+  return (
+    editor.value.storage?.documentReferences ||
+    editor.value.storage?.['document-references'] ||
+    editor.value.extensionStorage?.documentReferences ||
+    editor.value.extensionStorage?.['document-references'] ||
+    null
+  )
+}
+
 const saveContent = async (showMessage = true) => {
   if (options.value.document?.readOnly) {
     return
@@ -1235,7 +1246,7 @@ const getDocumentSnapshot = (savedAt = new Date().toISOString()) => {
   if (!editor.value) {
     throw new Error('editor is not ready!')
   }
-  const refStorage = editor.value.extensionStorage['document-references']
+  const refStorage = getRefStorage()
   return createDocumentSnapshot({
     content: editor.value.getJSON(),
     document: options.value.document,
@@ -1274,7 +1285,7 @@ const applyDocumentSnapshot = async (snapshot) => {
       value.profiles.forEach((p) => {
         if (p && p.fontFamily) ensureFontFamilyLoaded(p.fontFamily)
       })
-      const refStorage = editor.value?.extensionStorage['document-references']
+      const refStorage = getRefStorage()
       if (refStorage) {
         refStorage.profiles = value.profiles
         try {
