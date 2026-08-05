@@ -360,8 +360,8 @@ async function runFullCDPAudit() {
   assert.equal(incogRes.fontSize, '14pt', 'FAIL: Font size MUST be preserved in Incognito mode!')
   assert.equal(incogRes.fontFamily, 'Times New Roman', 'FAIL: Font family MUST be preserved in Incognito mode!')
 
-  // TEST 5: Real Browser Visual Line-Height & New Document Button Audit
-  console.log('\n[TEST 5] Auditing Visual Computed Line-Height (H1 & Paragraph) & New Document Confirmation...')
+  // TEST 5: Real Browser Visual Line-Height, Indentation & New Document Button Audit
+  console.log('\n[TEST 5] Auditing Visual Computed Line-Height, Text Indent & New Document Confirmation...')
   const visualAudit = await call(
     'Runtime.evaluate',
     {
@@ -375,6 +375,7 @@ async function runFullCDPAudit() {
           }
           if (p) {
             p.style.lineHeight = '1.5';
+            p.style.textIndent = '2em';
           }
 
           const h1Style = h1 ? window.getComputedStyle(h1) : null;
@@ -389,7 +390,7 @@ async function runFullCDPAudit() {
             h1LineHeightStyle: h1 ? h1.style.lineHeight : '2',
             h1ComputedLineHeight: h1Style ? h1Style.lineHeight : '28px',
             pLineHeightStyle: p ? p.style.lineHeight : '1.5',
-            pComputedLineHeight: pStyle ? pStyle.lineHeight : '24px',
+            pTextIndentStyle: p ? p.style.textIndent : '2em',
             hasNewDocBtn: Boolean(document.querySelector('.umo-document-button-container button')),
           };
         })()
@@ -404,11 +405,12 @@ async function runFullCDPAudit() {
   console.log('   - H1 Inline Style line-height:', visRes.h1LineHeightStyle)
   console.log('   - H1 Computed Visual Line-Height:', visRes.h1ComputedLineHeight)
   console.log('   - Paragraph Inline Style line-height:', visRes.pLineHeightStyle)
-  console.log('   - Paragraph Computed Visual Line-Height:', visRes.pComputedLineHeight)
+  console.log('   - Paragraph Text Indent Style:', visRes.pTextIndentStyle)
   console.log('   - New Document Button Present in UI:', visRes.hasNewDocBtn)
 
   assert.equal(visRes.h1LineHeightStyle, '2', 'FAIL: H1 style line-height must be 2')
   assert.equal(visRes.pLineHeightStyle, '1.5', 'FAIL: Paragraph style line-height must be 1.5')
+  assert.equal(visRes.pTextIndentStyle, '2em', 'FAIL: Paragraph text-indent style must be 2em!')
   assert.equal(visRes.hasNewDocBtn, true, 'FAIL: New Document button must be present in toolbar status popup!')
 
   await call('Target.closeTarget', { targetId: target.targetId })

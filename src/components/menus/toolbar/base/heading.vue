@@ -190,6 +190,12 @@
       <t-form-item label="Bottom Margin">
         <t-select v-model="activeEditingProfile.marginBottom" :options="marginBottomOptions" filterable creatable clearable placeholder="e.g. 8px or 12px" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
+      <t-form-item label="First Line Indent (Level)">
+        <t-select v-model="activeEditingProfile.indent" :options="indentOptions" clearable placeholder="Select Indent Level (e.g. 0, 1 = 2em, 2 = 4em)" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+      </t-form-item>
+      <t-form-item label="Text Align">
+        <t-select v-model="activeEditingProfile.textAlign" :options="textAlignOptions" clearable placeholder="Left / Center / Right / Justify" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+      </t-form-item>
     </t-form>
   </modal>
 </template>
@@ -371,6 +377,22 @@ const fontFamilyOptions = computed(() => {
   })
   return opts
 })
+
+const indentOptions = [
+  { label: 'None / 0', value: 0 },
+  { label: 'Level 1 (2em / First Line Indent)', value: 1 },
+  { label: 'Level 2 (4em)', value: 2 },
+  { label: 'Level 3 (6em)', value: 3 },
+  { label: 'Level 4 (8em)', value: 4 },
+]
+
+const textAlignOptions = [
+  { label: 'Default / Inherit', value: '' },
+  { label: 'Left', value: 'left' },
+  { label: 'Center', value: 'center' },
+  { label: 'Right', value: 'right' },
+  { label: 'Justify', value: 'justify' },
+]
 
 const loadProfiles = () => {
   editor.value?.commands.getNumberingProfiles((data) => {

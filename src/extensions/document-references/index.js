@@ -202,6 +202,24 @@ const applyTargetUpdates = (tr, updates) => {
           nodeChanged = true
           changed = true
         }
+        if (
+          update.profile.indent !== undefined &&
+          (isProfileOwner || !attrs.indent) &&
+          hasDifferentValue(attrs, 'indent', update.profile.indent)
+        ) {
+          attrs.indent = update.profile.indent
+          nodeChanged = true
+          changed = true
+        }
+        if (
+          update.profile.textAlign &&
+          (isProfileOwner || !attrs.textAlign) &&
+          hasDifferentValue(attrs, 'textAlign', update.profile.textAlign)
+        ) {
+          attrs.textAlign = update.profile.textAlign
+          nodeChanged = true
+          changed = true
+        }
       }
     }
     if (nodeChanged) {
@@ -597,6 +615,32 @@ export const DocumentReferences = Extension.create({
                   }
                 : {},
           },
+          indent: {
+            default: null,
+            parseHTML: (element) => {
+              if (element.style.textIndent) {
+                const match = element.style.textIndent.match(/^([\d.]+)\s*em$/i)
+                if (match) return Math.round(parseFloat(match[1]) / 2)
+              }
+              return null
+            },
+            renderHTML: ({ indent }) =>
+              indent && Number(indent) > 0
+                ? {
+                    style: `text-indent: ${Number(indent) * 2}em`,
+                  }
+                : {},
+          },
+          textAlign: {
+            default: null,
+            parseHTML: (element) => element.style.textAlign || null,
+            renderHTML: ({ textAlign }) =>
+              textAlign
+                ? {
+                    style: `text-align: ${textAlign}`,
+                  }
+                : {},
+          },
         },
       },
     ]
@@ -851,6 +895,15 @@ export const DocumentReferences = Extension.create({
                     bottom: updatedProfile.marginBottom,
                   }
                 }
+                if (updatedProfile.indent !== undefined) {
+                  nextAttrs.indent = updatedProfile.indent
+                }
+                if (
+                  updatedProfile.textAlign !== undefined &&
+                  updatedProfile.textAlign !== ''
+                ) {
+                  nextAttrs.textAlign = updatedProfile.textAlign
+                }
                 tr.setNodeMarkup(pos, undefined, nextAttrs)
 
                 if (updatedProfile.fontSize || updatedProfile.fontFamily) {
@@ -952,6 +1005,12 @@ export const DocumentReferences = Extension.create({
                 ...(targetNode.attrs.margin || {}),
                 bottom: profile.marginBottom,
               }
+            }
+            if (profile.indent !== undefined) {
+              nextAttrs.indent = profile.indent
+            }
+            if (profile.textAlign !== undefined && profile.textAlign !== '') {
+              nextAttrs.textAlign = profile.textAlign
             }
           }
           tr.setNodeMarkup(targetPos, undefined, nextAttrs)
