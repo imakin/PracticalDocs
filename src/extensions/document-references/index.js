@@ -196,7 +196,7 @@ const applyTargetUpdates = (tr, updates) => {
         }
         if (
           update.profile.marginBottom &&
-          hasDifferentValue(attrs.margin?.bottom, 'bottom', update.profile.marginBottom)
+          String(attrs.margin?.bottom ?? '') !== String(update.profile.marginBottom ?? '')
         ) {
           attrs.margin = {
             ...(attrs.margin || {}),
