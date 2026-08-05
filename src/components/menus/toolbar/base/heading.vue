@@ -441,6 +441,24 @@ const editProfile = (profile) => {
       }
     })
   }
+
+  // Fallback defaults if still missing
+  if (mergedProfile.targetType === 'heading') {
+    if (!mergedProfile.fontSize) mergedProfile.fontSize = mergedProfile.level === 1 ? '14pt' : '12pt'
+    if (!mergedProfile.fontWeight) mergedProfile.fontWeight = 'bold'
+    if (!mergedProfile.lineHeight) mergedProfile.lineHeight = '1.5'
+    if (!mergedProfile.marginBottom) mergedProfile.marginBottom = mergedProfile.level === 1 ? '4em' : '0.25em'
+    if (mergedProfile.indent === undefined) mergedProfile.indent = 0
+    if (!mergedProfile.textAlign) mergedProfile.textAlign = mergedProfile.level === 1 ? 'center' : 'left'
+  } else if (mergedProfile.targetType === 'paragraph') {
+    if (!mergedProfile.fontSize) mergedProfile.fontSize = '12pt'
+    if (!mergedProfile.fontWeight) mergedProfile.fontWeight = 'normal'
+    if (!mergedProfile.lineHeight) mergedProfile.lineHeight = '1.5'
+    if (!mergedProfile.marginBottom) mergedProfile.marginBottom = '0.25em'
+    if (mergedProfile.indent === undefined) mergedProfile.indent = 1
+    if (!mergedProfile.textAlign) mergedProfile.textAlign = 'justify'
+  }
+
   activeEditingProfile = mergedProfile
   editModalVisible = true
 }
