@@ -183,6 +183,15 @@ const applyTargetUpdates = (tr, updates) => {
           changed = true
         }
         if (
+          !attrs.fontFamily &&
+          update.profile.fontFamily &&
+          hasDifferentValue(attrs, 'fontFamily', update.profile.fontFamily)
+        ) {
+          attrs.fontFamily = update.profile.fontFamily
+          nodeChanged = true
+          changed = true
+        }
+        if (
           update.profile.marginBottom &&
           (!attrs.margin || attrs.margin.bottom === undefined || attrs.margin.bottom === '')
         ) {
@@ -578,6 +587,16 @@ export const DocumentReferences = Extension.create({
                   }
                 : {},
           },
+          fontFamily: {
+            default: null,
+            parseHTML: (element) => element.style.fontFamily || null,
+            renderHTML: ({ fontFamily }) =>
+              fontFamily
+                ? {
+                    style: `font-family: ${fontFamily}`,
+                  }
+                : {},
+          },
         },
       },
     ]
@@ -776,8 +795,23 @@ export const DocumentReferences = Extension.create({
           const { tr } = state
           if (updatedProfile) {
             state.doc.descendants((node, pos) => {
-              if (node.attrs?.numberingProfileId === id) {
-                const nextAttrs = { ...node.attrs }
+              const isMatch =
+                node.attrs?.numberingProfileId === id ||
+                (updatedProfile.targetType === 'heading' &&
+                  node.type.name === 'heading' &&
+                  (node.attrs.level || 1) === (updatedProfile.level || 1)) ||
+                (updatedProfile.targetType === 'paragraph' &&
+                  node.type.name === 'paragraph') ||
+                (updatedProfile.targetType === 'table' &&
+                  node.type.name === 'table') ||
+                (updatedProfile.targetType === 'figure' &&
+                  node.type.name === 'image')
+
+              if (isMatch) {
+                const nextAttrs = {
+                  ...node.attrs,
+                  numberingProfileId: id,
+                }
                 if (updatedProfile.template !== undefined) {
                   nextAttrs.numberTemplate = updatedProfile.template
                 }
@@ -801,6 +835,12 @@ export const DocumentReferences = Extension.create({
                   updatedProfile.fontWeight !== ''
                 ) {
                   nextAttrs.fontWeight = updatedProfile.fontWeight
+                }
+                if (
+                  updatedProfile.fontFamily !== undefined &&
+                  updatedProfile.fontFamily !== ''
+                ) {
+                  nextAttrs.fontFamily = updatedProfile.fontFamily
                 }
                 if (
                   updatedProfile.marginBottom !== undefined &&
@@ -900,6 +940,9 @@ export const DocumentReferences = Extension.create({
               nextAttrs.fontWeight = profile.fontWeight
             } else if (profile.targetType === 'paragraph') {
               nextAttrs.fontWeight = 'normal'
+            }
+            if (profile.fontFamily !== undefined && profile.fontFamily !== '') {
+              nextAttrs.fontFamily = profile.fontFamily
             }
             if (
               profile.marginBottom !== undefined &&

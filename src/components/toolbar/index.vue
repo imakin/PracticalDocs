@@ -100,6 +100,14 @@
               >
                 Open Document...
               </t-button>
+              <t-button
+                size="small"
+                theme="danger"
+                variant="outline"
+                @click="confirmNewDocument"
+              >
+                New Document
+              </t-button>
             </div>
             <div class="umo-save-target-container">
               <div class="umo-save-target-title">Save Destination:</div>
@@ -193,6 +201,8 @@ const documentTitle = computed({
   },
 })
 
+import { useConfirm, useMessage } from '@/composables/dialog'
+
 const saveTarget = useStorage('umo-editor:save-target', 'practical-umodoc-server')
 const serverUrl = useStorage('umo-editor:server-url', 'http://localhost:3001/api/documents/save')
 
@@ -200,6 +210,28 @@ const triggerLoadModal = () => {
   statusPopup = false
   const btn = document.querySelector('[data-testid="open-json"]')
   if (btn) btn.click()
+}
+
+const confirmNewDocument = () => {
+  statusPopup = false
+  const confirmDialog = useConfirm({
+    header: 'Create New Document?',
+    body: 'Are you sure you want to start a new blank document? Any unsaved changes will be lost.',
+    confirmBtn: {
+      content: 'New Document',
+      theme: 'danger',
+    },
+    cancelBtn: 'Cancel',
+    onConfirm: () => {
+      if (editor.value) {
+        editor.value.chain().focus().setContent('<p></p>').run()
+      }
+      documentTitle.value = 'file-identifier'
+      savedAt.value = null
+      confirmDialog.destroy()
+      useMessage('success', 'New blank document created successfully.')
+    },
+  })
 }
 
 // 工具栏菜单

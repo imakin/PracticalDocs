@@ -43,3 +43,36 @@ export const loadResource = (url, type = 'script', id = '') => {
     document.head.appendChild(element)
   })
 }
+
+/**
+ * Automatically loads a web font (such as Google Fonts) into the browser if it's not a standard system font.
+ * @param {string} fontFamily - The font family name, e.g. "Poppins", "Inter", "Playfair Display"
+ */
+export const ensureFontFamilyLoaded = (fontFamily) => {
+  if (!fontFamily || typeof document === 'undefined') return
+  const fontName = String(fontFamily).split(',')[0].trim().replace(/^["']|["']$/g, '')
+  if (!fontName) return
+
+  const systemFonts = [
+    'simsun', 'simhei', 'kaiti', 'kaiti_gb2312', 'fangsong', 'fangsong_gb2312',
+    'stsong', 'stfangsong', 'microsoft yahei', 'pingfang sc', 'hiragino sans gb',
+    'dengxian', 'youyuan', 'lisu', 'arial', 'times new roman', 'courier new',
+    'georgia', 'verdana', 'tahoma', 'trebuchet ms', 'impact', 'sans-serif',
+    'serif', 'monospace', 'cursive', 'fantasy', 'initial', 'inherit',
+  ]
+
+  if (systemFonts.includes(fontName.toLowerCase())) {
+    return
+  }
+
+  const elementId = `google-font-${fontName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
+  if (document.getElementById(elementId)) {
+    return
+  }
+
+  const link = document.createElement('link')
+  link.id = elementId
+  link.rel = 'stylesheet'
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap`
+  document.head.appendChild(link)
+}

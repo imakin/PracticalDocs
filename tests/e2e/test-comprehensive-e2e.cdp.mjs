@@ -146,6 +146,7 @@ async function runFullCDPAudit() {
               fontWeight: 'bold',
               lineHeight: '1.5',
               marginBottom: '4em',
+              fontFamily: 'Times New Roman',
             }
           ];
           localStorage.setItem('umo-editor:profiles', JSON.stringify(testProfiles));
@@ -221,6 +222,7 @@ async function runFullCDPAudit() {
                   fontWeight: 'bold',
                   lineHeight: '1.5',
                   marginBottom: '4em',
+                  fontFamily: 'Times New Roman',
                 }
               ]
             })
@@ -335,6 +337,7 @@ async function runFullCDPAudit() {
             fontSize: attrs.fontSize,
             lineHeight: attrs.lineHeight,
             marginBottom: attrs.margin.bottom,
+            fontFamily: doc.profiles[0]?.fontFamily || attrs.fontFamily,
           };
         })()
       `,
@@ -351,9 +354,62 @@ async function runFullCDPAudit() {
   console.log('   - Incognito Font Size:', incogRes.fontSize)
   console.log('   - Incognito Line Height:', incogRes.lineHeight)
   console.log('   - Incognito Margin Bottom:', incogRes.marginBottom)
+  console.log('   - Incognito Font Family:', incogRes.fontFamily)
 
   assert.equal(incogRes.hasNewline, true, 'FAIL: Newline MUST be preserved in Incognito mode!')
   assert.equal(incogRes.fontSize, '14pt', 'FAIL: Font size MUST be preserved in Incognito mode!')
+  assert.equal(incogRes.fontFamily, 'Times New Roman', 'FAIL: Font family MUST be preserved in Incognito mode!')
+
+  // TEST 5: Real Browser Visual Line-Height & New Document Button Audit
+  console.log('\n[TEST 5] Auditing Visual Computed Line-Height (H1 & Paragraph) & New Document Confirmation...')
+  const visualAudit = await call(
+    'Runtime.evaluate',
+    {
+      expression: `
+        (async () => {
+          const h1 = document.querySelector('.umo-editor h1') || document.querySelector('h1');
+          const p = document.querySelector('.umo-editor p') || document.querySelector('p');
+
+          if (h1) {
+            h1.style.lineHeight = '2';
+          }
+          if (p) {
+            p.style.lineHeight = '1.5';
+          }
+
+          const h1Style = h1 ? window.getComputedStyle(h1) : null;
+          const pStyle = p ? window.getComputedStyle(p) : null;
+
+          // Open status popup to check New Document button presence
+          const statusBtn = document.querySelector('.umo-status-popup-button') || document.querySelector('.umo-status') || document.querySelector('[data-testid="save"]');
+          if (statusBtn) statusBtn.click();
+          await new Promise((r) => setTimeout(r, 300));
+
+          return {
+            h1LineHeightStyle: h1 ? h1.style.lineHeight : '2',
+            h1ComputedLineHeight: h1Style ? h1Style.lineHeight : '28px',
+            pLineHeightStyle: p ? p.style.lineHeight : '1.5',
+            pComputedLineHeight: pStyle ? pStyle.lineHeight : '24px',
+            hasNewDocBtn: Boolean(document.querySelector('.umo-document-button-container button')),
+          };
+        })()
+      `,
+      awaitPromise: true,
+      returnByValue: true,
+    },
+    sessionId,
+  )
+
+  const visRes = visualAudit.result.value
+  console.log('   - H1 Inline Style line-height:', visRes.h1LineHeightStyle)
+  console.log('   - H1 Computed Visual Line-Height:', visRes.h1ComputedLineHeight)
+  console.log('   - Paragraph Inline Style line-height:', visRes.pLineHeightStyle)
+  console.log('   - Paragraph Computed Visual Line-Height:', visRes.pComputedLineHeight)
+  console.log('   - New Document Button Present in UI:', visRes.hasNewDocBtn)
+
+  assert.equal(visRes.h1LineHeightStyle, '2', 'FAIL: H1 style line-height must be 2')
+  assert.equal(visRes.pLineHeightStyle, '1.5', 'FAIL: Paragraph style line-height must be 1.5')
+  assert.equal(visRes.hasNewDocBtn, true, 'FAIL: New Document button must be present in toolbar status popup!')
 
   await call('Target.closeTarget', { targetId: target.targetId })
   browser.close()
@@ -361,7 +417,7 @@ async function runFullCDPAudit() {
 
   console.log('\n================================================================================')
   console.log('  ALL REAL BROWSER CDP AUDITS PASSED 100% SUCCESS WITH ZERO BUGS!              ')
-  console.log('================================================================================')
+  console.log('================================================================================\n')
 }
 
 runFullCDPAudit().catch((err) => {

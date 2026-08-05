@@ -175,6 +175,9 @@
       <t-form-item :label="t('references.numbering.template')">
         <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. BAB {number}&#10;or {number}" />
       </t-form-item>
+      <t-form-item label="Font Family">
+        <t-select v-model="activeEditingProfile.fontFamily" :options="fontFamilyOptions" filterable creatable clearable placeholder="e.g. Times New Roman or Arial" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+      </t-form-item>
       <t-form-item label="Font Size">
         <t-select v-model="activeEditingProfile.fontSize" :options="fontSizeOptions" filterable creatable clearable placeholder="e.g. 12pt or 16px" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
@@ -195,7 +198,9 @@
 const { popupVisible } = usePopup()
 const container = inject('container')
 const editor = inject('editor')
-const $toolbar = useState('toolbar', inject('options'))
+const options = inject('options')
+const { t, locale } = useI18n()
+const $toolbar = useState('toolbar', options)
 const popupContentRef = ref(null)
 
 let profileModalVisible = $ref(false)
@@ -352,6 +357,21 @@ const marginBottomOptions = [
   { label: '24px', value: '24px' },
 ]
 
+const fontFamilyOptions = computed(() => {
+  const list = options.value?.dicts?.fonts || []
+  const opts = [{ label: 'Default / Inherit', value: '' }]
+  list.forEach((item) => {
+    if (!item.value) return
+    const val = item.value
+    const rawLabel =
+      typeof item.label === 'object'
+        ? item.label[locale.value?.replaceAll('-', '_')] || item.label.en_US || val
+        : item.label || val
+    opts.push({ label: `${rawLabel} (${val})`, value: val })
+  })
+  return opts
+})
+
 const loadProfiles = () => {
   editor.value?.commands.getNumberingProfiles((data) => {
     profiles = Array.isArray(data) ? [...data] : []
@@ -395,8 +415,13 @@ const openCreateProfile = () => {
   editModalVisible = true
 }
 
+import { ensureFontFamilyLoaded } from '@/utils/load-resource'
+
 const saveEditingProfile = () => {
   if (!activeEditingProfile) return
+  if (activeEditingProfile.fontFamily) {
+    ensureFontFamilyLoaded(activeEditingProfile.fontFamily)
+  }
   if (activeEditingProfile.id) {
     editor.value?.commands.updateNumberingProfile(
       activeEditingProfile.id,

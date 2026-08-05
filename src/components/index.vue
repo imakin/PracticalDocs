@@ -85,6 +85,7 @@ import {
   undoHistoryRecord,
 } from '@/utils/history-record'
 import { getOptions } from '@/utils/options'
+import { ensureFontFamilyLoaded } from '@/utils/load-resource'
 import { getSelectionNode, getSelectionText } from '@/utils/selection'
 import { shortId } from '@/utils/short-id'
 import { getCurrentInstance } from 'vue'
@@ -1270,6 +1271,9 @@ const applyDocumentSnapshot = async (snapshot) => {
   const apply = async (value) => {
     historyRecords.value.isUndoRedo = true
     if (value.profiles && Array.isArray(value.profiles) && value.profiles.length > 0) {
+      value.profiles.forEach((p) => {
+        if (p && p.fontFamily) ensureFontFamilyLoaded(p.fontFamily)
+      })
       const refStorage = editor.value?.extensionStorage['document-references']
       if (refStorage) {
         refStorage.profiles = value.profiles
