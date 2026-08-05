@@ -21,15 +21,7 @@ export default TextAlign.extend({
               }
               return element.style.textAlign || this.options.defaultAlignment
             },
-            renderHTML: (attributes) => {
-              if (attributes.textAlign === this.options.defaultAlignment) {
-                return {}
-              }
-              if (attributes.textAlign === 'distributed') {
-                return { style: 'text-align-last: justify' }
-              }
-              return { style: `text-align: ${attributes.textAlign}` }
-            },
+            renderHTML: () => ({}),
           },
         },
       },

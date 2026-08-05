@@ -571,22 +571,12 @@ export const DocumentReferences = Extension.create({
           fontSize: {
             default: null,
             parseHTML: (element) => element.style.fontSize || null,
-            renderHTML: ({ fontSize }) =>
-              fontSize
-                ? {
-                    style: `font-size: ${fontSize}`,
-                  }
-                : {},
+            renderHTML: () => ({}),
           },
           fontWeight: {
             default: null,
             parseHTML: (element) => element.style.fontWeight || null,
-            renderHTML: ({ fontWeight }) =>
-              fontWeight
-                ? {
-                    style: `font-weight: ${fontWeight}`,
-                  }
-                : {},
+            renderHTML: () => ({}),
           },
           numberTemplate: {
             default: null,
@@ -602,12 +592,7 @@ export const DocumentReferences = Extension.create({
           fontFamily: {
             default: null,
             parseHTML: (element) => element.style.fontFamily || null,
-            renderHTML: ({ fontFamily }) =>
-              fontFamily
-                ? {
-                    style: `font-family: ${fontFamily}`,
-                  }
-                : {},
+            renderHTML: () => ({}),
           },
           indent: {
             default: null,
@@ -618,22 +603,44 @@ export const DocumentReferences = Extension.create({
               }
               return null
             },
-            renderHTML: ({ indent }) =>
-              indent && Number(indent) > 0
-                ? {
-                    style: `text-indent: ${Number(indent) * 2}em`,
-                  }
-                : {},
+            renderHTML: () => ({}),
           },
           textAlign: {
             default: null,
             parseHTML: (element) => element.style.textAlign || null,
-            renderHTML: ({ textAlign }) =>
-              textAlign
-                ? {
-                    style: `text-align: ${textAlign}`,
-                  }
-                : {},
+            renderHTML: () => ({}),
+          },
+          style: {
+            default: null,
+            parseHTML: (element) => element.getAttribute('style') || null,
+            renderHTML: (attributes) => {
+              const styles = []
+              if (attributes.fontFamily) {
+                styles.push(`font-family: ${attributes.fontFamily}`)
+              }
+              if (attributes.fontSize) {
+                styles.push(`font-size: ${attributes.fontSize}`)
+              }
+              if (attributes.fontWeight) {
+                styles.push(`font-weight: ${attributes.fontWeight}`)
+              }
+              if (attributes.lineHeight) {
+                styles.push(`line-height: ${attributes.lineHeight}`)
+              }
+              if (attributes.indent && Number(attributes.indent) > 0) {
+                styles.push(`text-indent: ${Number(attributes.indent) * 2}em`)
+              }
+              if (attributes.textAlign) {
+                styles.push(`text-align: ${attributes.textAlign}`)
+              }
+              if (attributes.margin?.bottom) {
+                styles.push(`margin-bottom: ${attributes.margin.bottom}`)
+              }
+              if (styles.length === 0) {
+                return {}
+              }
+              return { style: styles.join('; ') }
+            },
           },
         },
       },
