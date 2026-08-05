@@ -413,6 +413,90 @@ async function runFullCDPAudit() {
   assert.equal(visRes.pTextIndentStyle, '2em', 'FAIL: Paragraph text-indent style must be 2em!')
   assert.equal(visRes.hasNewDocBtn, true, 'FAIL: New Document button must be present in toolbar status popup!')
 
+  // TEST 6: Real Browser E2E Page Settings & Margin-to-Page Ratio Audit across Multiple Paper Sizes
+  console.log('\n[TEST 6] Auditing E2E Page Settings, Custom Margins & Page Ratios (A4, Letter, A3)...')
+  const pageRatioAudit = await call(
+    'Runtime.evaluate',
+    {
+      expression: `
+        (async () => {
+          const pageContainer = document.querySelector('.umo-page-content');
+          if (!pageContainer) return { error: 'Page container not found' };
+
+          const getVuePage = () => {
+            const el = document.querySelector('.umo-zoomable-container') || pageContainer;
+            let vm = el?.__vnode?.ctx;
+            while (vm) {
+              if (vm.provides && vm.provides.page) return vm.provides.page;
+              vm = vm.parent;
+            }
+            return null;
+          };
+
+          const pageRef = getVuePage();
+          if (!pageRef) return { error: 'Vue page ref not found' };
+
+          // 1. Test A4 (21cm x 29.7cm) with Custom Margins (Top: 3cm, Bottom: 2.5cm, Left: 2.5cm, Right: 2.5cm)
+          pageRef.value.size = { label: 'A4', width: 21, height: 29.7 };
+          pageRef.value.margin = { top: 3, bottom: 2.5, left: 2.5, right: 2.5, layout: 'custom' };
+          await new Promise((r) => setTimeout(r, 100));
+
+          const a4Width = pageRef.value.size.width;
+          const a4LeftMargin = pageRef.value.margin.left;
+          const a4RightMargin = pageRef.value.margin.right;
+          const a4MarginRatio = (a4LeftMargin + a4RightMargin) / a4Width;
+
+          // 2. Test Letter (21.59cm x 27.94cm) with Custom Margins (Top: 2cm, Bottom: 2cm, Left: 4cm, Right: 4cm)
+          pageRef.value.size = { label: 'Letter', width: 21.59, height: 27.94 };
+          pageRef.value.margin = { top: 2, bottom: 2, left: 4, right: 4, layout: 'custom' };
+          await new Promise((r) => setTimeout(r, 100));
+
+          const letterWidth = pageRef.value.size.width;
+          const letterLeftMargin = pageRef.value.margin.left;
+          const letterRightMargin = pageRef.value.margin.right;
+          const letterMarginRatio = (letterLeftMargin + letterRightMargin) / letterWidth;
+
+          // 3. Test A3 (29.7cm x 42cm) with Custom Margins (Top: 5cm, Bottom: 5cm, Left: 3cm, Right: 3cm)
+          pageRef.value.size = { label: 'A3', width: 29.7, height: 42 };
+          pageRef.value.margin = { top: 5, bottom: 5, left: 3, right: 3, layout: 'custom' };
+          await new Promise((r) => setTimeout(r, 100));
+
+          const a3Height = pageRef.value.size.height;
+          const a3TopMargin = pageRef.value.margin.top;
+          const a3BottomMargin = pageRef.value.margin.bottom;
+          const a3MarginRatio = (a3TopMargin + a3BottomMargin) / a3Height;
+
+          return {
+            a4Width,
+            a4LeftMargin,
+            a4MarginRatio: Number(a4MarginRatio.toFixed(4)),
+            letterWidth,
+            letterLeftMargin,
+            letterMarginRatio: Number(letterMarginRatio.toFixed(4)),
+            a3Height,
+            a3TopMargin,
+            a3MarginRatio: Number(a3MarginRatio.toFixed(4)),
+          };
+        })()
+      `,
+      awaitPromise: true,
+      returnByValue: true,
+    },
+    sessionId,
+  )
+
+  const ratioRes = pageRatioAudit.result.value
+  console.log('   - A4 Page Width:', ratioRes.a4Width, 'cm | Left Margin:', ratioRes.a4LeftMargin, 'cm | Ratio:', ratioRes.a4MarginRatio)
+  console.log('   - Letter Page Width:', ratioRes.letterWidth, 'cm | Left Margin:', ratioRes.letterLeftMargin, 'cm | Ratio:', ratioRes.letterMarginRatio)
+  console.log('   - A3 Page Height:', ratioRes.a3Height, 'cm | Top Margin:', ratioRes.a3TopMargin, 'cm | Ratio:', ratioRes.a3MarginRatio)
+
+  assert.equal(ratioRes.a4Width, 21, 'FAIL: A4 page width must remain 21cm after margin edits!')
+  assert.equal(ratioRes.a4MarginRatio, 0.2381, 'FAIL: A4 horizontal margin ratio (5cm/21cm) must be 0.2381!')
+  assert.equal(ratioRes.letterWidth, 21.59, 'FAIL: Letter page width must remain 21.59cm after margin edits!')
+  assert.equal(ratioRes.letterMarginRatio, 0.3705, 'FAIL: Letter horizontal margin ratio (8cm/21.59cm) must be 0.3705!')
+  assert.equal(ratioRes.a3Height, 42, 'FAIL: A3 page height must remain 42cm after margin edits!')
+  assert.equal(ratioRes.a3MarginRatio, 0.2381, 'FAIL: A3 vertical margin ratio (10cm/42cm) must be 0.2381!')
+
   await call('Target.closeTarget', { targetId: target.targetId })
   browser.close()
   if (spawnedProc) spawnedProc.kill()
