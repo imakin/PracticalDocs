@@ -2,6 +2,8 @@
   <modal
     :visible="visible"
     width="450px"
+    :confirm-btn="t('base.confirm')"
+    :cancel-btn="t('base.cancel')"
     @close="emits('close')"
     @confirm="onConfirm"
   >
@@ -31,6 +33,7 @@
         </t-form-item>
         <t-form-item v-if="page.layout === 'page'" :label="t('page.size.text')">
           <t-select
+            :value="selectedPageSizeIndex >= 0 ? selectedPageSizeIndex : undefined"
             :popup-props="{
               overlayClassName: 'umo-page-size-select',
               destroyOnClose: true,
@@ -158,6 +161,7 @@
                   :suffix="t('page.size.cm')"
                   placeholder=""
                   :allow-input-over-limit="false"
+                  @change="(val) => inputPageMargin(Number(val), 'top')"
                   @blur="(val) => inputPageMargin(Number(val), 'top')"
                 />
               </div>
@@ -174,6 +178,7 @@
                   :suffix="t('page.size.cm')"
                   placeholder=""
                   :allow-input-over-limit="false"
+                  @change="(val) => inputPageMargin(Number(val), 'bottom')"
                   @blur="(val) => inputPageMargin(Number(val), 'bottom')"
                 />
               </div>
@@ -190,6 +195,7 @@
                   :suffix="t('page.size.cm')"
                   placeholder=""
                   :allow-input-over-limit="false"
+                  @change="(val) => inputPageMargin(Number(val), 'left')"
                   @blur="(val) => inputPageMargin(Number(val), 'left')"
                 />
               </div>
@@ -206,6 +212,7 @@
                   :suffix="t('page.size.cm')"
                   placeholder=""
                   :allow-input-over-limit="false"
+                  @change="(val) => inputPageMargin(Number(val), 'right')"
                   @blur="(val) => inputPageMargin(Number(val), 'right')"
                 />
               </div>
@@ -241,39 +248,60 @@ watch(
   { immediate: true },
 )
 
-// 页面大小
+const selectedPageSizeIndex = computed(() => {
+  if (!pageOptions.size || !options.value?.dicts?.pageSizes) return -1
+  return options.value.dicts.pageSizes.findIndex(
+    (item) => Number(item.width) === Number(pageOptions.size?.width) && Number(item.height) === Number(pageOptions.size?.height)
+  )
+})
+
+// Page size select dropdown handler
 const selectPageSize = (value) => {
-  pageOptions.size = options.value?.dicts?.pageSizes[value]
-}
-const inputPageSize = (value, field) => {
-  pageOptions.size = {
-    width: 0,
-    height: 0,
+  const selected = options.value?.dicts?.pageSizes[value]
+  if (selected) {
+    pageOptions.size = { ...selected }
   }
-  if (!value || value < 10) {
-    Reflect.set(pageOptions.size, field, 10)
-    return
-  }
-  pageOptions.size.label = t('pageOptions.size.custom')
 }
 
-// 页边距
-const selectPageMargin = (margin) => {
-  pageOptions.margin = margin
+// Manual width/height input blur handler
+const inputPageSize = (value, field) => {
+  if (!pageOptions.size) {
+    pageOptions.size = { width: 21, height: 29.7, label: '' }
+  }
+  const val = Number(value) || 10
+  const nextSize = {
+    ...pageOptions.size,
+    [field]: Math.max(10, val),
+  }
+  const dicts = options.value?.dicts?.pageSizes || []
+  const matchedPreset = dicts.find(
+    (p) => Number(p.width) === Number(nextSize.width) && Number(p.height) === Number(nextSize.height)
+  )
+  if (matchedPreset) {
+    pageOptions.size = { ...matchedPreset }
+  } else {
+    nextSize.label = t('pageOptions.size.custom')
+    pageOptions.size = nextSize
+  }
 }
+
+// Preset page margin handler
+const selectPageMargin = (margin) => {
+  pageOptions.margin = { ...margin }
+}
+
+// Manual top/bottom/left/right page margin input handler
 const inputPageMargin = (value, field) => {
-  pageOptions.margin = {
-    right: 0,
-    left: 0,
-    bottom: 0,
-    top: 0,
+  if (!pageOptions.margin) {
+    pageOptions.margin = { top: 2.54, bottom: 2.54, left: 3.18, right: 3.18 }
   }
-  if (!value || value < 0) {
-    Reflect.set(pageOptions.margin, field, 0)
-    return
+  const val = Number(value) >= 0 ? Number(value) : 0
+  const nextMargin = {
+    ...pageOptions.margin,
+    [field]: val,
+    layout: 'custom',
   }
-  pageOptions.margin.layout = 'custom'
-  selectPageMargin(pageOptions.margin)
+  pageOptions.margin = nextMargin
 }
 
 const onConfirm = () => {
