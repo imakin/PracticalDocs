@@ -27,6 +27,10 @@
               pageOptions.layout === 'page' ? pageSize.width + 'cm' : 'auto',
             '--umo-page-height':
               pageOptions.layout === 'page' ? pageSize.height + 'cm' : '100%',
+            '--umo-page-content-height':
+              pageOptions.layout === 'page'
+                ? `calc(${pageSize.height}cm - ${pageOptions.margin?.top || 0}cm - ${pageOptions.margin?.bottom || 0}cm)`
+                : 'auto',
             width:
               pageOptions.layout === 'page' ? pageSize.width + 'cm' : '100%',
             transform: `scale(${pageOptions.zoomLevel ? pageOptions.zoomLevel / 100 : 1})`,
@@ -244,6 +248,15 @@ watch(
       box-shadow:
         rgba(0, 0, 0, 0.06) 0px 0px 10px 0px,
         rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
+    }
+    .umo-page-content {
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent calc(var(--umo-page-height) - 2px),
+        var(--umo-primary-color, #1677ff) calc(var(--umo-page-height) - 2px),
+        var(--umo-primary-color, #1677ff) var(--umo-page-height)
+      );
     }
   }
   &.umo-web-container {
