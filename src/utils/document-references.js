@@ -221,6 +221,15 @@ export const buildReferencePlan = (
     seenIds.add(targetId)
 
     const profile = findProfile(descriptor, profiles)
+    if (profile) {
+      if (!profile.fontFamily && descriptor.fontFamily) profile.fontFamily = descriptor.fontFamily
+      if (!profile.fontSize && descriptor.fontSize) profile.fontSize = descriptor.fontSize
+      if (!profile.fontWeight && descriptor.fontWeight) profile.fontWeight = descriptor.fontWeight
+      if (!profile.lineHeight && descriptor.lineHeight) profile.lineHeight = descriptor.lineHeight
+      if (!profile.marginBottom && descriptor.marginBottom) profile.marginBottom = descriptor.marginBottom
+      if (profile.indent === undefined && descriptor.indent !== undefined) profile.indent = descriptor.indent
+      if (!profile.textAlign && descriptor.textAlign) profile.textAlign = descriptor.textAlign
+    }
     const profileEnabled = profile
       ? profile.enabled !== false
       : enabled !== false

@@ -422,7 +422,26 @@ const applyProfile = (id) => {
 }
 
 const editProfile = (profile) => {
-  activeEditingProfile = { ...profile }
+  const mergedProfile = { ...profile }
+  if (editor.value) {
+    editor.value.state.doc.descendants((node) => {
+      const isMatch =
+        node.attrs?.numberingProfileId === profile.id ||
+        (profile.targetType === 'heading' && node.type.name === 'heading' && (node.attrs.level || 1) === (profile.level || 1)) ||
+        (profile.targetType === 'paragraph' && node.type.name === 'paragraph')
+      if (isMatch) {
+        if (!mergedProfile.fontFamily && node.attrs.fontFamily) mergedProfile.fontFamily = node.attrs.fontFamily
+        if (!mergedProfile.fontSize && node.attrs.fontSize) mergedProfile.fontSize = node.attrs.fontSize
+        if (!mergedProfile.fontWeight && node.attrs.fontWeight) mergedProfile.fontWeight = node.attrs.fontWeight
+        if (!mergedProfile.lineHeight && node.attrs.lineHeight) mergedProfile.lineHeight = node.attrs.lineHeight
+        if (!mergedProfile.marginBottom && node.attrs.margin?.bottom) mergedProfile.marginBottom = node.attrs.margin.bottom
+        if (mergedProfile.indent === undefined && node.attrs.indent !== undefined) mergedProfile.indent = node.attrs.indent
+        if (!mergedProfile.textAlign && node.attrs.textAlign) mergedProfile.textAlign = node.attrs.textAlign
+        return false
+      }
+    })
+  }
+  activeEditingProfile = mergedProfile
   editModalVisible = true
 }
 

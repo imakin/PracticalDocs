@@ -75,6 +75,13 @@ const collectTargetDescriptors = (doc) => {
       numberStyle: node.attrs.numberStyle,
       numberTemplate: node.attrs.numberTemplate,
       level: node.attrs.level,
+      fontFamily: node.attrs.fontFamily,
+      fontSize: node.attrs.fontSize,
+      fontWeight: node.attrs.fontWeight,
+      lineHeight: node.attrs.lineHeight,
+      marginBottom: node.attrs.margin?.bottom,
+      indent: node.attrs.indent,
+      textAlign: node.attrs.textAlign,
       title: getTargetTitle(node, targetType),
     })
   })
