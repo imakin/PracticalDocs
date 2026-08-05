@@ -133,12 +133,71 @@ const updatePageZoomHeight = () => {
     pageZoomHeight = height
   }
 }
+const updatePagination = () => {
+  if (pageOptions.value.layout !== 'page') return
+  const pmEl = document.querySelector(`${container} .ProseMirror`)
+  if (!pmEl) return
+
+  const CM_TO_PX = 37.7952755906
+  const h = pageSize.height || (pageOptions.value.orientation === 'landscape' ? 21 : 29.7)
+  const mt = pageOptions.value.margin?.top ?? 2.5
+  const mb = pageOptions.value.margin?.bottom ?? 2.5
+
+  const contentHeight = (h - mt - mb) * CM_TO_PX
+  const gap = (mb + mt) * CM_TO_PX + 16
+
+  if (contentHeight <= 0) return
+
+  const children = Array.from(pmEl.children)
+  if (children.length === 0) return
+
+  // Pass 1: Reset all auto page break margins first
+  children.forEach((child) => {
+    if (child.dataset.autoPageBreak) {
+      child.style.marginTop = ''
+      delete child.dataset.autoPageBreak
+    }
+  })
+
+  // Force layout recalculation
+  void pmEl.offsetHeight
+
+  // Pass 2: Calculate page breaks based on natural unpushed element positions
+  let pageIndex = 1
+  children.forEach((child) => {
+    const childHeight = child.offsetHeight || 20
+    const rawTop = child.offsetTop
+
+    let pageStart = (pageIndex - 1) * (contentHeight + gap)
+    let pageEnd = pageStart + contentHeight
+
+    while (rawTop >= pageEnd + gap) {
+      pageIndex++
+      pageStart = (pageIndex - 1) * (contentHeight + gap)
+      pageEnd = pageStart + contentHeight
+    }
+
+    if (rawTop + childHeight > pageEnd) {
+      const nextPageStart = pageIndex * (contentHeight + gap)
+      const pushMargin = nextPageStart - rawTop
+      if (pushMargin > 0) {
+        child.style.marginTop = `${pushMargin}px`
+        child.dataset.autoPageBreak = 'true'
+        pageIndex++
+      }
+    }
+  })
+}
+
+let pmMutationObserver = null
+
 const schedulePageZoomHeight = () => {
   if (pageHeightRaf) {
     cancelAnimationFrame(pageHeightRaf)
   }
   pageHeightRaf = requestAnimationFrame(() => {
     pageHeightRaf = 0
+    updatePagination()
     updatePageZoomHeight()
   })
 }
@@ -150,6 +209,18 @@ onMounted(async () => {
       schedulePageZoomHeight()
     })
     pageHeightObserver.observe(pageContentEl)
+
+    const pmEl = document.querySelector(`${container} .ProseMirror`)
+    if (pmEl) {
+      pmMutationObserver = new MutationObserver(() => {
+        schedulePageZoomHeight()
+      })
+      pmMutationObserver.observe(pmEl, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      })
+    }
   } else {
     console.warn('The element <.umo-page-content> does not exist.')
   }
@@ -159,6 +230,10 @@ onUnmounted(() => {
   if (pageHeightObserver) {
     pageHeightObserver.disconnect()
     pageHeightObserver = null
+  }
+  if (pmMutationObserver) {
+    pmMutationObserver.disconnect()
+    pmMutationObserver = null
   }
   if (pageHeightRaf) {
     cancelAnimationFrame(pageHeightRaf)

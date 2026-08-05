@@ -58,13 +58,34 @@ async function run() {
           if (!pageContent) return { error: 'pageContent not found' };
 
           const style = window.getComputedStyle(pageContent);
-          const inlineStyle = pageContent.getAttribute('style') || '';
+          const pm = document.querySelector('.ProseMirror');
+          const children = pm ? Array.from(pm.children) : [];
+          const brokenChildren = children.filter(c => c.dataset.autoPageBreak === 'true');
           
+          // Verify no child top falls in non-printable zone
+          const CM_TO_PX = 37.7952755906;
+          const contentHeight = (29.7 - 2.5 - 2.5) * CM_TO_PX;
+          const gap = (2.5 + 2.5) * CM_TO_PX + 16;
+          
+          let overlappingText = false;
+          children.forEach(c => {
+            const top = c.offsetTop;
+            const h = c.offsetHeight;
+            // Check if top falls inside [contentHeight, contentHeight + gap]
+            const rem = top % (contentHeight + gap);
+            if (rem > contentHeight && rem < contentHeight + gap - 1) {
+              overlappingText = true;
+            }
+          });
+
           return {
             pageHeightVar: pageContent.style.getPropertyValue('--umo-page-height'),
             pageContentHeightVar: pageContent.style.getPropertyValue('--umo-page-content-height'),
             backgroundImage: style.backgroundImage,
             hasGradient: style.backgroundImage.includes('gradient'),
+            childCount: children.length,
+            brokenChildCount: brokenChildren.length,
+            overlappingText: overlappingText,
           };
         })()
       `,
@@ -76,12 +97,14 @@ async function run() {
   const res = evalResult.result?.result?.value || {}
   console.log('1. Computed --umo-page-height:', res.pageHeightVar)
   console.log('2. Computed --umo-page-content-height:', res.pageContentHeightVar)
-  console.log('3. Computed Background Image:', res.backgroundImage)
-  console.log('4. Has Page Break Gradient:', res.hasGradient)
+  console.log('3. Total Block Nodes:', res.childCount)
+  console.log('4. Auto Page-Broken Nodes:', res.brokenChildCount)
+  console.log('5. Overlapping Text in Margin Gap:', res.overlappingText)
 
   assert.ok(res.pageHeightVar, 'FAIL: --umo-page-height variable must be set!')
   assert.ok(res.pageContentHeightVar, 'FAIL: --umo-page-content-height variable must be set!')
   assert.equal(res.hasGradient, true, 'FAIL: Page break repeating gradient must be present!')
+  assert.equal(res.overlappingText, false, 'FAIL: Text must NEVER overlap the page margin/gap!')
 
   console.log('\n=== VISUAL PAGE BREAK RULER TEST PASSED 100% SUCCESS ===')
   ws.close()

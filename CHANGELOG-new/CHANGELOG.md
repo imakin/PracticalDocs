@@ -1,6 +1,6 @@
 ### Real-Browser E2E Audit & Comprehensive CDP Test Suite
 
-- `Comprehensive CDP Audit`: `test-comprehensive-e2e.cdp.mjs`, `test-keystroke-typing.cdp.mjs`, & `test-page-ruler.cdp.mjs` verify all user requirements in real Chrome:
+- `Comprehensive CDP Audit`: `test-comprehensive-e2e.cdp.mjs`, `test-keystroke-typing.cdp.mjs`, `test-page-ruler.cdp.mjs`, & `test-visual-multipage.cdp.mjs` verify all user requirements in real Chrome:
   - **TEST 1**: Default title (`file-identifier`) and English UI audit.
   - **TEST 2**: Multi-file disk persistence (`a.enc` & `a.json` physical files).
   - **TEST 3**: Document load & computed DOM visual styling (font size, weight, line-height, text-align, margin-bottom, newline widget).
@@ -8,7 +8,7 @@
   - **TEST 5**: Visual computed line-height, text-indent (`2em`), and New Document confirmation modal.
   - **TEST 6**: Page Settings custom margin-to-page ratios across A4, Letter, and A3 sizes.
   - **Keystroke Typing**: Real Chrome typing test verifying text is never deleted or reverted during typing.
-  - **Page Break Ruler**: Real Chrome audit verifying `--umo-page-content-height` variable and visual page break ruler gradient.
+  - **Multi-Page Pagination Audit**: Real Chrome audit verifying 0 text blocks overlap margin gaps in multi-page documents (e.g. `tesis3.json`).
 
   Start Chrome with remote debugging enabled, then run:
 
@@ -16,6 +16,7 @@
   node tests/e2e/test-comprehensive-e2e.cdp.mjs
   node tests/e2e/test-keystroke-typing.cdp.mjs
   node tests/e2e/test-page-ruler.cdp.mjs
+  node tests/e2e/test-visual-multipage.cdp.mjs
   ```
 
 ### Encrypted Local Storage Server & Save Target Selector
@@ -36,9 +37,10 @@
 - `Backward Compatibility`: Full support for opening older document files without profile IDs or pre-attached attributes.
 - `Details`: See [Block Style Profiles and Document Styling Restoration](./details/block-style-profiles-and-styling.md).
 
-### Page Settings & Custom Margins Preservation
+### Page Settings, Custom Margins, & Automatic Multi-Page Pagination
 
-- `Visual Page-Break Ruler`: Added dynamic `--umo-page-content-height` CSS calculation and `repeating-linear-gradient` visual page break indicators at exact paper height intervals.
+- `Automatic Pagination Engine`: Two-pass layout engine measuring block element bounds (`offsetTop`) and automatically pushing blocks extending past `pageEnd` to the top of the next page content area.
+- `Visual Page Sheet Boundaries`: Dynamic `--umo-page-content-height` calculation, header zone boundary line, footer/page-numbering zone boundary line, and 16px sheet-separation gaps between pages.
 - `Paper Size Retention`: Margin edits maintain standard paper sizes (A4, Letter, Legal, A3) without converting to Custom or zeroing out margins.
 - `Margin Popup CSS Units`: Flexible `<t-input>` supporting any CSS length unit (`0.25em`, `4em`, `12px`, `10pt`, `1.5cm`, `0.5rem`, `0`).
 - `English UI`: Translated Page Settings confirm/cancel buttons and status popup controls to English.
