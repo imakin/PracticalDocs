@@ -250,13 +250,35 @@ watch(
         rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
     }
     .umo-page-content {
-      background-image: repeating-linear-gradient(
-        to bottom,
-        transparent 0,
-        transparent calc(var(--umo-page-height) - 2px),
-        var(--umo-primary-color, #1677ff) calc(var(--umo-page-height) - 2px),
-        var(--umo-primary-color, #1677ff) var(--umo-page-height)
-      );
+      /* Visual Page Sheets: Header boundary, Footer & Page Numbering zone, and Sheet Separation Gap */
+      background-image:
+        /* Footer & Page Numbering boundary line (dashed/subtle line at top of footer margin) */
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent calc(var(--umo-page-height) - var(--umo-page-margin-bottom) - 1px),
+          rgba(0, 0, 0, 0.15) calc(var(--umo-page-height) - var(--umo-page-margin-bottom) - 1px),
+          rgba(0, 0, 0, 0.15) calc(var(--umo-page-height) - var(--umo-page-margin-bottom)),
+          transparent calc(var(--umo-page-height) - var(--umo-page-margin-bottom))
+        ),
+        /* Sheet Separation Gap (16px grey band + sheet edge shadow at bottom of each page sheet) */
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent calc(var(--umo-page-height) - 16px),
+          #cbd5e1 calc(var(--umo-page-height) - 16px),
+          #e2e8f0 calc(var(--umo-page-height) - 8px),
+          #cbd5e1 var(--umo-page-height)
+        ),
+        /* Header margin boundary line (subtle line at bottom of top margin) */
+        linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent calc(var(--umo-page-margin-top) - 1px),
+          rgba(0, 0, 0, 0.15) calc(var(--umo-page-margin-top) - 1px),
+          rgba(0, 0, 0, 0.15) var(--umo-page-margin-top),
+          transparent var(--umo-page-margin-top)
+        );
     }
   }
   &.umo-web-container {
