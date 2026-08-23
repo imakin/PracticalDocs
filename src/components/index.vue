@@ -286,6 +286,39 @@ const clearAutoSaveInterval = () => {
     autoSaveInterval = null
   }
 }
+// 空文档判定：只由空段落/空标题构成，且没有任何文字
+const BLANK_DOCUMENT_NODE_TYPES = new Set([
+  'doc',
+  'paragraph',
+  'heading',
+  'text',
+  'hardBreak',
+])
+// Autosave writes to the storage backend under the currently loaded document title, so a blank
+// editor would erase whatever is stored under that name. Treat a document as blank only when it
+// holds no text at all and consists of nothing but empty paragraphs or headings; anything else
+// (an image, a table, a code block) counts as content and is saved normally.
+const isDocumentBlank = () => {
+  const doc = editor.value?.state?.doc
+  if (!doc) {
+    return true
+  }
+  if (doc.textContent.trim().length > 0) {
+    return false
+  }
+  let blank = true
+  doc.descendants((node) => {
+    if (!blank) {
+      return false
+    }
+    if (!BLANK_DOCUMENT_NODE_TYPES.has(node.type.name)) {
+      blank = false
+      return false
+    }
+    return true
+  })
+  return blank
+}
 watch(
   () => contentUpdated,
   (val) => {
@@ -298,9 +331,14 @@ watch(
       return
     }
     autoSaveInterval = setInterval(() => {
-      saveContent()
-      contentUpdated = false
       clearAutoSaveInterval()
+      const blank = isDocumentBlank()
+      // Reset first either way, so the next real edit can arm autosave again.
+      contentUpdated = false
+      if (blank) {
+        return
+      }
+      saveContent()
     }, autoSave.interval)
   },
 )

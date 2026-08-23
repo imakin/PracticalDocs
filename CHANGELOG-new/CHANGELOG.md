@@ -1,3 +1,19 @@
+### Autosave Blank-Document Guard
+
+- `Blank Autosave Blocked`: Autosave no longer writes an empty document to `practical-umodoc-server`. Because autosave saves under the currently loaded document title, a blank editor could previously overwrite the stored file under that name and destroy it.
+- `Strict Blank Test`: A document counts as blank only when it holds no text **and** consists solely of `doc`, `paragraph`, `heading`, `text`, and `hardBreak` nodes. Images, tables, code blocks, and horizontal rules are treated as content and still autosave. `editor.isEmpty` is deliberately not used, since numbering-profile attributes make it report non-empty on documents that hold no text.
+- `Autosave Re-Arms`: `contentUpdated` is cleared even when a blank save is skipped, so the next real edit schedules autosave again instead of leaving it dead for the session.
+- `Manual Save Unchanged`: Ctrl+S and the toolbar save button still save a blank document on purpose. Only the unattended path is guarded.
+- `Test script`: `autosave-blank-guard.cdp.mjs` records whether a save POST is actually issued and what it carries, intercepting every request so the storage server is never written to.
+
+  Start Chrome with remote debugging enabled, then run:
+
+  ```bash
+  npm run test:e2e:autosave-blank-guard
+  ```
+
+- `Details`: See [Autosave Blank-Document Guard](./details/autosave-blank-document-guard.md).
+
 ### Real-Browser E2E Audit & Comprehensive CDP Test Suite
 
 - `Comprehensive CDP Audit`: `test-comprehensive-e2e.cdp.mjs`, `test-keystroke-typing.cdp.mjs`, `test-page-ruler.cdp.mjs`, & `test-visual-multipage.cdp.mjs` verify all user requirements in real Chrome:
