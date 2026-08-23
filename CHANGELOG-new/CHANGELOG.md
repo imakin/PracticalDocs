@@ -1,3 +1,10 @@
+### Pagination Engine Switched Off Pending Rebuild
+
+- `Runaway Render Loop Stopped`: `updatePagination()` rewrote the same DOM that its own `MutationObserver` watched, so the two fed each other permanently - about 50 scheduled animation frames and 195 observer callbacks per second on an idle document. Measured idle frames are now 0.
+- `Phantom Scroll Space Removed`: `updatePageZoomHeight()` sampled `clientHeight` in the same frame the engine had just inflated with `marginTop` pushes, leaving the scroll container 6299px tall around 4904px of content. Scrolling to the bottom landed in over a sheet of emptiness that the mouse wheel could not climb back out of. The container now matches its content, and scrolling returns to the top.
+- `Misleading Sheet Bands Hidden`: with nothing enforcing the page boundary, 23 of 183 text lines sat inside the painted bottom-margin and sheet-gap band. The bands are suppressed while the engine is off rather than drawn across live text.
+- `Code Kept`: the engine is skipped through a `paginationEngineEnabled` flag, not deleted. Its line-level geometry (`TreeWalker` plus `Range.getClientRects()`) is what the decoration-based engine will reuse.
+
 ### Autosave Blank-Document Guard
 
 - `Blank Autosave Blocked`: Autosave no longer writes an empty document to `practical-umodoc-server`. Because autosave saves under the currently loaded document title, a blank editor could previously overwrite the stored file under that name and destroy it.

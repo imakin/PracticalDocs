@@ -16,6 +16,7 @@
       >
         <t-watermark
           class="umo-page-content"
+          :class="{ 'umo-pagination-off': !paginationEngineEnabled }"
           :style="{
             '--umo-page-orientation': pageOptions.orientation,
             '--umo-page-background': pageOptions.background,
@@ -133,10 +134,41 @@ const updatePageZoomHeight = () => {
     pageZoomHeight = height
   }
 }
+// 分页引擎开关：等待 ADR 0002 的装饰器方案落地前先关闭
+// The pagination engine is switched off pending ADR 0002 (decoration-based pagination).
+//
+// `updatePagination()` rewrites the very DOM that `pmMutationObserver` watches, so the two feed each
+// other at animation-frame rate and never settle: measured at about 50 scheduled frames and 195
+// observer callbacks per second on an idle document. `updatePageZoomHeight()` then samples
+// `clientHeight` in that same frame, right after the engine has inflated the content with `marginTop`
+// pushes, so the scroll container is left taller than what it holds - 6299px of container around
+// 4904px of content on a five-sheet document, leaving over a sheet of empty scroll the user cannot
+// escape from.
+//
+// The engine's code is kept in place rather than deleted: its line-level geometry (TreeWalker plus
+// Range.getClientRects to find the first line crossing a page boundary) is the part worth carrying
+// into the decoration-based engine. Only the DOM mutation it performs is rejected.
+const paginationEngineEnabled = false
+
+const removeLineSpacers = (containerEl) => {
+  const spacers = containerEl.querySelectorAll('.umo-page-line-spacer')
+  spacers.forEach((spacer) => {
+    const parent = spacer.parentNode
+    if (parent) {
+      parent.removeChild(spacer)
+      parent.normalize()
+    }
+  })
+}
+
 const updatePagination = () => {
+  if (!paginationEngineEnabled) return
   if (pageOptions.value.layout !== 'page') return
   const pmEl = document.querySelector(`${container} .ProseMirror`)
   if (!pmEl) return
+
+  const nodeContentEl = pmEl.closest('.umo-page-node-content')
+  if (!nodeContentEl) return
 
   const CM_TO_PX = 37.7952755906
   const h = pageSize.height || (pageOptions.value.orientation === 'landscape' ? 21 : 29.7)
@@ -151,7 +183,8 @@ const updatePagination = () => {
   const children = Array.from(pmEl.children)
   if (children.length === 0) return
 
-  // Pass 1: Reset all auto page break margins first
+  // Pass 1: Clear all previous auto page breaks and line spacers
+  removeLineSpacers(pmEl)
   children.forEach((child) => {
     if (child.dataset.autoPageBreak) {
       child.style.marginTop = ''
@@ -161,12 +194,14 @@ const updatePagination = () => {
 
   // Force layout recalculation
   void pmEl.offsetHeight
+  const nodeContentRect = nodeContentEl.getBoundingClientRect()
 
-  // Pass 2: Calculate page breaks based on natural unpushed element positions
+  // Pass 2: Line-level pagination breaking across pages
   let pageIndex = 1
   children.forEach((child) => {
-    const childHeight = child.offsetHeight || 20
-    const rawTop = child.offsetTop
+    const childRect = child.getBoundingClientRect()
+    const rawTop = childRect.top - nodeContentRect.top
+    const rawBottom = childRect.bottom - nodeContentRect.top
 
     let pageStart = (pageIndex - 1) * (contentHeight + gap)
     let pageEnd = pageStart + contentHeight
@@ -177,13 +212,77 @@ const updatePagination = () => {
       pageEnd = pageStart + contentHeight
     }
 
-    if (rawTop + childHeight > pageEnd) {
+    // If block starts in or past the gap zone (e.g. heading or image)
+    if (rawTop >= pageEnd && rawTop < pageEnd + gap) {
       const nextPageStart = pageIndex * (contentHeight + gap)
       const pushMargin = nextPageStart - rawTop
       if (pushMargin > 0) {
         child.style.marginTop = `${pushMargin}px`
         child.dataset.autoPageBreak = 'true'
         pageIndex++
+      }
+      return
+    }
+
+    // If block crosses pageEnd (e.g. a paragraph with multiple text lines)
+    if (rawTop < pageEnd && rawBottom > pageEnd) {
+      const textNodes = []
+      const walk = document.createTreeWalker(child, NodeFilter.SHOW_TEXT, null)
+      let n
+      while ((n = walk.nextNode())) {
+        if (n.textContent && n.textContent.trim().length > 0) {
+          textNodes.push(n)
+        }
+      }
+
+      let breakTargetNode = null
+      let breakOffset = 0
+
+      for (const textNode of textNodes) {
+        const text = textNode.textContent
+        const range = document.createRange()
+
+        for (let i = 0; i < text.length; i++) {
+          range.setStart(textNode, i)
+          range.setEnd(textNode, i + 1)
+          const rects = range.getClientRects()
+          if (rects.length > 0) {
+            const lineTop = rects[0].top - nodeContentRect.top
+            if (lineTop >= pageEnd) {
+              breakTargetNode = textNode
+              breakOffset = i
+              break
+            }
+          }
+        }
+        if (breakTargetNode) break
+      }
+
+      if (breakTargetNode) {
+        const range = document.createRange()
+        range.setStart(breakTargetNode, breakOffset)
+        range.collapse(true)
+
+        const spacer = document.createElement('span')
+        spacer.className = 'umo-page-line-spacer'
+        spacer.style.display = 'block'
+        spacer.style.height = `${gap}px`
+        spacer.style.width = '100%'
+        spacer.style.margin = '0'
+        spacer.style.padding = '0'
+        spacer.style.clear = 'both'
+        spacer.contentEditable = 'false'
+
+        range.insertNode(spacer)
+        pageIndex++
+      } else {
+        const nextPageStart = pageIndex * (contentHeight + gap)
+        const pushMargin = nextPageStart - rawTop
+        if (pushMargin > 0) {
+          child.style.marginTop = `${pushMargin}px`
+          child.dataset.autoPageBreak = 'true'
+          pageIndex++
+        }
       }
     }
   })
@@ -324,8 +423,14 @@ watch(
         rgba(0, 0, 0, 0.06) 0px 0px 10px 0px,
         rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
     }
+    /* With the engine off nothing keeps text out of these bands, so painting them would draw
+       page boundaries straight across live text. Restored together with the engine. */
+    .umo-page-content.umo-pagination-off {
+      background-image: none;
+    }
     .umo-page-content {
       /* Visual Page Sheets: Header boundary, Footer & Page Numbering zone, and Sheet Separation Gap */
+      /* Period is calc(var(--umo-page-height) + 16px) to match 16px DOM sheet gap */
       background-image:
         /* Footer & Page Numbering boundary line (dashed/subtle line at top of footer margin) */
         repeating-linear-gradient(
@@ -334,25 +439,27 @@ watch(
           transparent calc(var(--umo-page-height) - var(--umo-page-margin-bottom) - 1px),
           rgba(0, 0, 0, 0.15) calc(var(--umo-page-height) - var(--umo-page-margin-bottom) - 1px),
           rgba(0, 0, 0, 0.15) calc(var(--umo-page-height) - var(--umo-page-margin-bottom)),
-          transparent calc(var(--umo-page-height) - var(--umo-page-margin-bottom))
+          transparent calc(var(--umo-page-height) - var(--umo-page-margin-bottom)),
+          transparent calc(var(--umo-page-height) + 16px)
         ),
         /* Sheet Separation Gap (16px grey band + sheet edge shadow at bottom of each page sheet) */
         repeating-linear-gradient(
           to bottom,
           transparent 0,
-          transparent calc(var(--umo-page-height) - 16px),
-          #cbd5e1 calc(var(--umo-page-height) - 16px),
-          #e2e8f0 calc(var(--umo-page-height) - 8px),
-          #cbd5e1 var(--umo-page-height)
+          transparent var(--umo-page-height),
+          #cbd5e1 var(--umo-page-height),
+          #e2e8f0 calc(var(--umo-page-height) + 8px),
+          #cbd5e1 calc(var(--umo-page-height) + 16px)
         ),
         /* Header margin boundary line (subtle line at bottom of top margin) */
-        linear-gradient(
+        repeating-linear-gradient(
           to bottom,
           transparent 0,
           transparent calc(var(--umo-page-margin-top) - 1px),
           rgba(0, 0, 0, 0.15) calc(var(--umo-page-margin-top) - 1px),
           rgba(0, 0, 0, 0.15) var(--umo-page-margin-top),
-          transparent var(--umo-page-margin-top)
+          transparent var(--umo-page-margin-top),
+          transparent calc(var(--umo-page-height) + 16px)
         );
     }
   }
