@@ -1,3 +1,18 @@
+### Page Breaks Now Match Export to PDF
+
+- `Widows and Orphans Honoured`: On-screen page breaks drifted against the exported PDF by one line per sheet, cumulatively. The cause was not geometry - both use the same text column - but `widows` and `orphans`, whose initial value in Chrome is 2. Print refuses to strand a single line at the top of a page or leave one behind at the bottom; the engine did not care. It now reads the computed values of the block being broken and moves the break earlier when needed.
+- `Verified Against A Real Export`: All six pages of a 10702-character thesis now match the exported PDF exactly, first line and line count. Rendering the same export document with `orphans: 1; widows: 1` reproduces the old, drifting breaks, which is what identified the cause.
+- `Lines Merged Before Breaking`: Line fragments split across text nodes by marks are merged into one line box, so a break can no longer land inside a rendered line.
+- `Test script`: `pagination-pdf-parity.cdp.mjs` renders the export document to PDF and compares the first line of every page against the corresponding on-screen sheet. The geometry test cannot see this class of bug: keeping text out of the margin band is necessary but not sufficient. Removing the widow and orphan handling fails four of six pages here and nothing else notices.
+
+  Start Chrome with remote debugging enabled, then run:
+
+  ```bash
+  npm run test:e2e:pagination-pdf
+  ```
+
+- `Details`: See [Decoration-Based Pagination](./details/decoration-based-pagination.md).
+
 ### Visual Page View: Decoration-Based Pagination
 
 - `Sheets On Screen`: The editor shows discrete sheets of paper. A long paragraph splits between its own text lines at the page boundary, and the band made of bottom margin, sheet gap and top margin holds no text. Measured on a 10702-character document: 0 of 183 text lines fall inside that band.

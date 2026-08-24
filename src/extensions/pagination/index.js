@@ -46,17 +46,51 @@ const readMetrics = (view) => {
   return { sheet, pageHeight, marginTop, marginBottom, gap, column, stride: pageHeight + gap }
 }
 
+const BLOCK_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, pre, figcaption, div'
+
+const blockOf = (node) => {
+  const start = node.nodeType === Node.TEXT_NODE ? node.parentElement : node
+  return start?.closest(BLOCK_SELECTOR) || start
+}
+
+const intStyle = (element, property, fallback) => {
+  const raw = element ? getComputedStyle(element)[property] : null
+  const value = Number.parseInt(raw, 10)
+  return Number.isFinite(value) && value > 0 ? value : fallback
+}
+
 /**
- * Every box that must stay inside a text column: one entry per rendered line of text, plus embedded
- * media, which has no line boxes of its own.
+ * One entry per rendered line of text, plus embedded media, which has no line boxes of its own.
+ *
+ * Fragments of the same line are merged: a line broken across several text nodes by marks would
+ * otherwise look like several independent boxes, and the engine would break inside a line.
  */
-const collectBoxes = (view, originTop) => {
-  const boxes = []
-  const push = (rect, source) => {
+const collectLines = (view, originTop) => {
+  const merged = new Map()
+  const add = (rect, block, node, key) => {
     if (rect.height <= 0 || rect.width <= 0) {
       return
     }
-    boxes.push({ top: rect.top - originTop, bottom: rect.bottom - originTop, clientTop: rect.top, source })
+    const existing = merged.get(key)
+    if (!existing) {
+      merged.set(key, {
+        block,
+        top: rect.top - originTop,
+        bottom: rect.bottom - originTop,
+        clientTop: rect.top,
+        left: rect.left,
+        source: node,
+      })
+      return
+    }
+    existing.top = Math.min(existing.top, rect.top - originTop)
+    existing.bottom = Math.max(existing.bottom, rect.bottom - originTop)
+    // The leftmost fragment owns the start of the line, which is where a break has to be anchored.
+    if (rect.left < existing.left) {
+      existing.left = rect.left
+      existing.clientTop = rect.top
+      existing.source = node
+    }
   }
 
   const walker = document.createTreeWalker(view.dom, NodeFilter.SHOW_TEXT, null)
@@ -65,18 +99,67 @@ const collectBoxes = (view, originTop) => {
     if (!node.textContent || !node.textContent.trim()) {
       continue
     }
+    const block = blockOf(node)
     const range = document.createRange()
     range.selectNodeContents(node)
     for (const rect of range.getClientRects()) {
-      push(rect, { kind: 'text', node })
+      add(rect, block, node, `${Math.round(rect.top)}`)
     }
   }
-  for (const el of view.dom.querySelectorAll('img, video, iframe, canvas, svg')) {
-    push(el.getBoundingClientRect(), { kind: 'element', el })
+  for (const element of view.dom.querySelectorAll('img, video, iframe, canvas, svg')) {
+    const rect = element.getBoundingClientRect()
+    add(rect, blockOf(element), element, `media-${Math.round(rect.top)}-${Math.round(rect.left)}`)
   }
 
-  boxes.sort((a, b) => a.top - b.top)
-  return boxes
+  const lines = [...merged.values()].sort((a, b) => a.top - b.top)
+  // index of each line inside its own block, and how many lines that block has in total
+  const counts = new Map()
+  for (const line of lines) {
+    line.indexInBlock = counts.get(line.block) ?? 0
+    counts.set(line.block, line.indexInBlock + 1)
+  }
+  for (const line of lines) {
+    line.blockLineCount = counts.get(line.block)
+  }
+  return lines
+}
+
+const firstOverflowing = (lines, metrics) => {
+  for (const line of lines) {
+    const index = Math.floor(line.top / metrics.stride)
+    const columnBottom = index * metrics.stride + metrics.pageHeight - metrics.marginBottom
+    if (line.bottom > columnBottom + TOLERANCE) {
+      return line
+    }
+  }
+  return null
+}
+
+/**
+ * Move the break earlier when breaking here would violate the block's widows or orphans.
+ *
+ * Print honours these; Chrome's initial values are 2 and 2. Ignoring them is what made the on-screen
+ * breaks drift against Export to PDF: the engine happily left a single line stranded at the top of the
+ * next sheet, print refused to, and every following sheet inherited the difference.
+ */
+const respectWidowsAndOrphans = (lines, overflow) => {
+  const blockLines = lines.filter((line) => line.block === overflow.block)
+  const widows = intStyle(overflow.block, 'widows', 2)
+  const orphans = intStyle(overflow.block, 'orphans', 2)
+  let index = overflow.indexInBlock
+
+  const linesMovedDown = overflow.blockLineCount - index
+  if (linesMovedDown < widows) {
+    index -= widows - linesMovedDown
+  }
+  // Too few lines would be left behind, so the whole block moves to the next sheet.
+  if (index > 0 && index < orphans) {
+    index = 0
+  }
+  if (index < 0) {
+    index = 0
+  }
+  return blockLines[index] || overflow
 }
 
 const charTop = (node, index) => {
@@ -88,22 +171,22 @@ const charTop = (node, index) => {
 }
 
 /**
- * Document position of the first character of the line the box belongs to.
+ * Document position of the first character of a line.
  *
  * Deliberately not `posAtCoords`: that maps a viewport point, and the line that overflows a page is
  * usually scrolled far out of view, where it returns nothing usable. Character rect tops rise
  * monotonically inside one text node, so the first character of the line can be binary-searched
  * instead, which does not care where the viewport happens to be.
  */
-const positionAtBoxStart = (view, box) => {
-  if (box.source.kind === 'element') {
+const positionAtLineStart = (view, line) => {
+  const node = line.source
+  if (!node || node.nodeType !== Node.TEXT_NODE) {
     try {
-      return view.posAtDOM(box.source.el, 0)
+      return view.posAtDOM(node, 0)
     } catch {
       return null
     }
   }
-  const { node } = box.source
   const { length } = node
   let low = 0
   let high = length - 1
@@ -115,7 +198,7 @@ const positionAtBoxStart = (view, box) => {
       low = middle + 1
       continue
     }
-    if (top >= box.clientTop - 0.5) {
+    if (top >= line.clientTop - 0.5) {
       answer = middle
       high = middle - 1
     } else {
@@ -130,17 +213,6 @@ const positionAtBoxStart = (view, box) => {
   } catch {
     return null
   }
-}
-
-const firstOverflowing = (boxes, metrics) => {
-  for (const box of boxes) {
-    const index = Math.floor(box.top / metrics.stride)
-    const columnBottom = index * metrics.stride + metrics.pageHeight - metrics.marginBottom
-    if (box.bottom > columnBottom + TOLERANCE) {
-      return { box, index }
-    }
-  }
-  return null
 }
 
 const buildDecorations = (doc, breaks) =>
@@ -281,16 +353,19 @@ class PaginationDriver {
       let lastPos = -1
       for (let guard = 0; guard < MAX_SHEETS; guard += 1) {
         const originTop = metrics.sheet.getBoundingClientRect().top
-        const overflow = firstOverflowing(collectBoxes(this.view, originTop), metrics)
+        const lines = collectLines(this.view, originTop)
+        const overflow = firstOverflowing(lines, metrics)
         if (!overflow) {
           break
         }
-        const nextColumnTop = (overflow.index + 1) * metrics.stride + metrics.marginTop
-        const height = nextColumnTop - overflow.box.top
+        const target = respectWidowsAndOrphans(lines, overflow)
+        const sheet = Math.floor(target.top / metrics.stride)
+        const nextColumnTop = (sheet + 1) * metrics.stride + metrics.marginTop
+        const height = nextColumnTop - target.top
         if (height <= 0) {
           break
         }
-        const pos = positionAtBoxStart(this.view, overflow.box)
+        const pos = positionAtLineStart(this.view, target)
         // No position, or no forward progress, means this box cannot be moved. Stop rather than
         // spin: a single unbreakable box taller than a column would otherwise loop forever.
         if (pos === null || pos <= lastPos) {
@@ -313,8 +388,8 @@ class PaginationDriver {
    */
   padToWholeSheets(metrics) {
     const originTop = metrics.sheet.getBoundingClientRect().top
-    const boxes = collectBoxes(this.view, originTop)
-    const lastBottom = boxes.length > 0 ? boxes[boxes.length - 1].bottom : 0
+    const lines = collectLines(this.view, originTop)
+    const lastBottom = lines.length > 0 ? lines[lines.length - 1].bottom : 0
     const sheets = Math.max(1, Math.floor(lastBottom / metrics.stride) + 1)
     metrics.sheet.style.setProperty(
       '--umo-page-total-height',

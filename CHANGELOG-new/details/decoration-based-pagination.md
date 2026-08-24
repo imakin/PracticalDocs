@@ -52,6 +52,28 @@ being set. Without it the last sheet is drawn as a fragment ending wherever the 
 own through `@page`. Leaving the spacers in would stack their blank space on top of the browser's page
 breaks. `src/components/container/print.vue` removes them and the padded height before printing.
 
+## Matching Export to PDF: widows and orphans
+
+The engine originally packed every line that geometrically fitted, and the on-screen breaks drifted
+against the exported PDF: sheet 1 matched, sheet 2 was one line out, sheet 3 two lines, and so on.
+
+The cause is not geometry. Both sides use the same 4cm-to-26.7cm text column, and measuring the
+exported PDF showed page 2 ending at 25.69cm with a full centimetre of column still free - print was
+declining to fill it. That is `widows` and `orphans`, whose initial value in Chrome is 2. Print refuses
+to strand a single line at the top of a page or leave a single line behind at the bottom; the engine
+did not care, and every following sheet inherited the difference.
+
+Proof: rendering the same export document with `orphans: 1; widows: 1` forced produced page breaks
+identical to the engine's, on every page.
+
+`respectWidowsAndOrphans()` now reads the computed `widows` and `orphans` of the block being broken and
+moves the break earlier when needed:
+
+- fewer than `widows` lines would move to the next sheet: break that many lines earlier
+- fewer than `orphans` lines would be left behind: move the whole block to the next sheet
+
+With this, all six pages of the reference thesis match the export exactly, line count included.
+
 ## Known limitation: justification of the line before a break
 
 A block-level spacer inside a justified paragraph splits it into two anonymous block boxes, so the line
@@ -86,5 +108,21 @@ shares with any other open tab.
 npm run test:e2e:pagination
 ```
 
-Requires Chrome started with `--remote-debugging-port=9222`, the dev server on port 9000, and a
-multi-page document on the storage server (`PAGINATION_DOC`, default `tesis4`).
+## Second test: parity with Export to PDF
+
+`tests/e2e/pagination-pdf-parity.cdp.mjs` renders the export document through the same path the
+application uses, converts it to PDF, and compares the first line of every PDF page against the first
+line of the corresponding on-screen sheet.
+
+This is the check the geometry test cannot make. Keeping text out of the margin band is necessary but
+not sufficient: the engine can satisfy it while still breaking one line away from the export, which is
+exactly the bug that shipped. Removing the widow and orphan handling makes this test fail on four of
+six pages, and no other test notices.
+
+```bash
+npm run test:e2e:pagination-pdf
+```
+
+Both tests require Chrome started with `--remote-debugging-port=9222`, the dev server on port 9000, and
+a multi-page document on the storage server (`PAGINATION_DOC`, default `tesis4`). The parity test also
+needs `poppler-utils` for `pdfinfo` and `pdftotext`.
