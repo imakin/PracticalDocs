@@ -40,6 +40,9 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
+# Test output
+tests/screenshots/
+
 # Other
 .DS_Store
 Thumbs.db
