@@ -22,10 +22,26 @@ const getPlyrSprite = () => {
   return document.querySelector('#sprite-plyr')?.innerHTML || ''
 }
 
+// 分页占位符只用于屏幕显示，打印时必须去掉
+// The pagination spacers and the padded canvas height are on-screen decorations. Print paginates on
+// its own through @page, so leaving them in would stack their blank space on top of the browser's own
+// page breaks and push the content out of alignment.
+const stripScreenPagination = (htmlContent) => {
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = htmlContent
+  for (const spacer of tempDiv.querySelectorAll('.umo-page-spacer')) {
+    spacer.remove()
+  }
+  for (const sheet of tempDiv.querySelectorAll('.umo-page-content')) {
+    sheet.style.removeProperty('--umo-page-total-height')
+  }
+  return tempDiv.innerHTML
+}
+
 const getContentHtml = () => {
   const originalContent =
     document.querySelector(`${container} .umo-page-content`)?.outerHTML || ''
-  return prepareEchartsForPrint(originalContent)
+  return prepareEchartsForPrint(stripScreenPagination(originalContent))
 }
 // 因echart依赖于组件动态展示，打印时效果无法通过html实现，所以通过转成图片方式解决
 const prepareEchartsForPrint = (htmlContent) => {

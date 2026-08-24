@@ -1,3 +1,23 @@
+### Visual Page View: Decoration-Based Pagination
+
+- `Sheets On Screen`: The editor shows discrete sheets of paper. A long paragraph splits between its own text lines at the page boundary, and the band made of bottom margin, sheet gap and top margin holds no text. Measured on a 10702-character document: 0 of 183 text lines fall inside that band.
+- `Bottom Margin Enforced`: Text no longer runs through the bottom margin into the next sheet, which was the visible symptom the previous engine never fixed.
+- `ProseMirror Decorations`: Page breaks are `Decoration.widget` spacers rendered by the editor view. Nothing is injected into the contenteditable behind the view's back, document positions are untouched, and the spacers never reach the saved HTML, JSON or text.
+- `Triggered, Not Observed`: Recomputation runs on document changes and on an explicit `refreshPagination()` command issued when page size, margins, orientation or zoom change. The engine never watches the DOM it writes to.
+- `Margins Now Repaginate`: The page watcher was missing `margin`, so changing a margin left the old page breaks in place. It is included now.
+- `Whole Sheets`: The canvas is padded out to a whole number of sheets, so the last sheet is drawn complete instead of ending wherever the text stops.
+- `Print Unaffected`: Export builds its document from the live DOM and paginates through `@page`, so the screen spacers and the padded height are stripped before printing.
+- `Known Limitation`: The line directly above a page break loses full justification, because a block-level spacer splits a justified paragraph into two anonymous blocks. Measured at 80-98% of column width on four of five breaks.
+- `Test script`: `pagination-geometry.cdp.mjs` measures where text actually lands, plus editing, undo, margin changes, save-content purity and export purity. Fourteen checks.
+
+  Start Chrome with remote debugging enabled, then run:
+
+  ```bash
+  npm run test:e2e:pagination
+  ```
+
+- `Details`: See [Decoration-Based Pagination](./details/decoration-based-pagination.md).
+
 ### Pagination Engine Switched Off Pending Rebuild
 
 - `Runaway Render Loop Stopped`: `updatePagination()` rewrote the same DOM that its own `MutationObserver` watched, so the two fed each other permanently - about 50 scheduled animation frames and 195 observer callbacks per second on an idle document. Measured idle frames are now 0.
