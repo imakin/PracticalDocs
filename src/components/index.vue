@@ -1422,8 +1422,11 @@ const openDocumentFile = async (source, { skipConfirmation = false } = {}) => {
           ? parseDocumentFile(await source.text())
           : validateDocumentSnapshot(source)
 
-    const contentNode = editor.value.schema.nodeFromJSON(snapshot.content)
-    contentNode.check()
+    // Content is stored as HTML now, which the editor parses itself. Only a document object can be
+    // checked against the schema up front.
+    if (typeof snapshot.content !== 'string') {
+      editor.value.schema.nodeFromJSON(snapshot.content).check()
+    }
 
     if (contentUpdated && !skipConfirmation) {
       const confirmed = await confirmDocumentFileAction({

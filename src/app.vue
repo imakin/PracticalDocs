@@ -10,6 +10,11 @@
 </template>
 
 <script setup>
+import {
+  collectAssets,
+  findUnresolvedMedia,
+  registerUpload,
+} from '@/utils/document-assets'
 import { shortId } from '@/utils/short-id'
 
 const editorRef = $ref(null)
@@ -161,6 +166,17 @@ const options = $ref({
         const filename = cleanFilename || 'file-identifier'
         const title = rawTitle
 
+        // Media sources are folded back to portable markers, and the bytes this session uploaded
+        // travel with them. Anything the archive already holds is named by hash only.
+        const packed = await collectAssets(content)
+        const stranded = findUnresolvedMedia(packed)
+        if (stranded.length > 0) {
+          return {
+            status: 'error',
+            message: `${stranded.length} media file(s) could not be prepared for saving. Re-insert them and try again.`,
+          }
+        }
+
         const response = await fetch(serverUrl, {
           method: 'POST',
           headers: {
@@ -170,11 +186,12 @@ const options = $ref({
             id: filename,
             filename,
             title,
-            html: content.html,
-            json: content.json,
-            snapshot: content.snapshot,
+            html: packed.html,
+            json: packed.json,
+            snapshot: packed.snapshot,
             profiles: content.profiles || [],
             pageSettings: page,
+            assets: packed.assets,
           }),
         })
 
@@ -183,6 +200,12 @@ const options = $ref({
         }
 
         const resData = await response.json()
+        if (Array.isArray(resData.missingAssets) && resData.missingAssets.length > 0) {
+          return {
+            status: 'error',
+            message: `Saved, but ${resData.missingAssets.length} image(s) could not be stored. Re-insert them and save again.`,
+          }
+        }
         if (resData.success === false) {
           return {
             status: 'error',
@@ -208,13 +231,15 @@ const options = $ref({
   },
   async onFileUpload(file) {
     if (!file) {
-      throw new Error('没有找到要上传的文件')
+      throw new Error('No file to upload.')
     }
-    console.log('onUpload', file)
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    // The bytes are kept so the next save can put them in the document archive. Returning a bare
+    // object URL, as this did before, meant the image lived only in this tab and was lost the moment
+    // it closed - the document recorded the name and the size, and not one byte of the image.
+    const registered = await registerUpload(file)
     return {
       id: shortId(),
-      url: file.url || URL.createObjectURL(file),
+      url: registered.url,
       name: file.name,
       type: file.type,
       size: file.size,

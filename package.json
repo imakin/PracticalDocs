@@ -59,6 +59,7 @@
     "test:e2e:autosave-blank-guard": "node tests/e2e/autosave-blank-guard.cdp.mjs",
     "test:e2e:pagination": "node tests/e2e/pagination-geometry.cdp.mjs",
     "test:e2e:pagination-pdf": "node tests/e2e/pagination-pdf-parity.cdp.mjs",
+    "test:e2e:document-assets": "node tests/e2e/document-assets.cdp.mjs",
     "test:unit:document-references": "node --test tests/unit/document-references.test.mjs",
     "test:unit:document-file": "node --test tests/unit/document-file.test.mjs",
     "format": "oxfmt --write .",

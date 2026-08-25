@@ -1,3 +1,20 @@
+### Document Storage: Plain Folders, Images Kept
+
+- `Images Are Actually Saved`: Media was stored as `blob:` URLs, which are handles to one browser tab's memory. A document recorded an image's name and size and not one byte of it, and looked fine until the tab closed. Images are now written to disk beside the document.
+- `A Document Is A Folder`: `document.html`, `settings.json`, `assets/` and `checksums.txt`. Every part can be read and edited with ordinary tools.
+- `Relative Paths Are Real`: An image is referenced as `./assets/gambar1.1.png`, so opening `document.html` straight from its folder in a browser renders it with no server involved.
+- `Encryption Removed`: It provided no confidentiality - an unencrypted copy was written beside every encrypted file, and the key was hardcoded in the source. What it did provide was integrity, now covered by `checksums.txt` in `sha256sum` format, verifiable with the standard tool.
+- `Original Bytes`: No base64, no re-encoding, no renaming to a hash. Checksums decide whether a file needs rewriting, so an unchanged image survives autosave untouched.
+- `Legacy Images Rescued`: A document carrying blob URLs from an older session has its bytes read back and stored properly on the next save, while that tab is still open.
+- `Older Files Keep Opening`: `.enc` documents still load and convert on the next save. Incomplete stored page settings are filled from the settings in effect instead of failing validation, which also fixes documents that could never be opened at all.
+- `Test script`: `document-assets.cdp.mjs` saves an image in one tab, closes it, and reads the bytes back in another, then opens the stored file from disk.
+
+  ```bash
+  npm run test:e2e:document-assets
+  ```
+
+- `Details`: See [Document Storage: Plain Folders](./details/document-storage-folders.md).
+
 ### Profiles: Chapter-Relative Numbering and Top Margin
 
 - `Counted By Profile, Not By Node Type`: A caption is an ordinary paragraph carrying the figure profile, but the number came from the paragraph sequence while the template came from the figure profile, so the sixth paragraph rendered as "Gambar 6". Each profile now owns its own sequence.

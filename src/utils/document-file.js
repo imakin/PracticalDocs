@@ -74,11 +74,19 @@ const validateLabel = (value) => {
 }
 
 const validateContent = (value) => {
+  // A document is stored as HTML now, which the editor parses directly. The document object is still
+  // accepted so files written in the older shape keep opening.
+  if (typeof value === 'string') {
+    if (value.trim().length === 0) {
+      fail('invalidContent', '"content" must not be empty.')
+    }
+    return value
+  }
   const content = requireRecord(value, 'content')
   if (content.type !== 'doc' || !Array.isArray(content.content)) {
     fail(
       'invalidContent',
-      '"content" must be a Tiptap document with a content array.',
+      '"content" must be a Tiptap document with a content array, or an HTML string.',
     )
   }
   return content

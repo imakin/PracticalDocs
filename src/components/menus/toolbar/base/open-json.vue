@@ -85,7 +85,10 @@
 </template>
 
 <script setup>
+import { resolveAssets } from '@/utils/document-assets'
+
 const openDocumentFile = inject('openDocumentFile')
+const pageOptions = inject('page')
 const container = inject('container')
 const fileInput = ref(null)
 
@@ -150,39 +153,54 @@ const openLoadModal = () => {
 const loadDocumentFromServer = async (doc) => {
   try {
     const baseUrl = getServerBaseUrl()
-    const response = await fetch(`${baseUrl}/api/documents/load?id=${encodeURIComponent(doc.filename || doc.id)}`)
+    const name = doc.filename || doc.id
+    const response = await fetch(`${baseUrl}/api/documents/load?id=${encodeURIComponent(name)}`)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const data = await response.json()
-    if (data.success && data.document) {
-      const payload = data.document
-      let { snapshot } = payload
-      if (!snapshot || !snapshot.content) {
-        snapshot = {
-          format: 'umodoc',
-          formatVersion: 1,
-          editorVersion: '11.0.4',
-          savedAt: payload.savedAt || new Date().toISOString(),
-          document: { title: payload.title || doc.title || 'file-identifier' },
-          content: payload.json || payload.html || '',
-          page: payload.pageSettings || {},
-          profiles: payload.profiles || [],
-        }
-      } else if (payload.json) {
-        snapshot.content = payload.json
-      }
-      if (payload.profiles && Array.isArray(payload.profiles) && payload.profiles.length > 0) {
-        snapshot.profiles = payload.profiles
-      }
-      await openDocumentFile(snapshot)
-      modalVisible = false
-    } else {
-      throw new Error(data.message || 'Gagal memuat dokumen')
+    if (!data.success || !data.document) {
+      throw new Error(data.message || 'Failed to load the document.')
     }
+    const payload = data.document
+
+    // Documents stored before this format carry a snapshot; the current one stores HTML and settings.
+    const content = payload.snapshot?.content || payload.json || payload.html || ''
+    // Stored page settings can be incomplete, and older files carry none at all. Fill the gaps from
+    // the settings already in effect rather than refusing to open the document.
+    const storedPage = payload.pageSettings || payload.snapshot?.page || {}
+    const current = JSON.parse(JSON.stringify(pageOptions.value))
+    const page = {
+      ...current,
+      ...storedPage,
+      size: { ...current.size, ...(storedPage.size || {}) },
+      margin: { ...current.margin, ...(storedPage.margin || {}) },
+      watermark: { ...current.watermark, ...(storedPage.watermark || {}) },
+    }
+    const profiles =
+      (Array.isArray(payload.profiles) && payload.profiles.length > 0
+        ? payload.profiles
+        : payload.snapshot?.profiles) || []
+
+    let snapshot = {
+      format: 'umodoc',
+      formatVersion: 1,
+      editorVersion: '11.0.4',
+      savedAt: payload.savedAt || new Date().toISOString(),
+      document: { title: payload.title || name },
+      content,
+      page,
+      profiles,
+    }
+    // Media sits beside the document as ordinary files, referenced by a relative path. Point those at
+    // the server this document just came from so the editor can fetch them.
+    snapshot = resolveAssets(snapshot, baseUrl, payload.filename || name)
+
+    await openDocumentFile(snapshot)
+    modalVisible = false
   } catch (err) {
     console.error('Failed to load document from server:', err)
     useMessage('error', {
       attach: container,
-      content: `Gagal memuat dokumen: ${err.message}`,
+      content: `Failed to load the document: ${err.message}`,
       placement: 'bottom',
     })
   }
