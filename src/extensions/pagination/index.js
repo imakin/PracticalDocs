@@ -67,24 +67,49 @@ const intStyle = (element, property, fallback) => {
  */
 const collectLines = (view, originTop) => {
   const merged = new Map()
+  const lineHeights = new WeakMap()
+  /**
+   * Text rects are the glyph box, not the line box: at line-height 1.5 a 12pt line measures about
+   * 17px where the line it occupies is 24px. Print breaks on the line box, so measuring glyphs makes
+   * the engine slightly more permissive at the bottom of a column, and a line sitting within half a
+   * leading of the boundary ends up on the wrong sheet. Grow each rect by the half-leading its own
+   * block declares.
+   */
+  const halfLeading = (block, rect) => {
+    if (!block) {
+      return 0
+    }
+    if (!lineHeights.has(block)) {
+      lineHeights.set(block, Number.parseFloat(getComputedStyle(block).lineHeight))
+    }
+    const lineHeight = lineHeights.get(block)
+    if (!Number.isFinite(lineHeight) || lineHeight <= rect.height) {
+      return 0
+    }
+    return (lineHeight - rect.height) / 2
+  }
+
   const add = (rect, block, node, key) => {
     if (rect.height <= 0 || rect.width <= 0) {
       return
     }
+    const leading = halfLeading(block, rect)
+    const top = rect.top - originTop - leading
+    const bottom = rect.bottom - originTop + leading
     const existing = merged.get(key)
     if (!existing) {
       merged.set(key, {
         block,
-        top: rect.top - originTop,
-        bottom: rect.bottom - originTop,
+        top,
+        bottom,
         clientTop: rect.top,
         left: rect.left,
         source: node,
       })
       return
     }
-    existing.top = Math.min(existing.top, rect.top - originTop)
-    existing.bottom = Math.max(existing.bottom, rect.bottom - originTop)
+    existing.top = Math.min(existing.top, top)
+    existing.bottom = Math.max(existing.bottom, bottom)
     // The leftmost fragment owns the start of the line, which is where a break has to be anchored.
     if (rect.left < existing.left) {
       existing.left = rect.left
@@ -358,21 +383,32 @@ class PaginationDriver {
         if (!overflow) {
           break
         }
-        const target = respectWidowsAndOrphans(lines, overflow)
-        const sheet = Math.floor(target.top / metrics.stride)
+        // A block long enough to span several sheets gets broken more than once, and the widow and
+        // orphan adjustment counts from the start of the block, so it can point at a line above the
+        // previous break. Breaking exactly at the overflow is then the only way forward; giving up
+        // here would leave the rest of the document unpaginated.
+        const candidates = [respectWidowsAndOrphans(lines, overflow), overflow]
+        let chosen = null
+        for (const candidate of candidates) {
+          const at = positionAtLineStart(this.view, candidate)
+          if (at !== null && at > lastPos) {
+            chosen = { line: candidate, pos: at }
+            break
+          }
+        }
+        // Nothing left that can be moved. Stop rather than spin: a single unbreakable box taller
+        // than a column would otherwise loop forever.
+        if (!chosen) {
+          break
+        }
+        const sheet = Math.floor(chosen.line.top / metrics.stride)
         const nextColumnTop = (sheet + 1) * metrics.stride + metrics.marginTop
-        const height = nextColumnTop - target.top
+        const height = nextColumnTop - chosen.line.top
         if (height <= 0) {
           break
         }
-        const pos = positionAtLineStart(this.view, target)
-        // No position, or no forward progress, means this box cannot be moved. Stop rather than
-        // spin: a single unbreakable box taller than a column would otherwise loop forever.
-        if (pos === null || pos <= lastPos) {
-          break
-        }
-        lastPos = pos
-        breaks.push({ pos, height })
+        lastPos = chosen.pos
+        breaks.push({ pos: chosen.pos, height })
         this.applyBreaks(breaks)
       }
       this.padToWholeSheets(metrics)

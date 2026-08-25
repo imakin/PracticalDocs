@@ -259,6 +259,7 @@ const liveStats = `(() => {
   const stride = pageH + gap, origin = pc.getBoundingClientRect().top
   const pm = document.querySelector('.ProseMirror')
   let bad = 0
+  const offenders = []
   const w = document.createTreeWalker(pm, NodeFilter.SHOW_TEXT, null)
   let n
   while ((n = w.nextNode())) {
@@ -267,11 +268,18 @@ const liveStats = `(() => {
     for (const c of r.getClientRects()) {
       if (c.height <= 0) continue
       const top = c.top - origin, bottom = c.bottom - origin, sheet = Math.floor(top / stride)
-      if (top < sheet * stride + mTop - 1 || bottom > sheet * stride + pageH - mBot + 1) bad++
+      const colTop = sheet * stride + mTop, colBottom = sheet * stride + pageH - mBot
+      if (top < colTop - 1 || bottom > colBottom + 1) {
+        bad++
+        if (offenders.length < 6) offenders.push({ sheet: sheet + 1, top: Math.round(top), bottom: Math.round(bottom),
+          colTop: Math.round(colTop), colBottom: Math.round(colBottom), text: n.textContent.trim().slice(0, 30) })
+      }
     }
   }
-  return { bad, spacers: pm.querySelectorAll('.umo-page-spacer').length,
-           marginBottom: Math.round(mBot), chars: window.__ed.state.doc.textContent.length }
+  return { bad, offenders, spacers: pm.querySelectorAll('.umo-page-spacer').length,
+           marginBottom: Math.round(mBot), marginTop: Math.round(mTop),
+           pageHeight: Math.round(pageH), stride: Math.round(stride),
+           chars: window.__ed.state.doc.textContent.length }
 })()`
 
 const MARKER = 'PAGINATION PROBE MARKER. '
@@ -302,6 +310,9 @@ await sleep(3000)
 const remargined = await evaluate(liveStats)
 check('changing the bottom margin repaginates', remargined.bad === 0 && remargined.marginBottom > baseline.marginBottom,
   `bottom margin ${baseline.marginBottom}px -> ${remargined.marginBottom}px, ${remargined.bad} lines in the band, ${remargined.spacers} spacers`)
+for (const o of remargined.offenders || []) {
+  console.log(`          sheet ${o.sheet}: line ${o.top}-${o.bottom} vs column ${o.colTop}-${o.colBottom}  "${o.text}"`)
+}
 await evaluate(`(() => { window.__p.page.value.margin.bottom = 3; return 1 })()`)
 await sleep(2500)
 
