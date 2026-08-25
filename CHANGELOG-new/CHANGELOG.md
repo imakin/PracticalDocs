@@ -1,3 +1,13 @@
+### Profiles: Chapter-Relative Numbering and Top Margin
+
+- `Counted By Profile, Not By Node Type`: A caption is an ordinary paragraph carrying the figure profile, but the number came from the paragraph sequence while the template came from the figure profile, so the sixth paragraph rendered as "Gambar 6". Each profile now owns its own sequence.
+- `Chapter-Relative Templates`: Templates accept `{h1}` through `{h6}`, the number of the enclosing heading at that level. `Gambar {h1}.{number}` gives "Gambar 1.1". Naming a heading level also restarts that profile's count whenever the heading changes, so the scope is declared by the template itself rather than by a separate setting. Available to every profile, not only figures.
+- `Heading Style Does Not Leak Into Placeholders`: `{h1}` is always plain digits, so a chapter displayed as "BAB I" still yields "Gambar 1.1".
+- `Images Are Containers, Not Numbered Blocks`: The image node no longer takes a number; the caption block the user applies a profile to does, exactly like a heading. The profile id automatically attached to image nodes in older documents is cleared on sync.
+- `Duplicate Figure Label Fixed`: The label was rendered twice on images, once by a ProseMirror widget and once by a CSS `::before` on the same figcaption, printing "Gambar 1Gambar 1". The widget no longer covers images.
+- `Top Margin In Profiles`: Profiles gained a Top Margin field alongside Bottom Margin, applied through the same paths: continuous sync, profile creation, profile editing, and applying a profile to a block.
+- `Renamed`: "Numbering Profiles" is now "Profiles", and the template field carries a hint describing the placeholders.
+
 ### Page Breaks Now Match Export to PDF
 
 - `Widows and Orphans Honoured`: On-screen page breaks drifted against the exported PDF by one line per sheet, cumulatively. The cause was not geometry - both use the same text column - but `widows` and `orphans`, whose initial value in Chrome is 2. Print refuses to strand a single line at the top of a page or leave one behind at the bottom; the engine did not care. It now reads the computed values of the block being broken and moves the break earlier when needed.

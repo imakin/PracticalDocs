@@ -109,7 +109,8 @@ test('supports custom placement templates and styles', () => {
     })),
     [
       { targetType: 'heading', number: 'I', label: 'BAB I' },
-      { targetType: 'figure', number: 'A', label: 'Gambar A' },
+      // An image is a container, not a numbered block: the caption that carries a profile is.
+      { targetType: 'figure', number: '', label: '' },
       { targetType: 'table', number: '1', label: 'Tabel 1' },
     ],
   )
@@ -178,9 +179,9 @@ test('builds independent heading, figure, table, and citation counters', () => {
     })),
     [
       { targetType: 'heading', number: '1', label: '1' },
-      { targetType: 'figure', number: '1', label: 'Figure 1' },
+      { targetType: 'figure', number: '', label: '' },
       { targetType: 'table', number: '1', label: 'Table 1' },
-      { targetType: 'figure', number: '2', label: 'Figure 2' },
+      { targetType: 'figure', number: '', label: '' },
       { targetType: 'citation', number: '1', label: '[1]' },
       { targetType: 'heading', number: '1.1', label: '1.1' },
     ],
@@ -237,5 +238,105 @@ test('formats citation and target option labels', () => {
       title: 'Methods',
     }),
     'Section 2: Methods',
+  )
+})
+
+test('counts by profile rather than by node type', () => {
+  // The caption under a figure is an ordinary paragraph carrying the figure profile. Counting by
+  // node type numbered it as the sixth paragraph and rendered "Gambar 6".
+  const figureProfile = {
+    id: 'profile-figure',
+    targetType: 'figure',
+    template: 'Gambar {number}',
+    style: 'numeric',
+    enabled: true,
+  }
+  const paragraph = (pos, profileId) => ({
+    pos,
+    targetType: 'paragraph',
+    numberingProfileId: profileId,
+  })
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1, title: 'Bab' },
+      paragraph(4),
+      paragraph(8),
+      paragraph(12),
+      paragraph(16, 'profile-figure'),
+      paragraph(20),
+      paragraph(24, 'profile-figure'),
+    ],
+    { createId: () => 'x', profiles: [figureProfile] },
+  )
+  assert.deepEqual(
+    targets.filter((t) => t.numberingProfileId === 'profile-figure').map((t) => t.label),
+    ['Gambar 1', 'Gambar 2'],
+  )
+})
+
+test('numbers relative to the enclosing chapter and restarts on a new one', () => {
+  const figureProfile = {
+    id: 'profile-figure',
+    targetType: 'figure',
+    template: 'Gambar {h1}.{number}',
+    style: 'numeric',
+    enabled: true,
+  }
+  const caption = (pos) => ({
+    pos,
+    targetType: 'paragraph',
+    numberingProfileId: 'profile-figure',
+  })
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1 },
+      caption(4),
+      caption(8),
+      { pos: 12, targetType: 'heading', level: 1 },
+      caption(16),
+      { pos: 20, targetType: 'heading', level: 2 },
+      caption(24),
+    ],
+    { createId: () => 'x', profiles: [figureProfile] },
+  )
+  assert.deepEqual(
+    targets.filter((t) => t.numberingProfileId === 'profile-figure').map((t) => t.label),
+    ['Gambar 1.1', 'Gambar 1.2', 'Gambar 2.1', 'Gambar 2.2'],
+  )
+})
+
+test('a chapter shown in roman still counts as a plain number in templates', () => {
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1 },
+      { pos: 4, targetType: 'paragraph', numberingProfileId: 'p' },
+    ],
+    {
+      createId: () => 'x',
+      profiles: [
+        { id: 'h1', targetType: 'heading', level: 1, style: 'roman-upper', template: 'BAB {number}', enabled: true },
+        { id: 'p', targetType: 'paragraph', style: 'numeric', template: 'Gambar {h1}.{number}', enabled: true },
+      ],
+    },
+  )
+  assert.equal(targets[0].label, 'BAB I')
+  assert.equal(targets[1].label, 'Gambar 1.1')
+})
+
+test('a template without any heading placeholder keeps one running sequence', () => {
+  const flat = { id: 'flat', targetType: 'paragraph', template: 'Gambar {number}', style: 'numeric', enabled: true }
+  const caption = (pos) => ({ pos, targetType: 'paragraph', numberingProfileId: 'flat' })
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1 },
+      caption(4),
+      { pos: 8, targetType: 'heading', level: 1 },
+      caption(12),
+    ],
+    { createId: () => 'x', profiles: [flat] },
+  )
+  assert.deepEqual(
+    targets.filter((t) => t.numberingProfileId === 'flat').map((t) => t.label),
+    ['Gambar 1', 'Gambar 2'],
   )
 })

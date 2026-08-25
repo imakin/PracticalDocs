@@ -174,7 +174,10 @@
         <t-select v-model="activeEditingProfile.style" :options="styleOptions" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item :label="t('references.numbering.template')">
-        <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. BAB {number}&#10;or {number}" />
+        <div class="umo-profile-template-field">
+          <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. Gambar {h1}.{number}&#10;or BAB {number}" />
+          <span class="umo-profile-template-help">{{ t('references.numbering.templateHelp') }}</span>
+        </div>
       </t-form-item>
       <t-form-item label="Font Family">
         <t-select v-model="activeEditingProfile.fontFamily" :options="fontFamilyOptions" filterable creatable clearable placeholder="e.g. Times New Roman or Arial" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
@@ -188,8 +191,11 @@
       <t-form-item label="Line Height">
         <t-select v-model="activeEditingProfile.lineHeight" :options="lineHeightOptions" filterable creatable clearable placeholder="e.g. 1.5 or 1.25" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
+      <t-form-item label="Top Margin">
+        <t-select v-model="activeEditingProfile.marginTop" :options="marginOptions" filterable creatable clearable placeholder="e.g. 8px or 1em" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+      </t-form-item>
       <t-form-item label="Bottom Margin">
-        <t-select v-model="activeEditingProfile.marginBottom" :options="marginBottomOptions" filterable creatable clearable placeholder="e.g. 8px or 12px" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+        <t-select v-model="activeEditingProfile.marginBottom" :options="marginOptions" filterable creatable clearable placeholder="e.g. 8px or 12px" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item label="First Line Indent (Level)">
         <t-select v-model="activeEditingProfile.indent" :options="indentOptions" clearable placeholder="Select Indent Level (e.g. 0, 1 = 2em, 2 = 4em)" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
@@ -354,7 +360,7 @@ const lineHeightOptions = [
   { label: '2.0 (Double)', value: '2' },
 ]
 
-const marginBottomOptions = [
+const marginOptions = [
   { label: 'Default (0px)', value: '' },
   { label: '0px', value: '0px' },
   { label: '4px', value: '4px' },
@@ -434,6 +440,7 @@ const editProfile = (profile) => {
         if (!mergedProfile.fontSize && node.attrs.fontSize) mergedProfile.fontSize = node.attrs.fontSize
         if (!mergedProfile.fontWeight && node.attrs.fontWeight) mergedProfile.fontWeight = node.attrs.fontWeight
         if (!mergedProfile.lineHeight && node.attrs.lineHeight) mergedProfile.lineHeight = node.attrs.lineHeight
+        if (!mergedProfile.marginTop && node.attrs.margin?.top) mergedProfile.marginTop = node.attrs.margin.top
         if (!mergedProfile.marginBottom && node.attrs.margin?.bottom) mergedProfile.marginBottom = node.attrs.margin.bottom
         if (mergedProfile.indent === undefined && node.attrs.indent !== undefined) mergedProfile.indent = node.attrs.indent
         if (!mergedProfile.textAlign && node.attrs.textAlign) mergedProfile.textAlign = node.attrs.textAlign
@@ -513,6 +520,18 @@ onClickOutside(
 </script>
 
 <style lang="less" scoped>
+.umo-profile-template-field {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 4px;
+}
+.umo-profile-template-help {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--umo-text-color-light);
+}
+
 .umo-toolbar-headding {
   width: 318px;
   height: 56px;

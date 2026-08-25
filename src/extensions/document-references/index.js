@@ -79,6 +79,7 @@ const collectTargetDescriptors = (doc) => {
       fontSize: node.attrs.fontSize,
       fontWeight: node.attrs.fontWeight,
       lineHeight: node.attrs.lineHeight,
+      marginTop: node.attrs.margin?.top,
       marginBottom: node.attrs.margin?.bottom,
       indent: node.attrs.indent,
       textAlign: node.attrs.textAlign,
@@ -132,7 +133,15 @@ const applyTargetUpdates = (tr, updates) => {
         nodeChanged = true
         changed = true
       }
-      if (
+      if (update.clearProfile) {
+        // Images are containers, not numbered blocks. Older documents carry a profile id that was
+        // assigned automatically by node type; drop it so it stops consuming a figure number.
+        if (attrs.numberingProfileId !== null && attrs.numberingProfileId !== undefined) {
+          attrs.numberingProfileId = null
+          nodeChanged = true
+          changed = true
+        }
+      } else if (
         update.numberingProfileId &&
         hasDifferentValue(attrs, 'numberingProfileId', update.numberingProfileId)
       ) {
@@ -191,6 +200,17 @@ const applyTargetUpdates = (tr, updates) => {
           hasDifferentValue(attrs, 'fontFamily', update.profile.fontFamily)
         ) {
           attrs.fontFamily = update.profile.fontFamily
+          nodeChanged = true
+          changed = true
+        }
+        if (
+          update.profile.marginTop &&
+          String(attrs.margin?.top ?? '') !== String(update.profile.marginTop ?? '')
+        ) {
+          attrs.margin = {
+            ...(attrs.margin || {}),
+            top: update.profile.marginTop,
+          }
           nodeChanged = true
           changed = true
         }
@@ -549,7 +569,7 @@ export const DocumentReferences = Extension.create({
           name: 'Tabel',
           enabled: true,
           style: 'numeric',
-          template: 'Tabel {number}',
+          template: 'Tabel {h1}.{number}',
           targetType: 'table',
         },
         {
@@ -557,7 +577,7 @@ export const DocumentReferences = Extension.create({
           name: 'Gambar',
           enabled: true,
           style: 'numeric',
-          template: 'Gambar {number}',
+          template: 'Gambar {h1}.{number}',
           targetType: 'figure',
         },
       ],
@@ -737,7 +757,7 @@ export const DocumentReferences = Extension.create({
           decorations: (state) => {
             const decorations = []
             state.doc.descendants((node, pos) => {
-              if (!['heading', 'paragraph', 'table', 'image'].includes(node.type.name)) {
+              if (!['heading', 'paragraph', 'table'].includes(node.type.name)) {
                 return
               }
               const displayLabel = node.attrs.referenceLabel
@@ -867,6 +887,7 @@ export const DocumentReferences = Extension.create({
             fontSize: profile.fontSize,
             fontWeight: profile.fontWeight,
             lineHeight: profile.lineHeight,
+            marginTop: profile.marginTop,
             marginBottom: profile.marginBottom,
             fontFamily: profile.fontFamily,
           }
@@ -944,11 +965,20 @@ export const DocumentReferences = Extension.create({
                   nextAttrs.fontFamily = updatedProfile.fontFamily
                 }
                 if (
+                  updatedProfile.marginTop !== undefined &&
+                  updatedProfile.marginTop !== ''
+                ) {
+                  nextAttrs.margin = {
+                    ...(nextAttrs.margin || node.attrs.margin || {}),
+                    top: updatedProfile.marginTop,
+                  }
+                }
+                if (
                   updatedProfile.marginBottom !== undefined &&
                   updatedProfile.marginBottom !== ''
                 ) {
                   nextAttrs.margin = {
-                    ...(node.attrs.margin || {}),
+                    ...(nextAttrs.margin || node.attrs.margin || {}),
                     bottom: updatedProfile.marginBottom,
                   }
                 }
@@ -1054,12 +1084,18 @@ export const DocumentReferences = Extension.create({
             if (profile.fontFamily !== undefined && profile.fontFamily !== '') {
               nextAttrs.fontFamily = profile.fontFamily
             }
+            if (profile.marginTop !== undefined && profile.marginTop !== '') {
+              nextAttrs.margin = {
+                ...(nextAttrs.margin || targetNode.attrs.margin || {}),
+                top: profile.marginTop,
+              }
+            }
             if (
               profile.marginBottom !== undefined &&
               profile.marginBottom !== ''
             ) {
               nextAttrs.margin = {
-                ...(targetNode.attrs.margin || {}),
+                ...(nextAttrs.margin || targetNode.attrs.margin || {}),
                 bottom: profile.marginBottom,
               }
             }

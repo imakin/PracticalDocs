@@ -111,11 +111,34 @@ export const getNextHeadingNumber = (
   return activeSegments.join('.')
 }
 
-export const applyTemplate = (template, number, defaultLabel, title = '') => {
+// {h1} .. {h6} expand to the number of the enclosing heading at that level, so any profile can be
+// numbered relative to its chapter: "Gambar {h1}.{number}" gives "Gambar 1.1". Always plain digits,
+// independent of the style that heading is displayed with, since a chapter shown as "BAB I" is still
+// chapter 1 when a figure refers to it.
+export const HEADING_PLACEHOLDER = /\{h([1-6])\}/g
+
+export const templateScopeLevel = (template) => {
+  let level = 0
+  for (const match of String(template || '').matchAll(HEADING_PLACEHOLDER)) {
+    level = Math.max(level, Number(match[1]))
+  }
+  return level
+}
+
+export const applyTemplate = (
+  template,
+  number,
+  defaultLabel,
+  title = '',
+  headingCounters = [],
+) => {
   if (!template) {
     return `${defaultLabel} ${number}`.trim()
   }
   return template
+    .replace(HEADING_PLACEHOLDER, (_, level) =>
+      String(headingCounters[Number(level) - 1] || 0),
+    )
     .replaceAll('{number}', number)
     .replaceAll('{label}', defaultLabel)
     .replaceAll('{title}', title)
@@ -197,12 +220,11 @@ export const buildReferencePlan = (
           }
         })()
   const headingCounters = [0, 0, 0, 0, 0, 0]
-  const counters = {
-    paragraph: 0,
-    figure: 0,
-    table: 0,
-    citation: 0,
-  }
+  // One sequence per profile, not per node type. A paragraph carrying the figure profile has to
+  // count as a figure; keying by node type is what numbered such a caption "Gambar 6" - the sixth
+  // paragraph - instead of the first figure.
+  const counters = new Map()
+  const scopeKeys = new Map()
   const seenIds = new Set()
   const updates = []
   const targets = []
@@ -226,6 +248,7 @@ export const buildReferencePlan = (
       if (!profile.fontSize && descriptor.fontSize) profile.fontSize = descriptor.fontSize
       if (!profile.fontWeight && descriptor.fontWeight) profile.fontWeight = descriptor.fontWeight
       if (!profile.lineHeight && descriptor.lineHeight) profile.lineHeight = descriptor.lineHeight
+      if (!profile.marginTop && descriptor.marginTop) profile.marginTop = descriptor.marginTop
       if (!profile.marginBottom && descriptor.marginBottom) profile.marginBottom = descriptor.marginBottom
       if (profile.indent === undefined && descriptor.indent !== undefined) profile.indent = descriptor.indent
       if (!profile.textAlign && descriptor.textAlign) profile.textAlign = descriptor.textAlign
@@ -243,13 +266,31 @@ export const buildReferencePlan = (
       number = getNextHeadingNumber(headingCounters, descriptor.level, {
         style: headingStyle,
       })
+    } else if (targetType === 'figure') {
+      // The image is only the container. What carries the number is the caption block the user
+      // applies a profile to, exactly like a heading carries its own number.
+      number = ''
     } else {
-      counters[targetType] += 1
+      const counterKey = profile ? profile.id : targetType
+      const template =
+        descriptor.numberTemplate ||
+        (profile ? profile.template : templates[targetType]) ||
+        DEFAULT_TEMPLATES[targetType] ||
+        ''
+      // A template that names a heading level restarts its sequence whenever that heading changes.
+      const scopeLevel = templateScopeLevel(template)
+      const scopeKey =
+        scopeLevel > 0 ? headingCounters.slice(0, scopeLevel).join('.') : ''
+      if (scopeKeys.get(counterKey) !== scopeKey) {
+        scopeKeys.set(counterKey, scopeKey)
+        counters.set(counterKey, 0)
+      }
+      counters.set(counterKey, (counters.get(counterKey) || 0) + 1)
       const style =
         descriptor.numberStyle ||
         (profile ? profile.style : styles[targetType]) ||
         'numeric'
-      number = formatSingleNumber(counters[targetType], style)
+      number = formatSingleNumber(counters.get(counterKey), style)
     }
 
     const title = normalizeText(descriptor.title)
@@ -260,9 +301,10 @@ export const buildReferencePlan = (
       DEFAULT_TEMPLATES[targetType] ||
       '{label} {number}'
 
-    const label = profileEnabled
-      ? applyTemplate(template, number, defaultLabel, title)
-      : ''
+    const label =
+      profileEnabled && targetType !== 'figure'
+        ? applyTemplate(template, number, defaultLabel, title, headingCounters)
+        : ''
 
     const target = {
       pos: descriptor.pos,
@@ -272,8 +314,14 @@ export const buildReferencePlan = (
       label,
       title,
       enabled: profileEnabled,
-      numberingProfileId: profile ? profile.id : descriptor.numberingProfileId,
-      profile,
+      numberingProfileId:
+        targetType === 'figure'
+          ? null
+          : profile
+            ? profile.id
+            : descriptor.numberingProfileId,
+      clearProfile: targetType === 'figure',
+      profile: targetType === 'figure' ? null : profile,
     }
     targets.push(target)
     updates.push({
