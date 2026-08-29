@@ -1,3 +1,10 @@
+### Readable Documents, Encryption Gone For Good
+
+- `Encryption Removed Entirely`: All twelve stored documents were converted to folders, and the `.enc` files, the archive reader and `crypto-utils.js` were deleted. Nothing encrypts or decrypts any more. `migrate-legacy.mjs` performed the conversion and is kept for reference.
+- `Readable HTML`: `document.html` was one line of 16,900 characters. It is now laid out one block per line with nesting indented. Only the gaps *between* block elements are touched: whitespace inside a text block is content, and `<pre>` is copied byte for byte.
+- `Verified Not To Change The Document`: The formatted HTML parses to a byte-identical document - same node count, same text, same JSON. Formatting is idempotent, so a file that is formatted twice does not accumulate whitespace.
+- `Test script`: `format-html.test.mjs` covers inline markup, code blocks, attributes containing newlines, void elements and idempotency.
+
 ### Document Storage: Plain Folders, Images Kept
 
 - `Images Are Actually Saved`: Media was stored as `blob:` URLs, which are handles to one browser tab's memory. A document recorded an image's name and size and not one byte of it, and looked fine until the tab closed. Images are now written to disk beside the document.

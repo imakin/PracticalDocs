@@ -3,13 +3,10 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  isDocumentFolder,
   listDocuments,
   readDocumentAsset,
   readDocumentFolder,
-  readLegacyDocument,
   removeDocument,
-  safeAssetName,
   writeDocument,
 } from './documents.js'
 
@@ -77,7 +74,7 @@ function sanitizeFilename(input) {
     .replaceAll(/_+/g, '_')
     .replaceAll(/^_+|_+$/g, '')
   const finalName = cleaned || 'file-identifier'
-  return finalName.endsWith('.enc') ? finalName.slice(0, -4) : finalName
+  return finalName
 }
 
 const server = http.createServer(async (req, res) => {
@@ -185,15 +182,8 @@ const server = http.createServer(async (req, res) => {
 
       const safeName = sanitizeFilename(targetName)
       try {
-        const found = (await isDocumentFolder(DATA_DIR, safeName))
-          ? await readDocumentFolder(DATA_DIR, safeName)
-          : await readLegacyDocument(DATA_DIR, safeName)
-        sendJson(res, 200, {
-          success: true,
-          document: found.document,
-          assets: found.assets,
-          legacy: found.legacy === true,
-        })
+        const found = await readDocumentFolder(DATA_DIR, safeName)
+        sendJson(res, 200, { success: true, document: found.document, assets: found.assets })
       } catch {
         sendJson(res, 404, { success: false, message: `Document '${safeName}' not found on server.` })
       }

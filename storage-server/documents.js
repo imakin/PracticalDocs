@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import { readAsset as readArchiveAsset, readDocument as readLegacy } from './archive.js'
+import { formatHtml } from './format-html.js'
 
 /**
  * A document is a folder of ordinary files. See AGENT/adr/0005-plain-document-folders.md.
@@ -124,7 +124,8 @@ export const writeDocument = async (dataDir, name, payload, assets = []) => {
     }
   }
 
-  await fs.writeFile(path.join(dir, DOCUMENT_FILE), payload.html || '', 'utf8')
+  // Laid out so a person can read and edit it; only the gaps between blocks are touched.
+  await fs.writeFile(path.join(dir, DOCUMENT_FILE), formatHtml(payload.html), 'utf8')
   await fs.writeFile(
     path.join(dir, SETTINGS_FILE),
     `${JSON.stringify(
@@ -164,81 +165,37 @@ export const readDocumentFolder = async (dataDir, name) => {
   }
 }
 
-/** Documents written before this format. They convert to a folder the next time they are saved. */
-export const readLegacyDocument = async (dataDir, name) => {
-  const buffer = await fs.readFile(path.join(dataDir, `${name}.enc`))
-  const { document, assets } = readLegacy(buffer)
-  return { document, assets, legacy: true }
-}
-
 export const readDocumentAsset = async (dataDir, name, assetName) => {
   const file = path.join(documentDir(dataDir, name), ASSETS_DIR, safeAssetName(assetName))
   try {
     return { data: await fs.readFile(file), name: safeAssetName(assetName) }
-  } catch {}
-  // an asset of a document that has not been converted yet
-  try {
-    const buffer = await fs.readFile(path.join(dataDir, `${name}.enc`))
-    const found = readArchiveAsset(buffer, assetName)
-    return found ? { data: found.data, name: found.name, type: found.type } : null
   } catch {
     return null
   }
 }
 
 export const removeDocument = async (dataDir, name) => {
-  let removed = false
-  try {
-    await fs.rm(documentDir(dataDir, name), { recursive: true, force: true })
-    removed = true
-  } catch {}
-  for (const suffix of ['.enc', '.json']) {
-    try {
-      await fs.rm(path.join(dataDir, `${name}${suffix}`), { force: true })
-      removed = true
-    } catch {}
+  if (!(await isDocumentFolder(dataDir, name))) {
+    return false
   }
-  return removed
+  await fs.rm(documentDir(dataDir, name), { recursive: true, force: true })
+  return true
 }
 
 export const listDocuments = async (dataDir) => {
   const documents = []
-  const seen = new Set()
   for (const entry of await fs.readdir(dataDir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      if (!(await isDocumentFolder(dataDir, entry.name))) {
-        continue
-      }
-      const settings =
-        (await readJson(path.join(documentDir(dataDir, entry.name), SETTINGS_FILE), {})) || {}
-      seen.add(entry.name)
-      documents.push({
-        id: settings.filename || entry.name,
-        filename: settings.filename || entry.name,
-        title: settings.title || entry.name,
-        savedAt: settings.savedAt || new Date().toISOString(),
-        format: 'folder',
-      })
-    }
-  }
-  for (const entry of await fs.readdir(dataDir)) {
-    if (!entry.endsWith('.enc')) {
+    if (!entry.isDirectory() || !(await isDocumentFolder(dataDir, entry.name))) {
       continue
     }
-    const name = entry.slice(0, -4)
-    if (seen.has(name)) {
-      continue
-    }
-    try {
-      const { document } = await readLegacyDocument(dataDir, name)
-      documents.push({
-        id: document.filename || name,
-        filename: document.filename || name,
-        title: document.title || name,
-        savedAt: document.savedAt || new Date().toISOString(),
-        format: 'legacy',
-      })
-    } catch {}
+    const settings =
+      (await readJson(path.join(documentDir(dataDir, entry.name), SETTINGS_FILE), {})) || {}
+    documents.push({
+      id: settings.filename || entry.name,
+      filename: settings.filename || entry.name,
+      title: settings.title || entry.name,
+      savedAt: settings.savedAt || new Date().toISOString(),
+    })
   }
   documents.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))
   return documents
