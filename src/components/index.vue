@@ -1155,7 +1155,7 @@ const saveContent = async (showMessage = true) => {
       },
       getCurrentInstance(),
     )
-    const refStorage = editor.value?.extensionStorage['document-references']
+    const refStorage = getRefStorage()
     const profiles = refStorage?.profiles || []
     if (profiles.length > 0) {
       try {

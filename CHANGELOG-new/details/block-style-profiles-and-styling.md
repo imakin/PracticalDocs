@@ -42,3 +42,23 @@ Provide per-profile font family, font size, font weight, line height, bottom mar
 
 3. **Full Lossless Save & Load Persistence**:
    - Verified via `tests/e2e/test-full-profile-save-load.mjs`, `tests/e2e/test-snapshot-profiles-presence.mjs`, `tests/e2e/test-all-profiles-default-styling.mjs`, and `tests/e2e/test-keystroke-typing.cdp.mjs` that all profile styling properties persist losslessly and typing remains 100% smooth.
+
+### 5. Server Save Lost Every Profile (second copy of the `getRefStorage` bug)
+
+- **Problem Identified**: Section 2 above fixed `getDocumentSnapshot()`, but `saveContent()` carried its
+  own copy of the same broken expression, `editor.value?.extensionStorage['document-references']`. The
+  extension is named `documentReferences`, so that lookup is always `undefined` and `profiles` fell back
+  to `[]`. Every save to the storage server therefore wrote an empty profile list. Measured on the
+  stored documents: saves from 2026-08-25 and earlier carry nine profiles, the newest save carries zero.
+- **Why it went unnoticed**: the stored document still renders correctly, because profile styling is
+  also inlined into each block's `style=` attribute. Only the profile definitions were lost, so the
+  damage is invisible until a document is reopened somewhere without them or the Profiles dialog is
+  used.
+- **Resolution**: `saveContent()` now calls the same `getRefStorage()` helper. As a side effect the
+  `umo-editor:profiles` localStorage mirror is refreshed on save again, which the empty list had been
+  skipping.
+- **Test**: `tests/e2e/profile-save.cdp.mjs`, 10 checks. It intercepts the POST to
+  `/api/documents/save` and asserts the payload's profile ids match the ones the editor is actually
+  holding, then edits a live profile value and asserts the edited value travels too. Seen to fail with
+  `payload 0 vs editor 9` on the unpatched build and pass after. Every save request is answered locally,
+  so the test never writes to the storage server.
