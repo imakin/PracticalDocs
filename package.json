@@ -63,6 +63,7 @@
     "test:e2e:profile-save": "node tests/e2e/profile-save.cdp.mjs",
     "test:unit:document-references": "node --test tests/unit/document-references.test.mjs",
     "test:unit:document-file": "node --test tests/unit/document-file.test.mjs",
+    "test:unit:profile-stylesheet": "node --test tests/unit/profile-stylesheet.test.mjs",
     "format": "oxfmt --write .",
     "lint": "oxlint --fix src",
     "analyzer": "vite-bundle-visualizer",

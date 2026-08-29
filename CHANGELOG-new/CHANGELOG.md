@@ -129,6 +129,7 @@
 - `Modal Interaction & Feedback`: Modal auto-closes on save with instant success toast notification (`Profile saved successfully!`).
 - `Backward Compatibility`: Full support for opening older document files without profile IDs or pre-attached attributes.
 - `Details`: See [Block Style Profiles and Document Styling Restoration](./details/block-style-profiles-and-styling.md).
+- `Profile Stylesheet & CSS Counter Numbering`: Profiles can now be generated as a CSS stylesheet with counters instead of inline styles repeated on every block, so a profile change is a rule change and a stored document renders its own numbering outside the editor. Generator and tests only so far; node rendering and saving follow. `Details`: See [Profile Stylesheet and CSS Counter Numbering](./details/profile-stylesheet-and-css-numbering.md).
 
 ### Page Settings, Custom Margins, & Automatic Multi-Page Pagination
 
