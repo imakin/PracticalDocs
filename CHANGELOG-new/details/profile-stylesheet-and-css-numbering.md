@@ -56,7 +56,63 @@ and only shows up when rendered.
   above `PENDAHULUAN`, `1.1`/`1.2`/`1.2.1` headings, `Gambar 1.1` and `Gambar 1.2`, then `Gambar 2.1`
   and `2.1` after the second chapter, with `Tabel` running on across chapters as its template requires.
 
+## Wired into the editor
+
+The generator gained two options, and the editor became its first consumer.
+
+- `scope` is the selector for the element holding the blocks. It carries the root counters and
+  prefixes every rule, so one generator serves both the stored file (`.umo-document`) and the live
+  editor without two sets of rules drifting apart.
+- `numbering` selects whether the `::before` counter rules are emitted at all.
+
+`document-references` now keeps one `<style>` element per editor in `document.head`, scoped by a
+`data-umo-profile-styles` marker on that editor's own ProseMirror element, so two editors on one page
+cannot restyle each other. It is refreshed on create and after every profile mutation, and removed on
+destroy.
+
+`renderHTML` for `numberingProfileId` now also emits the profile's class, and `applyTargetUpdates` no
+longer copies `fontSize`, `fontWeight`, `lineHeight`, `fontFamily`, `margin.top`, `margin.bottom`,
+`indent` or `textAlign` into node attributes - 8 writes, 2210 bytes of code removed. What remains in
+those attributes is a genuine per-block override, and an inline style rightly beats the class. This is
+also the structural fix for toolbar line spacing and margins not sticking: the sync no longer has
+anything to overwrite.
+
+### The editor keeps its decoration; only the file uses counters
+
+Measured before deciding:
+
+| path | source | number present |
+|---|---|---|
+| editor screen | live DOM plus decoration | yes |
+| Export to PDF | `.umo-page-content` outerHTML, so the decoration travels | yes |
+| stored `document.html` | `editor.getHTML()`, which has no decorations | **no** |
+
+Only the stored file was wrong, so only the stored file gets counters. Two further reasons not to move
+the editor onto counters: `collectLines` in the pagination engine walks text nodes, and generated
+content produces none, so a block `::before` would be invisible to it and every page break would
+shift; and the editor and the PDF already agree because both come from the live DOM.
+
+Emitting the counter rules into the editor as well renders the number twice - "BAB I / BAB I". The
+computed-style probe passed while the page was visibly wrong; only the screenshot caught it. Hence
+`numbering: false` for the editor.
+
+### Verification of this step
+
+- Computed styles before and after the switch are identical on h1, h2 and a paragraph
+  (`18.6667px` / `74.6667px` / center, `16px` / `8px`, `16px` / `4px` / justify / `32px` indent), with
+  no inline `style` attribute left on any of them.
+- `pagination-pdf-parity` still passes on the real thesis: 5 sheets, 5 PDF pages, every page break
+  matching. Class-based styling reproduces the previous layout geometry exactly.
+- `profile-save` and `autosave-blank-guard` pass. Unit suite 56 checks.
+
 ## Known gap
 
 A document that starts at `h2` with no `h1` renders `0.1` under CSS counters where the editor shows `1`.
 `getNextHeadingNumber` drops zero segments; CSS has no conditional. Not yet handled.
+
+Still to do: profile font is still pushed into `textStyle` marks; the stored file does not yet carry
+the generated `<style>` block or drop the derived numbering attributes; older documents are not yet
+migrated off their inline styles.
+
+Unrelated and pre-existing: `tests/e2e/document-references.cdp.mjs` fails at "Automatic reference labels
+were not synchronized". Confirmed to fail identically on a clean tree with this work stashed.

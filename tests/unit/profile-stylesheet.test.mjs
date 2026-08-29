@@ -122,3 +122,27 @@ test('the real tesis4 profiles produce a stylesheet with no unresolved placehold
   const css = buildProfileStylesheet(ALL)
   assert.doesNotMatch(css, /\{number\}|\{label\}|\{h[1-6]\}|\{title\}/)
 })
+
+test('the scope selector carries the root counters and prefixes every rule', () => {
+  const css = buildProfileStylesheet(ALL, { scope: '.umo-editor .ProseMirror' })
+  assert.match(css, /^\.umo-editor \.ProseMirror \{\s*counter-reset:/m)
+  assert.match(css, /\.umo-editor \.ProseMirror \.umo-profile-h1 \{/)
+  assert.match(css, /\.umo-editor \.ProseMirror \.umo-profile-h1::before \{/)
+  assert.doesNotMatch(css, /\.umo-document/)
+})
+
+test('one generator serves the file and the editor, so the two cannot drift', () => {
+  const strip = (scope) =>
+    buildProfileStylesheet(ALL, { scope }).replaceAll(scope, 'SCOPE')
+  assert.equal(strip('.umo-document'), strip('.umo-document'))
+  // Same rules, same order, same declarations - only the scope differs.
+  const a = buildProfileStylesheet(ALL, { scope: '.a' }).replaceAll('.a ', 'S ').replace(/^\.a /m, 'S ')
+  const b = buildProfileStylesheet(ALL, { scope: '.b' }).replaceAll('.b ', 'S ').replace(/^\.b /m, 'S ')
+  assert.equal(a.replace(/^\.a\b/m, 'S'), b.replace(/^\.b\b/m, 'S'))
+})
+
+test('an empty scope leaves the rules unprefixed and seeds counters on :root', () => {
+  const css = buildProfileStylesheet(ALL, { scope: '' })
+  assert.match(css, /^:root \{\s*counter-reset:/m)
+  assert.match(css, /^\.umo-profile-h1 \{/m)
+})

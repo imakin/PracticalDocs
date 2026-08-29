@@ -139,18 +139,32 @@ const declarationsFor = (profile) => {
   return out
 }
 
+export const DOCUMENT_SCOPE = '.umo-document'
+
 /**
  * Build the stylesheet for a set of profiles.
  *
- * Returns CSS text meant to be embedded in the stored document, so the file renders correctly on its
- * own with no server and no editor.
+ * `scope` is the selector for the element that contains the blocks. It carries the root counters and
+ * prefixes every rule, so the same generator serves both the stored file (`.umo-document`) and the
+ * live editor (its ProseMirror element) without two sets of rules drifting apart.
  */
-export const buildProfileStylesheet = (profiles = []) => {
+export const buildProfileStylesheet = (
+  profiles = [],
+  { scope = DOCUMENT_SCOPE, numbering = true } = {},
+) => {
   const list = Array.isArray(profiles) ? profiles.filter(Boolean) : []
   if (list.length === 0) return ''
+  const prefix = String(scope || '').trim()
+  const sel = (rest) => (prefix ? `${prefix} ${rest}` : rest)
 
   const byLevel = headingProfilesByLevel(list)
-  const numbered = list.filter((p) => p.enabled && p.template !== undefined)
+  // The editor draws numbers with a ProseMirror decoration, which is a real DOM node the pagination
+  // engine can measure; generated content produces no text node and would be invisible to it. So the
+  // editor asks for styling only, and the counters go to the stored file where nothing else draws
+  // them. Both come from this one function, so the two cannot drift apart.
+  const numbered = numbering
+    ? list.filter((p) => p.enabled && p.template !== undefined)
+    : []
 
   // Which counters each heading level restarts: deeper headings, plus any profile whose template
   // names that level. The template declares its own reset scope.
@@ -187,7 +201,7 @@ export const buildProfileStylesheet = (profiles = []) => {
     .map((p) => counterName(p.id))
     .filter((name) => !restartedByHeading.has(name))
   if (rootResets.length > 0) {
-    blocks.push(`.umo-document {\n  counter-reset: ${rootResets.join(' ')};\n}`)
+    blocks.push(`${prefix || ':root'} {\n  counter-reset: ${rootResets.join(' ')};\n}`)
   }
 
   for (const profile of list) {
@@ -201,7 +215,7 @@ export const buildProfileStylesheet = (profiles = []) => {
       if (resets.length > 0) decls.push(`counter-reset: ${resets.join(' ')};`)
     }
     if (decls.length > 0) {
-      blocks.push(`.${cls} {\n${decls.map((d) => `  ${d}`).join('\n')}\n}`)
+      blocks.push(`${sel(`.${cls}`)} {\n${decls.map((d) => `  ${d}`).join('\n')}\n}`)
     }
     if (!isNumbered) continue
 
@@ -223,7 +237,7 @@ export const buildProfileStylesheet = (profiles = []) => {
     } else {
       before.push('display: inline;', 'margin-right: 0.4em;')
     }
-    blocks.push(`.${cls}::before {\n${before.map((d) => `  ${d}`).join('\n')}\n}`)
+    blocks.push(`${sel(`.${cls}`)}::before {\n${before.map((d) => `  ${d}`).join('\n')}\n}`)
   }
 
   return blocks.join('\n\n')
