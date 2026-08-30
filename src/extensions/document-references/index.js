@@ -147,6 +147,64 @@ const createPlan = (doc, storage = {}) =>
 const hasDifferentValue = (attrs, name, value) =>
   String(attrs[name] ?? '') !== String(value ?? '')
 
+// Older documents carry the profile's font on an inner textStyle mark as well as on the block, and a
+// mark beats the block's class. Clearing just those two attributes lets the profile's rule through
+// while leaving colour, highlight and the rest of the mark alone.
+// A font family round-trips through CSS with quotes ("Times New Roman") while a profile stores it
+// bare, so a plain string comparison would read every migrated paragraph as a deliberate override.
+const sameStyleValue = (a, b) =>
+  String(a ?? '')
+    .replace(/["']/g, '')
+    .trim()
+    .toLowerCase() ===
+  String(b ?? '')
+    .replace(/["']/g, '')
+    .trim()
+    .toLowerCase()
+
+// Node attribute paired with the profile field it would repeat.
+const PROFILE_STYLE_ATTRS = [
+  ['fontSize', 'fontSize'],
+  ['fontWeight', 'fontWeight'],
+  ['fontFamily', 'fontFamily'],
+  ['lineHeight', 'lineHeight'],
+  ['indent', 'indent'],
+  ['textAlign', 'textAlign'],
+]
+
+const clearProfileFontMarks = (tr, schema, pos, node, profile = null) => {
+  const textStyleType = schema.marks.textStyle
+  if (!textStyleType || !node.content) return false
+  let touched = false
+  node.content.forEach((child, offset) => {
+    if (!child.isText) return
+    const existing = child.marks.find((m) => m.type === textStyleType)
+    if (!existing) return
+    // With a profile this is a migration: only a value that repeats the profile is a leftover. A
+    // value that differs is a run the user styled deliberately, and it stays. Without a profile the
+    // caller is applying a profile to the block, which clears the font outright.
+    const sizeIsLeftover =
+      existing.attrs.fontSize &&
+      (!profile || sameStyleValue(existing.attrs.fontSize, profile.fontSize))
+    const familyIsLeftover =
+      existing.attrs.fontFamily &&
+      (!profile || sameStyleValue(existing.attrs.fontFamily, profile.fontFamily))
+    if (!sizeIsLeftover && !familyIsLeftover) return
+    const attrs = { ...existing.attrs }
+    if (sizeIsLeftover) attrs.fontSize = null
+    if (familyIsLeftover) attrs.fontFamily = null
+    const from = pos + 1 + offset
+    const to = from + child.nodeSize
+    const stillCarries = Object.values(attrs).some((v) => v !== null && v !== undefined && v !== '')
+    tr.removeMark(from, to, textStyleType)
+    if (stillCarries) {
+      tr.addMark(from, to, textStyleType.create(attrs))
+    }
+    touched = true
+  })
+  return touched
+}
+
 const applyTargetUpdates = (tr, updates) => {
   let changed = false
   updates.forEach((update) => {
@@ -220,6 +278,31 @@ const applyTargetUpdates = (tr, updates) => {
         // class and the generated stylesheet supplies font, spacing, indent and alignment, so a
         // profile change is a rule change rather than a walk over every node. What remains in these
         // attributes is a genuine per-block override, and inline style rightly beats the class.
+        //
+        // Migration for documents written by the old force-write: an attribute that merely repeats
+        // its profile's value is not an override, it is a leftover, and leaving it would let the old
+        // value keep beating the class forever. A value that differs is the user's, and is kept.
+        for (const [attr, field] of PROFILE_STYLE_ATTRS) {
+          if (attrs[attr] === null || attrs[attr] === undefined) continue
+          if (!sameStyleValue(attrs[attr], update.profile[field])) continue
+          attrs[attr] = null
+          nodeChanged = true
+          changed = true
+        }
+        const marginTop = attrs.margin?.top
+        const marginBottom = attrs.margin?.bottom
+        const topIsLeftover =
+          marginTop == null || sameStyleValue(marginTop, update.profile.marginTop)
+        const bottomIsLeftover =
+          marginBottom == null || sameStyleValue(marginBottom, update.profile.marginBottom)
+        if (attrs.margin && topIsLeftover && bottomIsLeftover) {
+          attrs.margin = null
+          nodeChanged = true
+          changed = true
+        }
+        if (clearProfileFontMarks(tr, tr.doc.type.schema, update.pos, node, update.profile)) {
+          changed = true
+        }
       }
     }
     if (nodeChanged) {
@@ -917,79 +1000,11 @@ export const DocumentReferences = Extension.create({
                 if (updatedProfile.style !== undefined) {
                   nextAttrs.numberStyle = updatedProfile.style
                 }
-                if (
-                  updatedProfile.lineHeight !== undefined &&
-                  updatedProfile.lineHeight !== ''
-                ) {
-                  nextAttrs.lineHeight = updatedProfile.lineHeight
-                }
-                if (
-                  updatedProfile.fontSize !== undefined &&
-                  updatedProfile.fontSize !== ''
-                ) {
-                  nextAttrs.fontSize = updatedProfile.fontSize
-                }
-                if (
-                  updatedProfile.fontWeight !== undefined &&
-                  updatedProfile.fontWeight !== ''
-                ) {
-                  nextAttrs.fontWeight = updatedProfile.fontWeight
-                }
-                if (
-                  updatedProfile.fontFamily !== undefined &&
-                  updatedProfile.fontFamily !== ''
-                ) {
-                  nextAttrs.fontFamily = updatedProfile.fontFamily
-                }
-                if (
-                  updatedProfile.marginTop !== undefined &&
-                  updatedProfile.marginTop !== ''
-                ) {
-                  nextAttrs.margin = {
-                    ...(nextAttrs.margin || node.attrs.margin || {}),
-                    top: updatedProfile.marginTop,
-                  }
-                }
-                if (
-                  updatedProfile.marginBottom !== undefined &&
-                  updatedProfile.marginBottom !== ''
-                ) {
-                  nextAttrs.margin = {
-                    ...(nextAttrs.margin || node.attrs.margin || {}),
-                    bottom: updatedProfile.marginBottom,
-                  }
-                }
-                if (updatedProfile.indent !== undefined) {
-                  nextAttrs.indent = updatedProfile.indent
-                }
-                if (
-                  updatedProfile.textAlign !== undefined &&
-                  updatedProfile.textAlign !== ''
-                ) {
-                  nextAttrs.textAlign = updatedProfile.textAlign
-                }
+                // Styling comes from the profile's CSS rule now, so editing a profile does not
+                // touch a single node. Nothing is copied into node attributes, and nothing is pushed
+                // into textStyle marks either - a mark would beat the class and freeze the old font
+                // into the text.
                 tr.setNodeMarkup(pos, undefined, nextAttrs)
-
-                if (updatedProfile.fontSize || updatedProfile.fontFamily) {
-                  const textStyleType = state.schema.marks.textStyle
-                  if (textStyleType && node.content) {
-                    node.content.forEach((child, offset) => {
-                      if (child.isText) {
-                        const from = pos + 1 + offset
-                        const to = from + child.nodeSize
-                        const attrs = {
-                          ...(child.marks.find((m) => m.type === textStyleType)
-                            ?.attrs || {}),
-                        }
-                        if (updatedProfile.fontSize)
-                          attrs.fontSize = updatedProfile.fontSize
-                        if (updatedProfile.fontFamily)
-                          attrs.fontFamily = updatedProfile.fontFamily
-                        tr.addMark(from, to, textStyleType.create(attrs))
-                      }
-                    })
-                  }
-                }
               }
             })
           }
@@ -1048,43 +1063,21 @@ export const DocumentReferences = Extension.create({
             if (profile.style !== undefined && profile.style !== '') {
               nextAttrs.numberStyle = profile.style
             }
-            if (profile.lineHeight !== undefined && profile.lineHeight !== '') {
-              nextAttrs.lineHeight = profile.lineHeight
-            }
-            if (profile.fontSize !== undefined && profile.fontSize !== '') {
-              nextAttrs.fontSize = profile.fontSize
-            }
-            if (profile.fontWeight !== undefined && profile.fontWeight !== '') {
-              nextAttrs.fontWeight = profile.fontWeight
-            } else if (profile.targetType === 'paragraph') {
-              nextAttrs.fontWeight = 'normal'
-            }
-            if (profile.fontFamily !== undefined && profile.fontFamily !== '') {
-              nextAttrs.fontFamily = profile.fontFamily
-            }
-            if (profile.marginTop !== undefined && profile.marginTop !== '') {
-              nextAttrs.margin = {
-                ...(nextAttrs.margin || targetNode.attrs.margin || {}),
-                top: profile.marginTop,
-              }
-            }
-            if (
-              profile.marginBottom !== undefined &&
-              profile.marginBottom !== ''
-            ) {
-              nextAttrs.margin = {
-                ...(nextAttrs.margin || targetNode.attrs.margin || {}),
-                bottom: profile.marginBottom,
-              }
-            }
-            if (profile.indent !== undefined) {
-              nextAttrs.indent = profile.indent
-            }
-            if (profile.textAlign !== undefined && profile.textAlign !== '') {
-              nextAttrs.textAlign = profile.textAlign
-            }
+            // Applying a profile means "this block follows that profile", so any per-block
+            // override the user had set is cleared and the profile's rule shows through. Writing the
+            // profile's values in here would recreate the overrides this change exists to remove.
+            nextAttrs.lineHeight = null
+            nextAttrs.fontSize = null
+            nextAttrs.fontWeight = null
+            nextAttrs.fontFamily = null
+            nextAttrs.indent = null
+            nextAttrs.textAlign = null
+            nextAttrs.margin = null
           }
           tr.setNodeMarkup(targetPos, undefined, nextAttrs)
+          if (profile) {
+            clearProfileFontMarks(tr, state.schema, targetPos, targetNode)
+          }
 
           if (
             profile &&
@@ -1097,25 +1090,6 @@ export const DocumentReferences = Extension.create({
                 targetPos + targetNode.nodeSize - 1,
                 boldMarkType,
               )
-            }
-          }
-
-          if (profile && (profile.fontSize || profile.fontFamily)) {
-            const textStyleType = state.schema.marks.textStyle
-            if (textStyleType && targetNode.content) {
-              targetNode.content.forEach((child, offset) => {
-                if (child.isText) {
-                  const from = targetPos + 1 + offset
-                  const to = from + child.nodeSize
-                  const attrs = {
-                    ...(child.marks.find((m) => m.type === textStyleType)
-                      ?.attrs || {}),
-                  }
-                  if (profile.fontSize) attrs.fontSize = profile.fontSize
-                  if (profile.fontFamily) attrs.fontFamily = profile.fontFamily
-                  tr.addMark(from, to, textStyleType.create(attrs))
-                }
-              })
             }
           }
 

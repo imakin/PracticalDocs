@@ -148,14 +148,53 @@ text, the profile is recovered from the class alone, and the numbering is recomp
 Regression after this step: unit 61 checks; `pagination-pdf-parity` 5 sheets and 5 PDF pages all
 matching on the real thesis; `profile-save`, `autosave-blank-guard` and `document-assets` all pass.
 
+## Marks, and migrating documents written by the old format
+
+Two commands still wrote the profile into the document: `updateNumberingProfile` copied its styling
+into every matching node and pushed the font onto an inner `textStyle` mark, and
+`applyNumberingProfile` did the same for one block. Both are gone - 5461 bytes of code. A mark beats
+the block's class, so leaving it would freeze the old font into the text.
+
+`applyNumberingProfile` now **clears** per-block styling instead of writing it. Applying a profile
+means "this block follows that profile", so any override the user had set is dropped and the rule
+shows through. Writing the profile's values in would recreate the overrides this change exists to
+remove.
+
+Migration runs inside the ordinary sync, so a document written by the old format is cleaned the moment
+it is opened. The rule: **an attribute that merely repeats its profile's value is a leftover, not an
+override.** A value that differs is the user's and is kept. The same test applies to the font on
+`textStyle` marks.
+
+One subtlety cost a run: a font family round-trips through CSS as `"Times New Roman"` while a profile
+stores it bare, so a plain string comparison read every migrated paragraph as a deliberate override.
+`sameStyleValue` strips quotes and case before comparing.
+
+### Measured on the real thesis
+
+Feeding the previously stored `tesis4/document.html` through the editor:
+
+```
+                      before   after
+bytes                  17251   12128
+inline style attrs        33       2   <- both are figure alignment, not profile styling
+spans repeating a font    15       0
+derived numbering attrs   58       0
+profile classes            0      16
+data-reference-id         18      18   <- identity preserved
+```
+
+Rendering is unchanged: the paragraph still computes to `16px` Times New Roman, `32px` indent,
+justified; the heading to `18.6667px`, centred, `74.6667px` bottom margin; numbering still reads
+`BAB I`, `1.1`, `Gambar 1.1`, `Gambar 1.2`.
+
+`document-stylesheet.cdp.mjs` gained Case C, 8 checks, which feeds a block written in the old format
+through a sync and asserts the inline styles, the font spans and the derived attributes are all gone
+while the text, the reference ids, the rendered styling and the numbering survive.
+
 ## Known gap
 
 A document that starts at `h2` with no `h1` renders `0.1` under CSS counters where the editor shows `1`.
 `getNextHeadingNumber` drops zero segments; CSS has no conditional. Not yet handled.
-
-Still to do: profile font is still pushed into `textStyle` marks, so each block repeats its font on an
-inner `<span>`; and older documents are not yet migrated off their inline styles, which still win over
-the class.
 
 Unrelated and pre-existing: `tests/e2e/document-references.cdp.mjs` fails at "Automatic reference labels
 were not synchronized". Confirmed to fail identically on a clean tree with this work stashed.

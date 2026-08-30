@@ -224,6 +224,54 @@ check('no CSS was imported as document text', !/counter-reset|umo-count-|font-va
 check('the profile is recovered from the class alone', reloaded.nodes.find((n) => n.type === 'heading')?.profile === 'profile-h1', JSON.stringify(reloaded.nodes.map((n) => n.profile)))
 check('the numbering is recomputed after the load', JSON.stringify(reloaded.numbers) === JSON.stringify(['BAB I\n', '1.1']), JSON.stringify(reloaded.numbers))
 
+console.log('\nCase C: a document written by the old format is migrated on sync')
+// Every block carries an inline style repeating its profile, an inner span repeating the font, and
+// the derived numbering attributes. None of that should survive contact with the editor: an inline
+// style beats the class, so a leftover would pin the document to its old look forever.
+const LEGACY = [
+  '<h1 data-reference-id="heading-legacy1" data-reference-number="I" data-reference-label="BAB I"',
+  ' data-numbering-profile-id="profile-h1" data-number-style="roman-upper" data-number-template="BAB {number}"',
+  ' style="margin-bottom: 4em; font-size: 14pt; font-weight: bold; line-height: 1.5; text-align: center;">',
+  '<span style="font-size: 14pt;">PENDAHULUAN</span></h1>',
+  '<p data-reference-id="paragraph-legacy1" data-numbering-profile-id="profile-paragraph"',
+  ' style="text-indent: 2em; margin-bottom: 0.25em; font-family: &quot;Times New Roman&quot;; font-size: 12pt; text-align: justify;">',
+  '<span style="font-family: &quot;Times New Roman&quot;; font-size: 12pt;">Kalimat lama.</span></p>',
+].join('')
+
+const migrated = await evaluate(`(async () => {
+  window.__ed.commands.setContent(${JSON.stringify(LEGACY)})
+  window.__ed.commands.syncDocumentReferences()
+  await new Promise((r) => setTimeout(r, 1500))
+  window.__ed.commands.syncDocumentReferences()
+  await new Promise((r) => setTimeout(r, 1000))
+  const html = window.__ed.getHTML()
+  const p = document.querySelector('.ProseMirror p')
+  const cs = p ? getComputedStyle(p) : null
+  return {
+    html,
+    text: window.__ed.state.doc.textContent,
+    rendered: cs ? { fontSize: cs.fontSize, fontFamily: cs.fontFamily, textIndent: cs.textIndent, textAlign: cs.textAlign } : null,
+    numbers: [...document.querySelectorAll('.umo-heading-number')].map((n) => n.innerText),
+  }
+})()`)
+await shoot('case-c-migrated')
+
+check('the block inline styles are gone', !/<(h1|p)[^>]*\sstyle="/.test(migrated.html), migrated.html.slice(0, 80))
+check('the font is no longer repeated on an inner span', !/<span[^>]*style="[^"]*font/.test(migrated.html))
+check('the derived numbering attributes are gone', !/data-reference-number|data-reference-label|data-number-style|data-number-template|data-numbering-profile-id/.test(migrated.html))
+check('the profile class replaced them', /class="umo-profile-h1"/.test(migrated.html) && /class="umo-profile-paragraph"/.test(migrated.html))
+check('the stable reference ids survive', (migrated.html.match(/data-reference-id="/g) || []).length === 2)
+check('the text is untouched', migrated.text.includes('Kalimat lama.'), JSON.stringify(migrated.text))
+check('the paragraph still renders with its profile font and indent',
+  migrated.rendered?.fontSize === '16px' &&
+  /Times New Roman/.test(migrated.rendered?.fontFamily || '') &&
+  migrated.rendered?.textIndent === '32px' &&
+  migrated.rendered?.textAlign === 'justify',
+  JSON.stringify(migrated.rendered))
+// The label comes from the profile, whose template ends in a newline, not from the legacy
+// data-number-template the fixture carried. That the newline is back is the point.
+check('the numbering still renders, recomputed from the profile', JSON.stringify(migrated.numbers) === JSON.stringify(['BAB I\n']), JSON.stringify(migrated.numbers))
+
 console.log('\nscreenshots written to tests/screenshots/document-stylesheet-*.png')
 if (failures.length) {
   console.log(`\nRESULT: FAILED -- ${failures.length} check(s) failed:`)
