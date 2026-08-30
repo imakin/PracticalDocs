@@ -206,7 +206,57 @@ putting them in the flow would change the layout they describe.
 bentuk tesis                        -> i,ii, 1,2,3,4
 ```
 
-### Not in the export yet
+### In the export: the margins became real blocks
+
+Measured, not assumed: with `@page { padding }` the container's coordinate space is the **content
+area**, not the full page, so a position computed from the page height lands a page late. Content
+pushed past the content area does not render in the page padding either - it spills onto the next
+page. An absolutely positioned number therefore cannot reach the margin band, and inside the text
+column it would collide with the last line.
+
+The answer came from the reason this product exists: **stop making the margin invisible space**. For a
+document that carries page numbers the export drops `@page` padding entirely and the margins become
+real blocks in the flow. The engine's spacer already holds exactly what is needed - the leftover
+column space, the ending page's bottom margin, the sheet gap, and the next page's top margin - so it
+splits into a closing band (leftover + bottom margin, ending the page, holding the number) and an
+opening band (the next page's top margin).
+
+Five things had to be got right, each found by measuring rather than reasoning:
+
+1. **The canvas already had real margin blocks.** `.umo-page-node-header` and `.umo-page-node-footer`
+   are each one margin tall. The export was applying the top margin twice, as that element and as
+   `@page` padding.
+2. **A minimum height defeated the whole mechanism.** Clamping a band to the bottom margin pushed it
+   past the page boundary where the text ran 4.48px long, and Chrome moved the band and its number to
+   the next page. Bands now snap to the boundary with no minimum: a bottom margin a few pixels short
+   is invisible, a page number on the wrong page is not.
+3. **Half a pixel is enough to spill a band**, so each band measures itself after layout and snaps,
+   rather than trusting a height computed from screen geometry.
+4. **A manual page break fired twice.** The break element carries its own `break-before: page` and the
+   engine puts a spacer there too, giving two breaks at one point and a blank page. The bands are
+   authoritative in the export, so the element's own break is turned off.
+5. **`<div>` inside `<span>` does not survive.** The engine's spacer is a span, the export serialises
+   and re-parses its HTML twice, and the parser hoists the number out again - so the number vanished
+   from some bands and not others. The band is now a real `<div>` that replaces the span. The last
+   page's band goes into the text flow rather than beside the footer, which is a flex item and gets
+   laid out nowhere near the last line.
+
+**Only numbered documents take this path.** Everything else exports as before, with Chrome paginating
+freely, so `pagination-pdf-parity` stays an independent verdict on the engine rather than becoming
+true by construction. That test is what caught the page-break drift, and it is worth keeping honest.
+
+### Test
+
+`tests/e2e/page-numbers-export.cdp.mjs`, 6 checks, on its own synthetic document: front matter in
+lower roman, a page break that restarts the count in decimal, then the exported PDF read back page by
+page. It asserts one PDF page per on-screen sheet, a number on every page, the numbers matching the
+screen exactly, and the physical page count untouched by the restart.
+
+```bash
+npm run test:e2e:page-numbers-export
+```
+
+### Superseded note
 
 Measured, not assumed: with `@page { padding }` the container's coordinate space is the **content
 area**, not the full page, so a position computed from the page height lands a page late. Content
@@ -214,6 +264,5 @@ pushed past the content area does not render in the page padding either - it spi
 page. So an absolutely positioned number cannot reach the margin band, and inside the text column it
 would collide with the last line.
 
-The numbers are therefore removed from the export rather than misplaced. A PDF without numbers beats a
-PDF with numbers on the wrong pages. The fix under way makes the bottom margin a real block in the
-flow instead of invisible page padding, which is the same idea the whole product is built on.
+This section recorded an interim state in which the numbers were dropped from the export rather than
+misplaced. That is no longer the case; see above.

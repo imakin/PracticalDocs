@@ -134,7 +134,7 @@
 
 ### Page Settings, Custom Margins, & Automatic Multi-Page Pagination
 
-- `Page Numbers, On Screen`: Page numbers with sections anchored on page breaks - shown or hidden, positioned, formatted as roman/decimal/alphabetic, and able to restart or start at any value part way through the document. The physical page index stays 1..N so PDF navigation is unaffected. Not in the export yet; see the detail page for why.
+- `Page Numbers, On Screen`: Page numbers with sections anchored on page breaks - shown or hidden, positioned, formatted as roman/decimal/alphabetic, and able to restart or start at any value part way through the document. The physical page index stays 1..N so PDF navigation is unaffected. They reach the exported PDF too: for a numbered document the page margins become real blocks in the flow rather than invisible `@page` padding, which is the only way anything can be drawn in them.
 - `Manual Page Breaks On Screen`: A page break inserted by the user now starts a new sheet in the editor, not only in the export. Two causes: the pagination engine never read `break-before: page`, and the print stylesheet failed to zero the break element's margins because the base rule marked them `!important`, which pushed the first line of every page after a break down by 30px in the PDF only.
 
 - `Automatic Pagination Engine`: Two-pass layout engine measuring block element bounds (`offsetTop`) and automatically pushing blocks extending past `pageEnd` to the top of the next page content area.
