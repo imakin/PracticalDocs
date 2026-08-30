@@ -126,3 +126,47 @@ npm run test:e2e:pagination-pdf
 Both tests require Chrome started with `--remote-debugging-port=9222`, the dev server on port 9000, and
 a multi-page document on the storage server (`PAGINATION_DOC`, default `tesis4`). The parity test also
 needs `poppler-utils` for `pdfinfo` and `pdftotext`.
+
+## Manual page breaks (2026-08-30)
+
+`.umo-page-break` carries `break-before: page`. Print honoured it and the engine never read it, so a
+document with a manual break showed one layout on screen and a different one in the export, and every
+sheet after the break inherited the difference. Caught by the parity test the moment the reference
+thesis gained a second chapter with a break before it: pages 1 to 5 matched, 6 to 9 did not.
+
+`forcedBreaks` walks the document for `pageBreak` nodes and returns the position after each one with
+the geometry of the content that follows. The solve loop now takes whichever comes first down the
+page, a forced break or the first overflowing line. A break whose following content already sits at
+the top of a column is skipped, or it would insert an entire blank sheet.
+
+The spacer is anchored **after** the break node, not before it. In print the element collapses to zero
+height, so it is the content after the break that opens the new page; anchoring before would put the
+marker's own box at the top of the sheet and start the text lower than the export does.
+
+### A second cause, in the print stylesheet
+
+Honouring the break moved the failure but did not remove it: page 6 then matched and 7 to 9 still did
+not, with the screen fitting one line more per page. Measured under emulated print media:
+
+```
+screen  height 1px   margin 30px / 30px
+print   height 0px   margin 30px / 30px   <- not zeroed
+```
+
+The base rule marks the margins `!important` so they win on screen; the `@media print` block reset
+them without `!important`, so they won there too. A page break was therefore pushing the first line of
+the new page down by 30px in the export only. The print reset is now `!important`, and a page break
+adds no space to the page it starts.
+
+With both fixed, all nine pages of the two-chapter thesis match.
+
+### Test
+
+`tests/e2e/page-break.cdp.mjs`, 9 checks, on its own synthetic document rather than the user's, so it
+cannot be broken by whatever they are writing. Two short paragraphs share a sheet; inserting a break
+between them moves the second to the next sheet, at exactly the top of its column, with exactly one
+spacer, and a second solve adds no more.
+
+```bash
+npm run test:e2e:page-break
+```

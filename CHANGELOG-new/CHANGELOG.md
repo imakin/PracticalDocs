@@ -133,6 +133,8 @@
 
 ### Page Settings, Custom Margins, & Automatic Multi-Page Pagination
 
+- `Manual Page Breaks On Screen`: A page break inserted by the user now starts a new sheet in the editor, not only in the export. Two causes: the pagination engine never read `break-before: page`, and the print stylesheet failed to zero the break element's margins because the base rule marked them `!important`, which pushed the first line of every page after a break down by 30px in the PDF only.
+
 - `Automatic Pagination Engine`: Two-pass layout engine measuring block element bounds (`offsetTop`) and automatically pushing blocks extending past `pageEnd` to the top of the next page content area.
 - `Visual Page Sheet Boundaries`: Dynamic `--umo-page-content-height` calculation, header zone boundary line, footer/page-numbering zone boundary line, and 16px sheet-separation gaps between pages.
 - `Paper Size Retention`: Margin edits maintain standard paper sizes (A4, Letter, Legal, A3) without converting to Custom or zeroing out margins.

@@ -490,8 +490,12 @@
 
     @media print {
       height: 0;
-      margin-top: 0;
-      margin-bottom: 0;
+      // The base rule marks these !important to win on screen, which also made them win here, so a
+      // page break silently pushed the new page's first line down by 30px. On screen the engine puts
+      // the marker at the end of the previous sheet, so the export was a line short of the screen on
+      // every page after a break. A page break must not add space to the page it starts.
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
       page-break-before: always;
 
       &::after {

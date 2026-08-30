@@ -149,6 +149,44 @@ const collectLines = (view, originTop) => {
   return lines
 }
 
+/**
+ * Manual page breaks the user inserted.
+ *
+ * `.umo-page-break` carries `break-before: page`, which print honours and this engine used to ignore
+ * entirely, so the screen kept flowing where the export started a new page and every sheet after the
+ * break inherited the difference. In print the element collapses to zero height, so it is the content
+ * *after* the break that opens the new page - which is why the spacer is anchored after the node
+ * rather than before it.
+ */
+const forcedBreaks = (view, originTop, metrics) => {
+  const found = []
+  view.state.doc.descendants((node, pos) => {
+    if (node.type.name !== 'pageBreak') {
+      return
+    }
+    const after = pos + node.nodeSize
+    let coords = null
+    try {
+      coords = view.coordsAtPos(after)
+    } catch {
+      return
+    }
+    if (!coords) {
+      return
+    }
+    const top = coords.top - originTop
+    const sheet = Math.floor(top / metrics.stride)
+    const columnTop = sheet * metrics.stride + metrics.marginTop
+    // Already opening a column: print would not push it either, and a spacer here would insert a
+    // whole blank sheet.
+    if (top <= columnTop + TOLERANCE) {
+      return
+    }
+    found.push({ pos: after, top })
+  })
+  return found.sort((a, b) => a.top - b.top)
+}
+
 const firstOverflowing = (lines, metrics) => {
   for (const line of lines) {
     const index = Math.floor(line.top / metrics.stride)
@@ -380,20 +418,29 @@ class PaginationDriver {
         const originTop = metrics.sheet.getBoundingClientRect().top
         const lines = collectLines(this.view, originTop)
         const overflow = firstOverflowing(lines, metrics)
-        if (!overflow) {
+        const forced = forcedBreaks(this.view, originTop, metrics).find(
+          (item) => item.pos > lastPos,
+        )
+        if (!overflow && !forced) {
           break
         }
-        // A block long enough to span several sheets gets broken more than once, and the widow and
-        // orphan adjustment counts from the start of the block, so it can point at a line above the
-        // previous break. Breaking exactly at the overflow is then the only way forward; giving up
-        // here would leave the rest of the document unpaginated.
-        const candidates = [respectWidowsAndOrphans(lines, overflow), overflow]
         let chosen = null
-        for (const candidate of candidates) {
-          const at = positionAtLineStart(this.view, candidate)
-          if (at !== null && at > lastPos) {
-            chosen = { line: candidate, pos: at }
-            break
+        // Whichever comes first down the page wins. A forced break above the overflow has to be
+        // taken first, or the sheet it lands on is already the wrong one.
+        if (forced && (!overflow || forced.top <= overflow.top)) {
+          chosen = { top: forced.top, pos: forced.pos }
+        } else if (overflow) {
+          // A block long enough to span several sheets gets broken more than once, and the widow and
+          // orphan adjustment counts from the start of the block, so it can point at a line above the
+          // previous break. Breaking exactly at the overflow is then the only way forward; giving up
+          // here would leave the rest of the document unpaginated.
+          const candidates = [respectWidowsAndOrphans(lines, overflow), overflow]
+          for (const candidate of candidates) {
+            const at = positionAtLineStart(this.view, candidate)
+            if (at !== null && at > lastPos) {
+              chosen = { top: candidate.top, pos: at }
+              break
+            }
           }
         }
         // Nothing left that can be moved. Stop rather than spin: a single unbreakable box taller
@@ -401,9 +448,9 @@ class PaginationDriver {
         if (!chosen) {
           break
         }
-        const sheet = Math.floor(chosen.line.top / metrics.stride)
+        const sheet = Math.floor(chosen.top / metrics.stride)
         const nextColumnTop = (sheet + 1) * metrics.stride + metrics.marginTop
-        const height = nextColumnTop - chosen.line.top
+        const height = nextColumnTop - chosen.top
         if (height <= 0) {
           break
         }
