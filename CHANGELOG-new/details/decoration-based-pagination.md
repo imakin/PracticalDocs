@@ -170,3 +170,50 @@ spacer, and a second solve adds no more.
 ```bash
 npm run test:e2e:page-break
 ```
+
+
+## Page numbers (2026-08-30, screen only so far)
+
+A page carries two numbers and they are not the same thing.
+
+```
+index  the physical page, 1..N, never restarted. The PDF outline and page navigation use it.
+text   what is printed in the footer: restartable, re-formattable, hideable, purely visual.
+```
+
+A thesis whose body restarts at 1 still has its "BAB I" bookmark pointing at physical page 3. The
+physical index is produced by Chrome when it prints, so nothing has to be built for it.
+
+`src/utils/page-numbering.js` computes the visible number for every sheet from the document's settings
+plus **numbering sections**, which are anchored on `pageBreak` nodes: a numbering change always happens
+at a page boundary, and a break is already there between chapters, so the break carries five optional
+attributes rather than a second kind of marker being introduced. Null means "carry on from the section
+before", except `sectionStartAt`, where a number restarts the count and null continues it.
+
+Why the numbers are computed rather than left to CSS is recorded in ADR 0008: Chrome's `@page` margin
+boxes can place and format a number, but they cannot restart a count.
+
+The engine draws them, one element per sheet, inside the margin band. They are plain elements in the
+page container rather than decorations, because they belong to the sheet and not to the document, and
+putting them in the flow would change the layout they describe.
+
+`tests/unit/page-numbering.test.mjs`, 18 checks, including the four cases the user asked for:
+
+```
+"mulai dari 10"                     -> 10, 11, 12
+"reset ke 1 setelah halaman 5"      -> 1,2,3,4,5, 1,2,3
+"reset ke 1 di hal 5, jadi romawi"  -> 1,2,3,4, i,ii,iii
+bentuk tesis                        -> i,ii, 1,2,3,4
+```
+
+### Not in the export yet
+
+Measured, not assumed: with `@page { padding }` the container's coordinate space is the **content
+area**, not the full page, so a position computed from the page height lands a page late. Content
+pushed past the content area does not render in the page padding either - it spills onto the next
+page. So an absolutely positioned number cannot reach the margin band, and inside the text column it
+would collide with the last line.
+
+The numbers are therefore removed from the export rather than misplaced. A PDF without numbers beats a
+PDF with numbers on the wrong pages. The fix under way makes the bottom margin a real block in the
+flow instead of invisible page padding, which is the same idea the whole product is built on.

@@ -7,6 +7,11 @@ import {
   isString,
 } from '@tool-belt/type-predicates'
 
+import {
+  PAGE_NUMBER_FORMATS,
+  PAGE_NUMBER_POSITIONS,
+} from '@/utils/page-numbering'
+
 import defaultOptions from './config'
 
 const isLocale = (value) => {
@@ -326,6 +331,38 @@ export default new ObjectSchema({
         merge: 'replace',
         validate: 'boolean',
         required: false,
+      },
+      pageNumber: {
+        required: false,
+        merge: 'replace',
+        validate: 'object',
+        schema: {
+          enabled: { merge: 'replace', validate: 'boolean', required: false },
+          position: {
+            merge: 'replace',
+            required: false,
+            validate(value) {
+              if (value && !PAGE_NUMBER_POSITIONS.includes(value)) {
+                throw new Error(
+                  `Key "pageNumber": Key "position" must be one of ${PAGE_NUMBER_POSITIONS.join(', ')}.`,
+                )
+              }
+            },
+          },
+          format: {
+            merge: 'replace',
+            required: false,
+            validate(value) {
+              if (value && !PAGE_NUMBER_FORMATS.includes(value)) {
+                throw new Error(
+                  `Key "pageNumber": Key "format" must be one of ${PAGE_NUMBER_FORMATS.join(', ')}.`,
+                )
+              }
+            },
+          },
+          template: { merge: 'replace', validate: 'string', required: false },
+          startAt: { merge: 'replace', validate: 'number', required: false },
+        },
       },
       watermark: {
         required: false,

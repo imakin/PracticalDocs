@@ -908,3 +908,13 @@
     }
   }
 }
+
+// Page numbers are drawn by the pagination engine, one per sheet, inside the margin band. They are
+// plain elements rather than decorations because they belong to the sheet, not to the document.
+.umo-page-number {
+  font-size: 10.5pt;
+  line-height: 1.2;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  z-index: 1;
+}

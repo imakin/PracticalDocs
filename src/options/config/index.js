@@ -1,3 +1,5 @@
+import { defaultPageNumberSettings } from '@/utils/page-numbering'
+
 import defaultDicts from './dicts'
 
 // 默认配置
@@ -28,6 +30,8 @@ export default {
     showLineNumber: false,
     showBookmark: false,
     showToc: false,
+    // Off by default: a document that never asked for page numbers must not sprout any.
+    pageNumber: defaultPageNumberSettings(),
     watermark: {
       type: 'compact',
       alpha: 0.2,

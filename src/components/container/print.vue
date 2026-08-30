@@ -35,7 +35,25 @@ const stripScreenPagination = (htmlContent) => {
   for (const sheet of tempDiv.querySelectorAll('.umo-page-content')) {
     sheet.style.removeProperty('--umo-page-total-height')
   }
+  repositionPageNumbers(tempDiv)
   return tempDiv.innerHTML
+}
+
+// Page numbers are not exported yet, and are removed rather than misplaced.
+//
+// Measured 2026-08-30: with `@page { padding }` the container's coordinate space is the *content
+// area*, not the full page, so a position computed from the page height lands a page late. Worse,
+// content pushed past the content area does not render in the page padding at all - it spills onto
+// the next page. So an absolutely positioned number cannot reach the margin band where a folio
+// belongs, and placing it inside the text column would collide with the last line.
+//
+// Putting them in the export properly needs `@page { padding: 0 }` with the insets carried by
+// explicit per-page boxes. That is a change to how the export paginates, so it waits for a decision
+// rather than shipping numbers on the wrong pages. See ADR 0008.
+const repositionPageNumbers = (root) => {
+  for (const element of root.querySelectorAll('.umo-page-number')) {
+    element.remove()
+  }
 }
 
 const getContentHtml = () => {
@@ -108,6 +126,8 @@ const getIframeCode = () => {
       .umo-page-content{
         transform: scale(1) !important;
         overflow: hidden;
+        /* The page numbers are absolutely positioned against this box. */
+        position: relative;
       }
       @page {
         size: ${orientation === 'portrait' ? size?.width : size?.height}cm ${orientation === 'portrait' ? size?.height : size?.width}cm;

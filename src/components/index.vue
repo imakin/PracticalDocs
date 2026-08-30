@@ -85,6 +85,7 @@ import {
   undoHistoryRecord,
 } from '@/utils/history-record'
 import { getOptions } from '@/utils/options'
+import { defaultPageNumberSettings } from '@/utils/page-numbering'
 import { ensureFontFamilyLoaded } from '@/utils/load-resource'
 import { getSelectionNode, getSelectionText } from '@/utils/selection'
 import { shortId } from '@/utils/short-id'
@@ -182,6 +183,7 @@ watch(
     showBookmark,
     showLineNumber,
     showToc,
+    pageNumber,
   }) => {
     page.value = {
       layout: $layout.value || layouts[0],
@@ -194,6 +196,7 @@ watch(
       showBookmark,
       showLineNumber,
       showToc,
+      pageNumber: { ...defaultPageNumberSettings(), ...(pageNumber || {}) },
       zoomLevel: 100,
       autoWidth: false,
       preview: {
@@ -355,6 +358,7 @@ watch(
     showLineNumber: page.value.showLineNumber,
     showBookmark: page.value.showBookmark,
     showToc: page.value.showToc,
+    pageNumber: page.value.pageNumber,
   }),
   () => {
     if (!applyingDocumentFile) {

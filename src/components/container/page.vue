@@ -198,13 +198,26 @@ watch(
     pageOptions.value.orientation,
     // Margins were missing here, so changing them left the old page breaks in place.
     pageOptions.value.margin,
+    pageOptions.value.pageNumber,
   ],
   () => {
     schedulePageZoomHeight()
+    // The engine draws the page numbers, so it needs the settings; they are not derivable from the
+    // document or from the geometry.
+    editorRef.value?.commands.setPageNumberSettings?.(pageOptions.value.pageNumber)
     // Page geometry changed without the document changing, which the engine cannot detect on its own.
     editorRef.value?.commands.refreshPagination?.()
   },
-  { deep: true },
+  { deep: true, immediate: true },
+)
+
+// The watcher above can fire before the editor exists, so push the settings again once it does.
+watch(
+  () => editorRef.value,
+  (instance) => {
+    instance?.commands.setPageNumberSettings?.(pageOptions.value.pageNumber)
+  },
+  { immediate: true },
 )
 
 // 水印

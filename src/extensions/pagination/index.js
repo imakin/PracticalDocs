@@ -2,6 +2,11 @@ import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
+import {
+  computePageNumbers,
+  defaultPageNumberSettings,
+} from '@/utils/page-numbering'
+
 /**
  * Decoration-based pagination. See AGENT/adr/0002-decoration-based-pagination.md.
  *
@@ -37,13 +42,25 @@ const readMetrics = (view) => {
   const marginTop = measure('--umo-page-margin-top', '0cm')
   const marginBottom = measure('--umo-page-margin-bottom', '0cm')
   const gap = measure('--umo-page-sheet-gap', '16px')
+  const marginLeft = measure('--umo-page-margin-left', '0cm')
+  const marginRight = measure('--umo-page-margin-right', '0cm')
   ruler.remove()
 
   const column = pageHeight - marginTop - marginBottom
   if (!(pageHeight > 0) || !(column > 0)) {
     return null
   }
-  return { sheet, pageHeight, marginTop, marginBottom, gap, column, stride: pageHeight + gap }
+  return {
+    sheet,
+    pageHeight,
+    marginTop,
+    marginBottom,
+    marginLeft,
+    marginRight,
+    gap,
+    column,
+    stride: pageHeight + gap,
+  }
 }
 
 const BLOCK_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, pre, figcaption, div'
@@ -307,8 +324,26 @@ const buildDecorations = (doc, breaks) =>
 export const Pagination = Extension.create({
   name: 'pagination',
 
+  addStorage() {
+    return { pageNumber: defaultPageNumberSettings() }
+  },
+
   addCommands() {
     return {
+      // The engine draws the page numbers, because CSS cannot restart a page count (ADR 0008), so it
+      // has to be told what the user asked for.
+      setPageNumberSettings:
+        (settings) =>
+        ({ view }) => {
+          this.storage.pageNumber = {
+            ...defaultPageNumberSettings(),
+            ...(settings || {}),
+          }
+          if (view) {
+            view.dispatch(view.state.tr.setMeta(paginationRefreshKey, true))
+          }
+          return true
+        },
       // Page size, margins, orientation and zoom all change the geometry without changing the
       // document, so they cannot be picked up from document changes alone.
       refreshPagination:
@@ -324,6 +359,7 @@ export const Pagination = Extension.create({
   },
 
   addProseMirrorPlugins() {
+    const { storage } = this
     return [
       new Plugin({
         key: paginationPluginKey,
@@ -350,14 +386,15 @@ export const Pagination = Extension.create({
             return paginationPluginKey.getState(state)?.decorations
           },
         },
-        view: (editorView) => new PaginationDriver(editorView),
+        view: (editorView) => new PaginationDriver(editorView, storage),
       }),
     ]
   },
 })
 
 class PaginationDriver {
-  constructor(view) {
+  constructor(view, storage) {
+    this.storage = storage || { pageNumber: defaultPageNumberSettings() }
     this.view = view
     this.timer = null
     this.solving = false
@@ -458,10 +495,101 @@ class PaginationDriver {
         breaks.push({ pos: chosen.pos, height })
         this.applyBreaks(breaks)
       }
-      this.padToWholeSheets(metrics)
+      const sheets = this.padToWholeSheets(metrics)
+      this.renderPageNumbers(metrics, sheets)
     } finally {
       this.solving = false
     }
+  }
+
+  /**
+   * Draw the page numbers.
+   *
+   * These are plain elements in the page container, not decorations: they belong to the sheet, not to
+   * the document, and putting them in the document flow would change the very layout they describe.
+   * Absolute positioning was measured to survive Chrome's pagination, so the same elements can reach
+   * the export - see ADR 0008.
+   */
+  renderPageNumbers(metrics, sheetCount) {
+    const host = metrics.sheet
+    const existing = [...host.querySelectorAll(':scope > .umo-page-number')]
+    const settings = this.storage?.pageNumber || defaultPageNumberSettings()
+
+    if (!settings.enabled || !(sheetCount > 0)) {
+      existing.forEach((element) => element.remove())
+      return
+    }
+
+    // Which sheet each page break opens. The breaks are already applied, so the content after one
+    // sits at the top of its sheet.
+    const originTop = host.getBoundingClientRect().top
+    const sections = []
+    this.view.state.doc.descendants((node, pos) => {
+      if (node.type.name !== 'pageBreak') {
+        return
+      }
+      let coords = null
+      try {
+        coords = this.view.coordsAtPos(pos + node.nodeSize)
+      } catch {
+        return
+      }
+      if (!coords) {
+        return
+      }
+      sections.push({
+        atSheet: Math.floor((coords.top - originTop) / metrics.stride),
+        enabled: node.attrs.sectionEnabled,
+        position: node.attrs.sectionPosition,
+        format: node.attrs.sectionFormat,
+        template: node.attrs.sectionTemplate,
+        startAt: node.attrs.sectionStartAt,
+      })
+    })
+
+    const numbers = computePageNumbers(sheetCount, settings, sections).filter(
+      (entry) => entry.visible && entry.text !== '',
+    )
+
+    while (existing.length > numbers.length) {
+      existing.pop().remove()
+    }
+    numbers.forEach((entry, index) => {
+      let element = existing[index]
+      if (!element) {
+        element = document.createElement('div')
+        element.className = 'umo-page-number'
+        element.setAttribute('contenteditable', 'false')
+        element.setAttribute('aria-hidden', 'true')
+        host.appendChild(element)
+      }
+      const [edge, align] = entry.position.split('-')
+      // Sit inside the margin band rather than against the paper edge, which is where a reader
+      // expects a folio and where the text column is guaranteed not to reach.
+      const top =
+        edge === 'top'
+          ? entry.sheet * metrics.stride + Math.max(8, metrics.marginTop * 0.35)
+          : entry.sheet * metrics.stride +
+            metrics.pageHeight -
+            Math.max(16, metrics.marginBottom * 0.5)
+      element.style.cssText = [
+        'position: absolute',
+        `top: ${Math.round(top)}px`,
+        `left: ${Math.round(metrics.marginLeft)}px`,
+        `right: ${Math.round(metrics.marginRight)}px`,
+        `text-align: ${align === 'center' ? 'center' : align}`,
+        'pointer-events: none',
+        'user-select: none',
+      ].join(';')
+      // The export has no sheet gaps and works in cm, so it cannot reuse these pixel offsets. It
+      // repositions from these three, which describe intent rather than screen geometry.
+      element.dataset.sheet = String(entry.sheet)
+      element.dataset.edge = edge
+      element.dataset.align = align
+      if (element.textContent !== entry.text) {
+        element.textContent = entry.text
+      }
+    })
   }
 
   /**
@@ -478,9 +606,14 @@ class PaginationDriver {
       '--umo-page-total-height',
       `${sheets * metrics.stride - metrics.gap}px`,
     )
+    return sheets
   }
 
   destroy() {
+    this.view?.dom
+      ?.closest('.umo-page-content')
+      ?.querySelectorAll(':scope > .umo-page-number')
+      .forEach((element) => element.remove())
     if (this.timer) {
       clearTimeout(this.timer)
       this.timer = null
