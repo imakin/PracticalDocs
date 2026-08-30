@@ -124,6 +124,7 @@
 - `Per-Profile Styling`: Custom font family (Google Fonts auto-loader), font size, font weight, line height, bottom margin, first-line indent (`text-indent`), text align (`text-align`), and placement templates (`BAB {number}\n`).
 - `Snapshot Profiles Persistence`: Fixed extension storage lookup (`getRefStorage`) so `snapshot.profiles` is 100% serialized into snapshot `.json` and `.enc` files.
 - `Server Save Profiles Persistence`: `saveContent()` kept its own copy of the broken lookup, so every save to the storage server wrote `profiles: []` even after the snapshot path was fixed. It now uses `getRefStorage()` too, and `profile-save.cdp.mjs` measures the actual POST body so the regression cannot return unnoticed.
+- `Toolbar Overrides Stick`: Line spacing and margins set from the toolbar now survive a sync, further typing, and a storage round trip, and applying a profile to the block clears them again. Verified end to end rather than inferred from the removal of the force-write.
 - `Keystroke Typing Revert Fix`: Fixed margin string comparison preventing erroneous `setNodeMarkup()` calls on every keystroke.
 - `Default Styling Attributes & Auto-Extraction`: Added out-of-the-box default styling attributes for all standard profiles (`Normal`, `H1`-`H6`) and auto-extraction from matching document nodes.
 - `Modal Interaction & Feedback`: Modal auto-closes on save with instant success toast notification (`Profile saved successfully!`).

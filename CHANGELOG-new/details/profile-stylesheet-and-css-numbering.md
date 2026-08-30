@@ -191,6 +191,37 @@ justified; the heading to `18.6667px`, centred, `74.6667px` bottom margin; numbe
 through a sync and asserts the inline styles, the font spans and the derived attributes are all gone
 while the text, the reference ids, the rendered styling and the numbering survive.
 
+## Toolbar overrides now stick, and it is measured
+
+The long-standing complaint - line spacing and margins set from the toolbar do not stay - was a
+consequence of the old model, not a separate bug: the sync wrote the profile into the same node
+attributes the toolbar writes, so a hand-set value was indistinguishable from a profile-set one and
+was overwritten on the next pass. Removing the force-write was expected to fix it, but nothing had
+tested the toolbar path end to end, so it was deliberately not reported as fixed until now.
+
+Measured on a paragraph carrying the Normal profile:
+
+```
+no override            line-height 24px   margin-bottom 4px    no inline style
+setLineHeight('3')     line-height 48px   margin-bottom 40px   style="margin-bottom: 2.5em; line-height: 3;"
+setMargin(2.5em)
+after a sync           line-height 48px   margin-bottom 40px   unchanged
+after typing           line-height 48px   margin-bottom 40px   unchanged
+after store and load   line-height 48px   margin-bottom 40px   unchanged
+applyNumberingProfile  line-height 24px   margin-bottom 4px    inline style cleared
+```
+
+The last row is the other half of the contract: applying a profile means "this block follows that
+profile", so it clears the override rather than layering under it.
+
+`tests/e2e/block-overrides.cdp.mjs`, 13 checks. The toolbar components call these commands with
+nothing in between - `line-height.vue` runs `setLineHeight(value)`, `margin.vue` runs `setMargin({...})`
+- so exercising the commands exercises the toolbar path.
+
+```bash
+npm run test:e2e:block-overrides
+```
+
 ## Known gap
 
 A document that starts at `h2` with no `h1` renders `0.1` under CSS counters where the editor shows `1`.
