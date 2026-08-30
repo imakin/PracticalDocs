@@ -11,7 +11,9 @@ import {
 } from '@/utils/document-references'
 import {
   buildProfileStylesheet,
+  classCarriesProfileId,
   profileClassName,
+  profileIdFromClass,
 } from '@/utils/profile-stylesheet'
 import { shortId } from '@/utils/short-id'
 
@@ -581,48 +583,40 @@ export const DocumentReferences = Extension.create({
             default: null,
             parseHTML: (element) =>
               element.getAttribute('data-reference-number') || null,
-            renderHTML: ({ referenceNumber }) =>
-              referenceNumber
-                ? {
-                    'data-reference-number': referenceNumber,
-                  }
-                : {},
+            // Derived from the profile and the node's position, recomputed on every sync, and in a
+            // stored file rendered by the stylesheet's counters. Parsed for older documents, never
+            // written back.
+            renderHTML: () => ({}),
           },
           referenceLabel: {
             default: null,
             parseHTML: (element) =>
               element.getAttribute('data-reference-label') || null,
-            renderHTML: ({ referenceLabel }) =>
-              referenceLabel
-                ? {
-                    'data-reference-label': referenceLabel,
-                  }
-                : {},
+            renderHTML: () => ({}),
           },
           numberingProfileId: {
             default: null,
+            // The class is the profile, so it is also how the profile is read back. The old data
+            // attribute is still parsed, for documents written before this change.
             parseHTML: (element) =>
-              element.getAttribute('data-numbering-profile-id') || null,
-            // The class is what the profile stylesheet targets. The data attribute stays for now so
-            // existing documents keep parsing; it is dropped from stored files separately.
-            renderHTML: ({ numberingProfileId }) =>
-              numberingProfileId
-                ? {
-                    'data-numbering-profile-id': numberingProfileId,
-                    class: profileClassName(numberingProfileId),
-                  }
-                : {},
+              profileIdFromClass(element.getAttribute('class')) ||
+              element.getAttribute('data-numbering-profile-id') ||
+              null,
+            renderHTML: ({ numberingProfileId }) => {
+              if (!numberingProfileId) return {}
+              const attrs = { class: profileClassName(numberingProfileId) }
+              // An id the class cannot round-trip keeps the attribute, or it would be lost on reload.
+              if (!classCarriesProfileId(numberingProfileId)) {
+                attrs['data-numbering-profile-id'] = numberingProfileId
+              }
+              return attrs
+            },
           },
           numberStyle: {
             default: null,
             parseHTML: (element) =>
               element.getAttribute('data-number-style') || null,
-            renderHTML: ({ numberStyle }) =>
-              numberStyle
-                ? {
-                    'data-number-style': numberStyle,
-                  }
-                : {},
+            renderHTML: () => ({}),
           },
           fontSize: {
             default: null,
@@ -638,12 +632,7 @@ export const DocumentReferences = Extension.create({
             default: null,
             parseHTML: (element) =>
               element.getAttribute('data-number-template') || null,
-            renderHTML: ({ numberTemplate }) =>
-              numberTemplate
-                ? {
-                    'data-number-template': numberTemplate,
-                  }
-                : {},
+            renderHTML: () => ({}),
           },
           fontFamily: {
             default: null,

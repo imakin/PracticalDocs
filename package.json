@@ -61,6 +61,7 @@
     "test:e2e:pagination-pdf": "node tests/e2e/pagination-pdf-parity.cdp.mjs",
     "test:e2e:document-assets": "node tests/e2e/document-assets.cdp.mjs",
     "test:e2e:profile-save": "node tests/e2e/profile-save.cdp.mjs",
+    "test:e2e:document-stylesheet": "node tests/e2e/document-stylesheet.cdp.mjs",
     "test:unit:document-references": "node --test tests/unit/document-references.test.mjs",
     "test:unit:document-file": "node --test tests/unit/document-file.test.mjs",
     "test:unit:profile-stylesheet": "node --test tests/unit/profile-stylesheet.test.mjs",

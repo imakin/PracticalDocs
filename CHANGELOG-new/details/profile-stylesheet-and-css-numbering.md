@@ -105,14 +105,57 @@ computed-style probe passed while the page was visibly wrong; only the screensho
   matching. Class-based styling reproduces the previous layout geometry exactly.
 - `profile-save` and `autosave-blank-guard` pass. Unit suite 56 checks.
 
+## The stored document
+
+A saved `document.html` is now the generated stylesheet followed by the blocks inside the element the
+stylesheet is scoped to:
+
+```html
+<style data-umo-profiles>
+.umo-document { counter-reset: umo-count-profile-h1 umo-count-profile-table; }
+.umo-document .umo-profile-h1 { margin-bottom: 4em; font-size: 14pt; ... }
+.umo-document .umo-profile-h1::before { content: "BAB " counter(umo-count-profile-h1, upper-roman) "\A "; ... }
+</style>
+<div class="umo-document">
+<h1 id="gr4oiwoyvw" data-toc-id="gr4oiwoyvw" data-reference-id="heading-mi3sxax885" class="umo-profile-h1">PENDAHULUAN</h1>
+...
+</div>
+```
+
+That heading was **417 bytes and is now 118**. Opened straight from the folder it renders with its own
+fonts, spacing and numbering, which the previous format could not do at all.
+
+- **The class is the profile**, so it is also how the profile is read back. `parseHTML` reads the class
+  and falls back to `data-numbering-profile-id` for older files. An id the class cannot round-trip -
+  every built-in and generated id can - keeps the attribute, or it would be lost on reload.
+- **The derived numbering attributes are no longer written**: `data-reference-number`,
+  `data-reference-label`, `data-number-style`, `data-number-template` and
+  `data-numbering-profile-id`. All are recomputed on sync and, in the file, drawn by the counters.
+  `data-reference-id` stays: it is identity, and a cross-reference points at it.
+- `composeDocumentHtml` and `extractDocumentHtml` are a pair in one module so they cannot drift. The
+  second exists because a stylesheet that reaches the parser is imported as a paragraph of CSS at the
+  top of the user's document.
+
+### Verification
+
+`tests/e2e/document-stylesheet.cdp.mjs`, 12 checks, save requests intercepted so the storage server is
+never written to. It asserts the saved payload opens with the stylesheet, wraps the blocks, carries
+classes, carries no inline block style and none of the derived attributes but keeps
+`data-reference-id`; then feeds that payload back and asserts the text survives, no CSS became document
+text, the profile is recovered from the class alone, and the numbering is recomputed
+(`["BAB I\n", "1.1"]`).
+
+Regression after this step: unit 61 checks; `pagination-pdf-parity` 5 sheets and 5 PDF pages all
+matching on the real thesis; `profile-save`, `autosave-blank-guard` and `document-assets` all pass.
+
 ## Known gap
 
 A document that starts at `h2` with no `h1` renders `0.1` under CSS counters where the editor shows `1`.
 `getNextHeadingNumber` drops zero segments; CSS has no conditional. Not yet handled.
 
-Still to do: profile font is still pushed into `textStyle` marks; the stored file does not yet carry
-the generated `<style>` block or drop the derived numbering attributes; older documents are not yet
-migrated off their inline styles.
+Still to do: profile font is still pushed into `textStyle` marks, so each block repeats its font on an
+inner `<span>`; and older documents are not yet migrated off their inline styles, which still win over
+the class.
 
 Unrelated and pre-existing: `tests/e2e/document-references.cdp.mjs` fails at "Automatic reference labels
 were not synchronized". Confirmed to fail identically on a clean tree with this work stashed.

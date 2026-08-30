@@ -15,6 +15,7 @@ import {
   findUnresolvedMedia,
   registerUpload,
 } from '@/utils/document-assets'
+import { composeDocumentHtml } from '@/utils/profile-stylesheet'
 import { shortId } from '@/utils/short-id'
 
 const editorRef = $ref(null)
@@ -169,6 +170,9 @@ const options = $ref({
         // Media sources are folded back to portable markers, and the bytes this session uploaded
         // travel with them. Anything the archive already holds is named by hash only.
         const packed = await collectAssets(content)
+        // The stored file carries its own stylesheet, so it renders correctly opened straight from
+        // the folder with no editor and no server.
+        const documentHtml = composeDocumentHtml(packed.html, content.profiles || [])
         const stranded = findUnresolvedMedia(packed)
         if (stranded.length > 0) {
           return {
@@ -186,7 +190,7 @@ const options = $ref({
             id: filename,
             filename,
             title,
-            html: packed.html,
+            html: documentHtml,
             json: packed.json,
             snapshot: packed.snapshot,
             profiles: content.profiles || [],

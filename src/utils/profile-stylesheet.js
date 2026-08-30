@@ -31,6 +31,23 @@ export const profileClassName = (profileId) => {
   return name ? `umo-${name}` : ''
 }
 
+// A profile id is authoritative in the class only when it survives the round trip. Every built-in and
+// generated id looks like "profile-h1" or "profile-<shortId>", which does; an id supplied from outside
+// might not, and then the data attribute stays as the source of truth.
+export const PROFILE_CLASS_PREFIX = 'umo-profile-'
+
+export const profileIdFromClass = (classAttr) => {
+  for (const token of String(classAttr || '').split(/\s+/)) {
+    if (!token.startsWith(PROFILE_CLASS_PREFIX)) continue
+    const id = `profile-${token.slice(PROFILE_CLASS_PREFIX.length)}`
+    if (profileClassName(id) === token) return id
+  }
+  return null
+}
+
+export const classCarriesProfileId = (profileId) =>
+  profileIdFromClass(profileClassName(profileId)) === profileId
+
 export const counterName = (profileId) => {
   const name = slug(profileId)
   return name ? `umo-count-${name}` : ''
@@ -241,4 +258,42 @@ export const buildProfileStylesheet = (
   }
 
   return blocks.join('\n\n')
+}
+
+const STYLE_MARKER = 'data-umo-profiles'
+const DOCUMENT_CLASS = 'umo-document'
+
+/**
+ * Wrap a document's blocks for storage: the generated stylesheet, then the blocks inside the element
+ * the stylesheet is scoped to.
+ *
+ * The result is a complete, self-rendering fragment. Opened straight from the folder in a browser it
+ * shows the document with its own fonts, spacing and numbering, which is the point of storing plain
+ * files at all.
+ */
+export const composeDocumentHtml = (html, profiles = []) => {
+  const body = String(html ?? '')
+  const css = buildProfileStylesheet(profiles, { scope: `.${DOCUMENT_CLASS}` })
+  const opening = `<div class="${DOCUMENT_CLASS}">`
+  if (!css) {
+    return `${opening}\n${body}\n</div>`
+  }
+  return `<style ${STYLE_MARKER}>\n${css}\n</style>\n${opening}\n${body}\n</div>`
+}
+
+/**
+ * The inverse: recover the blocks from a stored document.
+ *
+ * Anything the editor is asked to parse must have no stylesheet in it, or the CSS is imported as
+ * document text. Kept beside `composeDocumentHtml` so the two cannot drift apart.
+ */
+export const extractDocumentHtml = (html) => {
+  let body = String(html ?? '').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+  body = body.trim()
+  const openTag = new RegExp(`^<div[^>]*\\bclass\\s*=\\s*["'][^"']*\\b${DOCUMENT_CLASS}\\b[^"']*["'][^>]*>`, 'i')
+  const match = body.match(openTag)
+  if (match && body.endsWith('</div>')) {
+    body = body.slice(match[0].length, body.length - '</div>'.length)
+  }
+  return body.trim()
 }

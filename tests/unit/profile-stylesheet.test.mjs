@@ -3,6 +3,8 @@ import test from 'node:test'
 
 import {
   buildProfileStylesheet,
+  composeDocumentHtml,
+  extractDocumentHtml,
   counterName,
   cssNumberStyle,
   cssString,
@@ -145,4 +147,39 @@ test('an empty scope leaves the rules unprefixed and seeds counters on :root', (
   const css = buildProfileStylesheet(ALL, { scope: '' })
   assert.match(css, /^:root \{\s*counter-reset:/m)
   assert.match(css, /^\.umo-profile-h1 \{/m)
+})
+
+test('a stored document carries its stylesheet inside the scope element', () => {
+  const body = '<h1 class="umo-profile-h1">PENDAHULUAN</h1>'
+  const out = composeDocumentHtml(body, ALL)
+  assert.match(out, /^<style data-umo-profiles>/)
+  assert.match(out, /<div class="umo-document">/)
+  assert.match(out, /counter-reset/)
+  assert.ok(out.includes(body))
+  assert.ok(out.trimEnd().endsWith('</div>'))
+})
+
+test('a document with no profiles is wrapped but carries no stylesheet', () => {
+  const out = composeDocumentHtml('<p>hi</p>', [])
+  assert.doesNotMatch(out, /<style/)
+  assert.match(out, /^<div class="umo-document">/)
+})
+
+test('the stylesheet never reaches the parser, and the round trip is exact', () => {
+  const body = '<h1 class="umo-profile-h1">A</h1>\n<p class="umo-profile-paragraph">B</p>'
+  const wrapped = composeDocumentHtml(body, ALL)
+  assert.equal(extractDocumentHtml(wrapped), body)
+  assert.doesNotMatch(extractDocumentHtml(wrapped), /counter-reset|<style/)
+})
+
+test('extracting is idempotent and leaves an unwrapped document alone', () => {
+  const body = '<p>plain</p>'
+  assert.equal(extractDocumentHtml(body), body)
+  const wrapped = composeDocumentHtml(body, ALL)
+  assert.equal(extractDocumentHtml(extractDocumentHtml(wrapped)), body)
+})
+
+test('a nested div does not confuse the unwrap', () => {
+  const body = '<div class="columns"><p>a</p></div>'
+  assert.equal(extractDocumentHtml(composeDocumentHtml(body, ALL)), body)
 })

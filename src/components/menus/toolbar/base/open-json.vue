@@ -86,6 +86,7 @@
 
 <script setup>
 import { resolveAssets } from '@/utils/document-assets'
+import { extractDocumentHtml } from '@/utils/profile-stylesheet'
 
 const openDocumentFile = inject('openDocumentFile')
 const pageOptions = inject('page')
@@ -163,7 +164,13 @@ const loadDocumentFromServer = async (doc) => {
     const payload = data.document
 
     // Documents stored before this format carry a snapshot; the current one stores HTML and settings.
-    const content = payload.snapshot?.content || payload.json || payload.html || ''
+    // A stored document carries its own stylesheet. It must not reach the parser, or the CSS is
+    // imported as document text.
+    const content =
+      payload.snapshot?.content ||
+      payload.json ||
+      (payload.html ? extractDocumentHtml(payload.html) : '') ||
+      ''
     // Stored page settings can be incomplete, and older files carry none at all. Fill the gaps from
     // the settings already in effect rather than refusing to open the document.
     const storedPage = payload.pageSettings || payload.snapshot?.page || {}
