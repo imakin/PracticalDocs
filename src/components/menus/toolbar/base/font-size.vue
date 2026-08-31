@@ -6,11 +6,7 @@
     hide-text
     style="width: 80px"
     :select-options="fontSizes"
-    :select-value="
-      typeWriterIsRunning
-        ? null
-        : editor?.getAttributes('textStyle').fontSize || '14px'
-    "
+    :select-value="typeWriterIsRunning ? null : currentFontSize"
     v-bind="$attrs"
     :placeholder="t('base.fontSize.text')"
     filterable
@@ -37,6 +33,8 @@
 </template>
 
 <script setup>
+import { effectiveTextStyle } from '@/utils/active-profile'
+
 const props = defineProps({
   select: {
     type: Boolean,
@@ -47,6 +45,23 @@ const props = defineProps({
 const editor = inject('editor')
 const options = inject('options')
 const typeWriterIsRunning = inject('typeWriterIsRunning')
+
+// A block styled by its profile carries no font attributes of its own, so reading only the mark
+// showed "Default" while the page showed the profile's size. Show what the block is really set in.
+const currentFontSize = $computed(() => {
+  const instance = editor.value
+  if (!instance) return '14px'
+  const store =
+    instance.storage?.documentReferences || instance.storage?.['document-references']
+  return (
+    effectiveTextStyle(
+      instance.state,
+      store?.profiles,
+      'fontSize',
+      instance.getAttributes('textStyle').fontSize,
+    ) || '14px'
+  )
+})
 
 const disableMenu = (name) => {
   return options.value.disableExtensions.includes(name)

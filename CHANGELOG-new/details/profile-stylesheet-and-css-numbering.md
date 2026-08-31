@@ -222,6 +222,35 @@ nothing in between - `line-height.vue` runs `setLineHeight(value)`, `margin.vue`
 npm run test:e2e:block-overrides
 ```
 
+## Three faults in how profiles reach the page
+
+All three had the same shape: the profile list is a plain property, so nothing that depends on it is
+told when it changes.
+
+**A document's own profiles never reached the stylesheet.** Opening a file wrote its profiles straight
+into the extension's storage, bypassing the generator, so the injected stylesheet still held the
+defaults from when the editor was created. A profile defined by the document had no CSS rule at all
+and its blocks fell back to the browser's own sizes - a heading on a 14pt profile rendered at 35px.
+Editing that profile afterwards created the rule, which is why the size appeared to move in the wrong
+direction: 14pt looked huge, 16pt looked smaller, 12pt looked right. Loading now goes through
+`setNumberingConfig`, the same path every other profile change uses.
+
+**The toolbar showed a default instead of the profile.** The font size and family selectors read
+`getAttributes('textStyle')`, and a block styled entirely by its profile's class carries no such
+attributes. `effectiveTextStyle` falls back to the profile of the block the cursor is in, so the
+controls now agree with the page: a heading reads `Default Font` and `14 pt`, a paragraph
+`Times New Roman` and `12 pt`.
+
+**The block gallery kept offering the built-in profiles.** It read the list once when it mounted and
+again when the Profiles dialog opened, so after loading a document the document's own profile was
+missing from the picker until that dialog had been opened and closed. The extension now announces
+`profilesChanged` and the gallery listens.
+
+Guarded by `document-stylesheet.cdp.mjs` case D, which loads a document carrying its own profile and
+checks the rule exists, no block is left without one, the heading renders at the size asked for, and
+the gallery offers the profile without the dialog being opened. Plus `active-profile.test.mjs`, 8
+checks on the lookup itself.
+
 ## Known gap
 
 A document that starts at `h2` with no `h1` renders `0.1` under CSS counters where the editor shows `1`.

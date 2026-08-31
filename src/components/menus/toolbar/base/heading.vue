@@ -508,6 +508,24 @@ onMounted(() => {
   loadProfiles()
 })
 
+// Profiles change without any document change the component can see: opening a file replaces them
+// wholesale, and editing one rewrites it. The extension announces it; this listens.
+let detachProfiles = null
+watch(
+  () => editor.value,
+  (instance) => {
+    detachProfiles?.()
+    detachProfiles = null
+    if (!instance?.on) return
+    instance.on('profilesChanged', loadProfiles)
+    detachProfiles = () => instance.off?.('profilesChanged', loadProfiles)
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => {
+  detachProfiles?.()
+})
+
 onClickOutside(
   popupContentRef,
   () => {

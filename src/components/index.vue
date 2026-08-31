@@ -1327,13 +1327,21 @@ const applyDocumentSnapshot = async (snapshot) => {
       value.profiles.forEach((p) => {
         if (p && p.fontFamily) ensureFontFamilyLoaded(p.fontFamily)
       })
-      const refStorage = getRefStorage()
-      if (refStorage) {
-        refStorage.profiles = value.profiles
-        try {
-          localStorage.setItem('umo-editor:profiles', JSON.stringify(value.profiles))
-        } catch {}
+      // Through the command, not by assigning to the storage: the profiles own a generated
+      // stylesheet, and writing the array directly left that stylesheet holding the defaults from
+      // when the editor was created. A document's own profiles then had no CSS rule at all, so its
+      // blocks fell back to the browser's sizes - a heading on a 14pt profile rendered at 35px.
+      if (editor.value?.commands.setNumberingConfig) {
+        editor.value.commands.setNumberingConfig({ profiles: value.profiles })
+      } else {
+        const refStorage = getRefStorage()
+        if (refStorage) {
+          refStorage.profiles = value.profiles
+        }
       }
+      try {
+        localStorage.setItem('umo-editor:profiles', JSON.stringify(value.profiles))
+      } catch {}
     }
     setContent(value.content, {
       emitUpdate: false,

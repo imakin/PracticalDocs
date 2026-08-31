@@ -272,6 +272,75 @@ check('the paragraph still renders with its profile font and indent',
 // data-number-template the fixture carried. That the newline is back is the point.
 check('the numbering still renders, recomputed from the profile', JSON.stringify(migrated.numbers) === JSON.stringify(['BAB I\n']), JSON.stringify(migrated.numbers))
 
+console.log('\nCase D: a document brings its own profiles, and they reach the stylesheet')
+// Opening a document used to write its profiles straight into the extension's storage, which left the
+// generated stylesheet holding the defaults from when the editor was created. A profile the document
+// defined then had no CSS rule at all, and its blocks fell back to the browser's own sizes: a heading
+// on a 14pt profile rendered at 35px. Only editing that profile afterwards brought the rule into
+// existence, which is why the size appeared to change in the wrong direction.
+const CUSTOM = {
+  id: 'profile-custom-heading', name: 'Chapter Title', enabled: false, style: 'numeric',
+  template: '', targetType: 'heading', level: 1, fontSize: '14pt', fontWeight: 'bold',
+  lineHeight: '1.5', textAlign: 'center', indent: 0,
+}
+const loaded = await evaluate(`(async () => {
+  localStorage.removeItem('umo-editor:profiles')
+  const snapshot = {
+    format: 'umodoc', formatVersion: 1, editorVersion: '11.0.4',
+    savedAt: new Date().toISOString(),
+    document: { title: 'profil-dokumen' },
+    content: { type: 'doc', content: [
+      { type: 'heading', attrs: { level: 1, numberingProfileId: ${JSON.stringify(CUSTOM.id)} },
+        content: [{ type: 'text', text: 'JUDUL BAB' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: 'Isi.' }] },
+    ] },
+    page: JSON.parse(JSON.stringify(window.__p.page.value)),
+    profiles: [${JSON.stringify(CUSTOM)}],
+  }
+  await window.__p.openDocumentFile(snapshot, { skipConfirmation: true })
+  await new Promise((r) => setTimeout(r, 3000))
+  const sheet = document.querySelector('style[data-umo-profile-styles]')
+  const rules = ((sheet ? sheet.textContent : '').match(/umo-profile-[a-z0-9-]+(?= \{)/g) || [])
+  const used = new Set()
+  document.querySelectorAll('.ProseMirror [class*=umo-profile-]').forEach((n) => {
+    const c = [...n.classList].find((x) => x.startsWith('umo-profile-'))
+    if (c) used.add(c)
+  })
+  const heading = document.querySelector('.ProseMirror h1')
+  return {
+    rules,
+    withoutRule: [...used].filter((c) => !rules.includes(c)),
+    headingClass: heading ? [...heading.classList].find((c) => c.startsWith('umo-profile-')) : null,
+    headingSize: heading ? getComputedStyle(heading).fontSize : null,
+  }
+})()`)
+await shoot('case-d-document-profiles')
+
+check("the document's own profile has a rule", loaded.rules.includes('umo-profile-custom-heading'), JSON.stringify(loaded.rules))
+check('no block is left without a rule for its class', loaded.withoutRule.length === 0, JSON.stringify(loaded.withoutRule))
+check('the heading carries that profile class', loaded.headingClass === 'umo-profile-custom-heading', String(loaded.headingClass))
+// 14pt is 18.667px. The browser's own h1 is 2em, which is where the 35px came from.
+check('the heading renders at the size the profile asks for', loaded.headingSize === '18.6667px', String(loaded.headingSize))
+
+// The block gallery in the toolbar reads the profile list once when it mounts. Opening a document
+// replaces that list, and nothing told the gallery, so it went on offering the built-in profiles: the
+// document's own profile was missing from the picker until the Profiles dialog was opened and closed.
+const gallery = await evaluate(`(() => {
+  const container = document.querySelector('.umo-toolbar-headding')
+  if (!container) return { found: false }
+  return {
+    found: true,
+    names: [...container.querySelectorAll('.umo-heading-container .card .title')]
+      .map((n) => (n.textContent || '').trim()),
+  }
+})()`)
+check('the toolbar block gallery is present', gallery.found === true)
+check(
+  "the document's own profile is offered in the gallery without opening the dialog",
+  (gallery.names || []).includes('Chapter Title'),
+  JSON.stringify(gallery.names),
+)
+
 console.log('\nscreenshots written to tests/screenshots/document-stylesheet-*.png')
 if (failures.length) {
   console.log(`\nRESULT: FAILED -- ${failures.length} check(s) failed:`)

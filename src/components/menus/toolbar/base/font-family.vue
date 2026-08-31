@@ -56,6 +56,8 @@
 </template>
 
 <script setup>
+import { effectiveTextStyle } from '@/utils/active-profile'
+
 import { isString } from '@tool-belt/type-predicates'
 
 import { MessagePlugin } from '@/composables/dialog'
@@ -74,13 +76,21 @@ let autoDownloadRunning = $ref(false)
 let restoringDownloadedFonts = $ref(true)
 
 const selectedFont = computed(() => {
-  if (!editor.value || typeWriterIsRunning.value) {
+  const instance = editor.value
+  if (!instance || typeWriterIsRunning.value) {
     return null
   }
-  if (!editor.value?.getAttributes('textStyle').fontFamily) {
-    return null
-  }
-  return editor.value.getAttributes('textStyle').fontFamily.replace(/"/g, '')
+  // A block styled by its profile carries no font attributes of its own, so reading only the mark
+  // left this blank while the page showed the profile's font.
+  const store =
+    instance.storage?.documentReferences || instance.storage?.['document-references']
+  const family = effectiveTextStyle(
+    instance.state,
+    store?.profiles,
+    'fontFamily',
+    instance.getAttributes('textStyle').fontFamily,
+  )
+  return family ? String(family).replace(/"/g, '') : null
 })
 
 const ensureRecentState = () => {

@@ -49,6 +49,11 @@ const syncProfileStylesheet = (editor, profiles) => {
   if (element.textContent !== css) {
     element.textContent = css
   }
+  // The profile list is a plain property on the extension storage, so nothing watching it can see a
+  // change. Anything that renders the profiles - the block gallery in the toolbar, for one - needs
+  // telling, or it keeps showing whatever was there when it mounted. Opening a document changed the
+  // profiles and left that gallery listing the defaults.
+  editor.emit?.('profilesChanged', profiles)
 }
 
 const removeProfileStylesheet = (editor) => {
