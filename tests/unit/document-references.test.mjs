@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  applyTemplate,
   buildReferencePlan,
   formatSingleNumber,
   getCrossReferenceText,
@@ -339,4 +340,142 @@ test('a template without any heading placeholder keeps one running sequence', ()
     targets.filter((t) => t.numberingProfileId === 'flat').map((t) => t.label),
     ['Gambar 1', 'Gambar 2'],
   )
+})
+
+test('a heading whose profile does not number it consumes no number', () => {
+  // The user's case: a Title 1 profile without numbering, then a numbered Title 1 after it. The
+  // second used to come out as 2, because the unnumbered one had already taken 1.
+  const profiles = [
+    { id: 'plain-h1', name: 'Title 1 plain', enabled: false, template: '', targetType: 'heading', level: 1 },
+    { id: 'numbered-h1', name: 'Title 1', enabled: true, style: 'numeric', template: 'BAB {number}', targetType: 'heading', level: 1 },
+  ]
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1, numberingProfileId: 'plain-h1', title: 'Abstract' },
+      { pos: 10, targetType: 'heading', level: 1, numberingProfileId: 'numbered-h1', title: 'Pendahuluan' },
+      { pos: 20, targetType: 'heading', level: 1, numberingProfileId: 'numbered-h1', title: 'Tinjauan' },
+    ],
+    { createId: () => 'id', profiles },
+  )
+  assert.deepEqual(targets.map((t) => t.label), ['', 'BAB 1', 'BAB 2'])
+})
+
+test('an unnumbered heading does not restart the levels below it either', () => {
+  const profiles = [
+    { id: 'plain-h1', enabled: false, template: '', targetType: 'heading', level: 1 },
+    { id: 'h2', enabled: true, style: 'numeric', template: '{number}', targetType: 'heading', level: 2 },
+  ]
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 2, numberingProfileId: 'h2' },
+      { pos: 10, targetType: 'heading', level: 1, numberingProfileId: 'plain-h1' },
+      { pos: 20, targetType: 'heading', level: 2, numberingProfileId: 'h2' },
+    ],
+    { createId: () => 'id', profiles },
+  )
+  assert.deepEqual(targets.map((t) => t.label), ['1', '', '2'])
+})
+
+test('a profile numbering a block without showing a label is allowed', () => {
+  // Counted but invisible: the template is empty on purpose, so nothing is drawn, but the block still
+  // takes its place in the sequence and a cross reference can still point at it.
+  const profiles = [
+    { id: 'silent', enabled: true, style: 'numeric', template: '', targetType: 'heading', level: 1 },
+  ]
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1, numberingProfileId: 'silent' },
+      { pos: 10, targetType: 'heading', level: 1, numberingProfileId: 'silent' },
+    ],
+    { createId: () => 'id', profiles },
+  )
+  assert.deepEqual(targets.map((t) => t.label), ['', ''])
+  assert.deepEqual(targets.map((t) => t.number), ['1', '2'])
+})
+
+test('a template with words but no number shows just the words', () => {
+  const profiles = [
+    { id: 'named', enabled: true, style: 'numeric', template: 'Lampiran', targetType: 'heading', level: 1 },
+  ]
+  const { targets } = buildReferencePlan(
+    [{ pos: 0, targetType: 'heading', level: 1, numberingProfileId: 'named' }],
+    { createId: () => 'id', profiles },
+  )
+  assert.equal(targets[0].label, 'Lampiran')
+})
+
+test("a stale template on the node no longer overrides the profile's", () => {
+  const profiles = [
+    { id: 'h1', enabled: true, style: 'numeric', template: '', targetType: 'heading', level: 1 },
+  ]
+  const { targets } = buildReferencePlan(
+    [
+      {
+        pos: 0, targetType: 'heading', level: 1, numberingProfileId: 'h1',
+        numberTemplate: 'BAB {number}',
+      },
+    ],
+    { createId: () => 'id', profiles },
+  )
+  assert.equal(targets[0].label, '')
+})
+
+test('applyTemplate tells an empty template apart from no template', () => {
+  assert.equal(applyTemplate('', '3', 'Section'), '')
+  assert.equal(applyTemplate(null, '3', 'Section'), 'Section 3')
+  assert.equal(applyTemplate(undefined, '3', 'Section'), 'Section 3')
+  assert.equal(applyTemplate('Bagian {number}', '3', 'Section'), 'Bagian 3')
+})
+
+test('a block keeps its profile when that profile is not in the list', () => {
+  // A list that is momentarily incomplete - a document still loading, a profile just removed - used
+  // to move the block onto the default for its type, and that reassignment was written to the node
+  // and could not be undone.
+  const profiles = [
+    { id: 'h1', enabled: true, style: 'numeric', template: 'BAB {number}', targetType: 'heading', level: 1 },
+  ]
+  const { targets } = buildReferencePlan(
+    [{ pos: 0, targetType: 'heading', level: 1, numberingProfileId: 'custom-h1' }],
+    { createId: () => 'id', profiles },
+  )
+  assert.equal(targets[0].numberingProfileId, 'custom-h1')
+  assert.equal(targets[0].label, '')
+})
+
+test('the plan never writes into a profile', () => {
+  // The profiles are the stylesheet. Filling a profile's empty fields from whichever block happened
+  // to be scanned first gave that one block's font and alignment to every block on the profile.
+  const profile = {
+    id: 'h1', enabled: true, style: 'numeric', template: '{number}',
+    targetType: 'heading', level: 1,
+  }
+  const before = JSON.stringify(profile)
+  buildReferencePlan(
+    [
+      {
+        pos: 0, targetType: 'heading', level: 1, numberingProfileId: 'h1',
+        fontFamily: 'Arial', fontSize: '20pt', fontWeight: 'bold',
+        lineHeight: '2', marginTop: '3em', marginBottom: '4em',
+        indent: 5, textAlign: 'center',
+      },
+    ],
+    { createId: () => 'id', profiles: [profile] },
+  )
+  assert.equal(JSON.stringify(profile), before)
+})
+
+test('a block with no profile still follows the default for its type', () => {
+  const profiles = [
+    { id: 'p', enabled: false, template: '', targetType: 'paragraph' },
+    { id: 'h1', enabled: true, style: 'numeric', template: 'BAB {number}', targetType: 'heading', level: 1 },
+  ]
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1 },
+      { pos: 10, targetType: 'paragraph' },
+    ],
+    { createId: () => 'id', profiles },
+  )
+  assert.deepEqual(targets.map((t) => t.numberingProfileId), ['h1', 'p'])
+  assert.deepEqual(targets.map((t) => t.label), ['BAB 1', ''])
 })

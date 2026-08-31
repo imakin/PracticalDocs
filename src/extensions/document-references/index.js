@@ -1005,17 +1005,12 @@ export const DocumentReferences = Extension.create({
           const { tr } = state
           if (updatedProfile) {
             state.doc.descendants((node, pos) => {
-              const isMatch =
-                node.attrs?.numberingProfileId === id ||
-                (updatedProfile.targetType === 'heading' &&
-                  node.type.name === 'heading' &&
-                  (node.attrs.level || 1) === (updatedProfile.level || 1)) ||
-                (updatedProfile.targetType === 'paragraph' &&
-                  node.type.name === 'paragraph') ||
-                (updatedProfile.targetType === 'table' &&
-                  node.type.name === 'table') ||
-                (updatedProfile.targetType === 'figure' &&
-                  node.type.name === 'image')
+              // Only the blocks that follow this profile. Matching by node type and level as well
+              // meant editing any profile moved every block of that type onto it: one edit to a
+              // paragraph profile put every paragraph in the document under it, and the whole
+              // document took that profile's font and alignment. A block that follows no profile
+              // yet is left to the sync below, which gives it the default for its type.
+              const isMatch = node.attrs?.numberingProfileId === id
 
               if (isMatch) {
                 const nextAttrs = {
@@ -1056,8 +1051,25 @@ export const DocumentReferences = Extension.create({
           try {
             localStorage.setItem('umo-editor:profiles', JSON.stringify(this.storage.profiles))
           } catch {}
-          const tr = createSyncTransaction(state, this.storage)
-          if (tr) dispatch?.(tr)
+          // The blocks that followed the deleted profile are released here, so they fall back to the
+          // default for their type. Doing it at deletion keeps the sync free to treat a name it
+          // cannot resolve as a list that is not ready, rather than as a profile that is gone.
+          const { tr } = state
+          let released = false
+          state.doc.descendants((node, pos) => {
+            if (node.attrs?.numberingProfileId !== id) return
+            tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              numberingProfileId: null,
+            })
+            released = true
+          })
+          if (released) {
+            dispatch?.(tr)
+            return true
+          }
+          const syncTr = createSyncTransaction(state, this.storage)
+          if (syncTr) dispatch?.(syncTr)
           return true
         },
       applyNumberingProfile:

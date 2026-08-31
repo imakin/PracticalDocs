@@ -136,3 +136,66 @@ An inline reference uses:
 - Profiles can be created, edited, toggled ON/OFF, and applied to document blocks.
 - Roman (`I`), Alphabet (`A`), Numeric (`1`), and template placement render accurately based on active profiles.
 - Unit tests, CDP tests, lint, and production build pass.
+
+
+## Numbering counts only what it numbers, and shows only what it is asked to
+
+Two faults reported by the user, both about the difference between counting a block and labelling it.
+
+**A heading whose profile does not number it was still taking a number.** The counter advanced before
+the profile's `enabled` flag was looked at, so a Title 1 profile with numbering off consumed 1 and the
+next numbered Title 1 came out as "BAB 2". An unnumbered heading now takes no number and consumes
+none, and leaves the deeper levels alone as well, since as far as the count is concerned it opens no
+section.
+
+**A profile could not be numbered without also being labelled.** Clearing a profile's template fell
+through to the default and put the number back, so there was no way to have a block counted but not
+shown. An empty template now means "show nothing" and is treated as different from having no template
+at all - only null or undefined falls back to a default. The block still takes its place in the
+sequence, so a cross reference can still point at it.
+
+While fixing that: a template stored on the node no longer overrides the profile's. The node attribute
+is a fallback for a block that follows no profile; letting it win meant a template cleared on the
+profile stayed visible on every block that had already been synced.
+
+Six checks in `tests/unit/document-references.test.mjs` cover both, including the user's exact case
+of an unnumbered chapter heading followed by numbered ones.
+
+
+## A profile edit reached every block of that type
+
+Editing one profile restyled the whole document: the paragraphs of one section took the font,
+size and alignment of another, and blocks the user had deliberately put on their own profile were
+moved off it. It had been seen before but rarely, because before the profile became the block's CSS
+class the reassignment was invisible - it changed the numbering and nothing else.
+
+The profile assignment was matched by node type and level as well as by profile id, in three places:
+
+- **The command that saves a profile edit** stamped its id onto every block of the matching type.
+  Editing any paragraph profile put every paragraph in the document under it; editing a level-1
+  heading profile took every h1, including ones on a different profile. This is the loud case: one
+  edit, and the whole document changes at once. A profile edit now reaches only the blocks that
+  carry its id. Blocks that follow no profile yet are left to the sync, which gives them the default
+  for their type as it always has.
+
+- **The dialog that opens a profile for editing** filled the profile's empty fields from the first
+  block of that type anywhere in the document, so saving wrote a stranger's font and alignment into
+  the profile. It now reads only from blocks that follow the profile being edited.
+
+- **The sync that resolves a block to its profile** dropped to the default for the type whenever it
+  could not find the profile the block named, and wrote that back to the block. A profile list that
+  was momentarily incomplete - a document still loading, a profile just removed - was enough to move
+  every block in the document onto one profile, permanently. A block now keeps the profile it names
+  even when that profile cannot be resolved, and is left unnumbered until it can be.
+
+Deleting a profile now releases the blocks that followed it, so they fall back to the default for
+their type at the moment of deletion rather than through a rule that cannot tell a deleted profile
+from one that has not loaded yet.
+
+Separately, the sync was writing into the profiles. Every field a profile left empty was filled from
+whichever block was scanned first, so one block's alignment or font became the profile's own and the
+generated stylesheet then handed it to every block that follows it. Since the profiles are saved with
+the document, this was permanent. The sync now reads the profiles and never writes to them.
+
+`tests/e2e/profile-isolation.cdp.mjs` covers all five cases against the running editor, and three
+unit tests cover the plan's half.

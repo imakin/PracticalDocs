@@ -430,11 +430,12 @@ const applyProfile = (id) => {
 const editProfile = (profile) => {
   const mergedProfile = { ...profile }
   if (editor.value) {
+    // Any field the profile leaves empty is filled from a block that actually follows it, so the
+    // dialog opens showing what the user sees on screen. Matching by node type as well meant the
+    // form was seeded from the first block of that type anywhere in the document, and saving then
+    // wrote that stranger's font and alignment into the profile.
     editor.value.state.doc.descendants((node) => {
-      const isMatch =
-        node.attrs?.numberingProfileId === profile.id ||
-        (profile.targetType === 'heading' && node.type.name === 'heading' && (node.attrs.level || 1) === (profile.level || 1)) ||
-        (profile.targetType === 'paragraph' && node.type.name === 'paragraph')
+      const isMatch = node.attrs?.numberingProfileId === profile.id
       if (isMatch) {
         if (!mergedProfile.fontFamily && node.attrs.fontFamily) mergedProfile.fontFamily = node.attrs.fontFamily
         if (!mergedProfile.fontSize && node.attrs.fontSize) mergedProfile.fontSize = node.attrs.fontSize

@@ -125,6 +125,13 @@ export const templateScopeLevel = (template) => {
   return level
 }
 
+/**
+ * An empty template means "show nothing", and is different from having no template at all.
+ *
+ * A profile whose template the user cleared used to fall through to the default and put the number
+ * back, so there was no way to have a block counted but not labelled. Only null or undefined - no
+ * template set - falls back now.
+ */
 export const applyTemplate = (
   template,
   number,
@@ -132,6 +139,9 @@ export const applyTemplate = (
   title = '',
   headingCounters = [],
 ) => {
+  if (template === '') {
+    return ''
+  }
   if (!template) {
     return `${defaultLabel} ${number}`.trim()
   }
@@ -185,8 +195,11 @@ const createUniqueId = (targetType, seenIds, createId) => {
 const findProfile = (descriptor, profiles = []) => {
   if (!Array.isArray(profiles) || profiles.length === 0) return null
   if (descriptor.numberingProfileId) {
-    const matched = profiles.find((p) => p.id === descriptor.numberingProfileId)
-    if (matched) return matched
+    // A block that names a profile keeps that assignment even when the profile is not in the list.
+    // Falling through to the default for its type used to overwrite the block's own choice, and a
+    // list that is momentarily incomplete - one profile just deleted, a document still loading - was
+    // enough to move every block in the document onto one profile, permanently.
+    return profiles.find((p) => p.id === descriptor.numberingProfileId) || null
   }
   if (descriptor.targetType === 'heading') {
     return (
@@ -242,30 +255,35 @@ export const buildReferencePlan = (
         : createUniqueId(targetType, seenIds, idFactory)
     seenIds.add(targetId)
 
+    // The profile is read here and never written to. Filling the profile's empty fields from the
+    // block being scanned made one block's font, margin or alignment the profile's own, and the
+    // stylesheet then handed it to every other block that follows that profile.
     const profile = findProfile(descriptor, profiles)
-    if (profile) {
-      if (!profile.fontFamily && descriptor.fontFamily) profile.fontFamily = descriptor.fontFamily
-      if (!profile.fontSize && descriptor.fontSize) profile.fontSize = descriptor.fontSize
-      if (!profile.fontWeight && descriptor.fontWeight) profile.fontWeight = descriptor.fontWeight
-      if (!profile.lineHeight && descriptor.lineHeight) profile.lineHeight = descriptor.lineHeight
-      if (!profile.marginTop && descriptor.marginTop) profile.marginTop = descriptor.marginTop
-      if (!profile.marginBottom && descriptor.marginBottom) profile.marginBottom = descriptor.marginBottom
-      if (profile.indent === undefined && descriptor.indent !== undefined) profile.indent = descriptor.indent
-      if (!profile.textAlign && descriptor.textAlign) profile.textAlign = descriptor.textAlign
-    }
-    const profileEnabled = profile
-      ? profile.enabled !== false
-      : enabled !== false
+    // A block naming a profile that is not in the list is left alone rather than numbered under the
+    // defaults, which would put a label on it that no profile asked for.
+    const profileMissing = !profile && Boolean(normalizeText(descriptor.numberingProfileId))
+    const profileEnabled = profileMissing
+      ? false
+      : profile
+        ? profile.enabled !== false
+        : enabled !== false
 
     let number
     if (targetType === 'heading') {
-      const headingStyle =
-        descriptor.numberStyle ||
-        (profile ? profile.style : styles.heading) ||
-        'numeric'
-      number = getNextHeadingNumber(headingCounters, descriptor.level, {
-        style: headingStyle,
-      })
+      // A heading whose profile does not number it takes no number and does not consume one, so the
+      // next numbered heading at that level carries on where the last numbered one left off. It also
+      // leaves the deeper levels alone, since it opens no section as far as the count is concerned.
+      if (!profileEnabled) {
+        number = ''
+      } else {
+        const headingStyle =
+          descriptor.numberStyle ||
+          (profile ? profile.style : styles.heading) ||
+          'numeric'
+        number = getNextHeadingNumber(headingCounters, descriptor.level, {
+          style: headingStyle,
+        })
+      }
     } else if (targetType === 'figure') {
       // The image is only the container. What carries the number is the caption block the user
       // applies a profile to, exactly like a heading carries its own number.
@@ -295,11 +313,17 @@ export const buildReferencePlan = (
 
     const title = normalizeText(descriptor.title)
     const defaultLabel = labels[targetType] || targetType
+    // The profile is the source of truth for its own blocks, including when it says "nothing". The
+    // node attribute is only a fallback for a block that follows no profile; letting it win meant a
+    // template cleared on the profile stayed visible on every block that had already been synced.
+    const profileTemplate = profile ? profile.template : undefined
     const template =
-      descriptor.numberTemplate ||
-      (profile ? profile.template : templates[targetType]) ||
-      DEFAULT_TEMPLATES[targetType] ||
-      '{label} {number}'
+      profileTemplate !== undefined && profileTemplate !== null
+        ? profileTemplate
+        : descriptor.numberTemplate ||
+          templates[targetType] ||
+          DEFAULT_TEMPLATES[targetType] ||
+          '{label} {number}'
 
     const label =
       profileEnabled && targetType !== 'figure'
