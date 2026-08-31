@@ -71,6 +71,7 @@ import Selection from './selection'
 import { Table, TableCell, TableHeader, TableRow } from './table'
 import Tag from './tag'
 import TextAlign from './text-align'
+import TextCase from './text-case'
 import TextBox from './text-box'
 import Toc from './toc'
 import TypeWriter from './type-writer'
@@ -229,6 +230,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     Superscript,
     Indent,
     TextAlign,
+    TextCase,
     NodeAlign,
     LetterSpacing,
     ListItem,

@@ -151,6 +151,9 @@
     <menus-toolbar-base-italic />
     <menus-toolbar-base-underline />
     <menus-toolbar-base-strike />
+    <menus-toolbar-base-uppercase />
+    <menus-toolbar-base-lowercase />
+    <menus-toolbar-base-capitalize />
     <div class="umo-bubble-menu-divider"></div>
     <menus-toolbar-base-align-dropdown />
     <menus-toolbar-insert-link v-if="!disable('link')" />
