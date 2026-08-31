@@ -505,6 +505,42 @@
       "compact": "紧凑型",
       "spacious": "宽松型",
       "clear": "清除水印"
+    },
+    "pageNumber": {
+      "text": "Page Numbers",
+      "enabled": "Show page numbers",
+      "position": "Position",
+      "positions": {
+        "top-left": "Top left",
+        "top-center": "Top centre",
+        "top-right": "Top right",
+        "bottom-left": "Bottom left",
+        "bottom-center": "Bottom centre",
+        "bottom-right": "Bottom right"
+      },
+      "format": "Numerals",
+      "formats": {
+        "numeric": "1, 2, 3",
+        "roman-upper": "I, II, III",
+        "roman-lower": "i, ii, iii",
+        "alpha-upper": "A, B, C",
+        "alpha-lower": "a, b, c"
+      },
+      "template": "Template",
+      "templateTip": "Placeholders:",
+      "tokenNumber": "the page number",
+      "tokenTotal": "the page count",
+      "startAt": "Start at",
+      "sectionHint": "To restart the count part way through, select a page break and set its section there.",
+      "styleHint": "Styling comes from the \"Page Number\" profile, like any other block.",
+      "section": {
+        "title": "At this page break",
+        "none": "No page break selected. Click one to change where a new count starts.",
+        "follow": "Follow the previous count",
+        "restart": "Restart the count at",
+        "format": "Change numerals to",
+        "keepFormat": "Keep the same numerals"
+      }
     }
   },
   "view": {

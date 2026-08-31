@@ -68,7 +68,7 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
   const addNumber = (host, entry, fromBottomPx) => {
     if (!entry) return
     const label = document.createElement('div')
-    label.className = 'umo-page-number'
+    label.className = 'umo-page-number umo-profile-page-number'
     label.textContent = entry.text
     label.style.cssText = [
       'position: absolute',

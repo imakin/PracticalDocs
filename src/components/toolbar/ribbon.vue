@@ -237,6 +237,7 @@
             <menus-toolbar-page-break />
             <menus-toolbar-page-break-marks />
             <menus-toolbar-page-line-number />
+            <menus-toolbar-page-numbering />
             <menus-toolbar-page-watermark v-if="!disableMenu('watermark')" />
             <menus-toolbar-page-background v-if="!disableMenu('background')" />
           </div>

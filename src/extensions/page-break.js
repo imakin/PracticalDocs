@@ -1,5 +1,24 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 
+// The break the user means: the one they have selected, or the one immediately around the cursor.
+// A page break is an atom, so a plain click selects it; arrowing past it leaves the cursor beside it.
+export const findPageBreakNear = (state) => {
+  const { selection } = state
+  const selected = selection.node
+  if (selected?.type?.name === 'pageBreak') {
+    return { node: selected, pos: selection.from }
+  }
+  const { $from } = selection
+  for (const candidate of [$from.nodeAfter, $from.nodeBefore]) {
+    if (candidate?.type?.name === 'pageBreak') {
+      const pos =
+        candidate === $from.nodeAfter ? $from.pos : $from.pos - candidate.nodeSize
+      return { node: candidate, pos }
+    }
+  }
+  return null
+}
+
 export default Node.create({
   name: 'pageBreak',
   group: 'block',
@@ -83,6 +102,20 @@ export default Node.create({
           commands.insertContent({
             type: this.name,
           }),
+      // Change the numbering section a break opens. A break carries no section by default - it just
+      // ends a page - so this is how a user opts one in. Passing null for a field puts it back to
+      // following the section before it.
+      setPageBreakSection:
+        (attrs = {}) =>
+        ({ state, dispatch }) => {
+          const found = findPageBreakNear(state)
+          if (!found) {
+            return false
+          }
+          const next = { ...found.node.attrs, ...attrs }
+          dispatch?.(state.tr.setNodeMarkup(found.pos, undefined, next))
+          return true
+        },
     }
   },
   addKeyboardShortcuts() {

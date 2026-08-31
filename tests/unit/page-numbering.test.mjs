@@ -132,3 +132,37 @@ test('starting the footer count at ten does not move any physical page', () => {
   assert.deepEqual(out.map((r) => r.index), [1, 2, 3])
   assert.deepEqual(texts(out), ['10', '11', '12'])
 })
+
+test('a page break with no section set does not renumber anything', () => {
+  // This is what a plain page break sends: every field null, because the user set none of them.
+  // `Number(null)` is 0, so an earlier version restarted the count at zero on every chapter break.
+  const plain = { atSheet: 2, enabled: null, position: null, format: null, template: null, startAt: null }
+  const out = computePageNumbers(4, { enabled: true }, [plain])
+  assert.deepEqual(texts(out), ['1', '2', '3', '4'])
+})
+
+test('an empty start value is not a restart either', () => {
+  const out = computePageNumbers(4, { enabled: true }, [{ atSheet: 2, startAt: '' }])
+  assert.deepEqual(texts(out), ['1', '2', '3', '4'])
+})
+
+test('several plain breaks in a row leave one running sequence', () => {
+  // The thesis case: a break at every chapter, none of them meant to restart anything.
+  const breaks = [1, 2, 3, 4].map((atSheet) => ({ atSheet, startAt: null }))
+  const out = computePageNumbers(6, { enabled: true }, breaks)
+  assert.deepEqual(texts(out), ['1', '2', '3', '4', '5', '6'])
+})
+
+test('one break can restart while the plain ones around it carry on', () => {
+  const out = computePageNumbers(6, { enabled: true }, [
+    { atSheet: 1, startAt: null },
+    { atSheet: 2, startAt: 1, format: 'numeric' },
+    { atSheet: 4, startAt: null },
+  ])
+  assert.deepEqual(texts(out), ['1', '2', '1', '2', '3', '4'])
+})
+
+test('restarting at zero is still possible when asked for explicitly', () => {
+  const out = computePageNumbers(3, { enabled: true }, [{ atSheet: 1, startAt: 0 }])
+  assert.deepEqual(out.map((r) => r.value), [1, 0, 1])
+})

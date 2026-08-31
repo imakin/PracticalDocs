@@ -48,7 +48,13 @@ const normalizePosition = (value, fallback) =>
 const normalizeFormat = (value, fallback) =>
   PAGE_NUMBER_FORMATS.includes(value) ? value : fallback
 
+// null means "carry on from the section before", and it is what a page break with no section set
+// actually sends. `Number(null)` is 0, not NaN, so an earlier version read every plain page break as a
+// restart at zero - which is why inserting a break between chapters silently renumbered the document.
 const normalizeStart = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
   const n = Number(value)
   return Number.isFinite(n) ? Math.trunc(n) : null
 }

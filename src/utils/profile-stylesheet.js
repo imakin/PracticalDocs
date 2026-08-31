@@ -232,7 +232,12 @@ export const buildProfileStylesheet = (
       if (resets.length > 0) decls.push(`counter-reset: ${resets.join(' ')};`)
     }
     if (decls.length > 0) {
-      blocks.push(`${sel(`.${cls}`)} {\n${decls.map((d) => `  ${d}`).join('\n')}\n}`)
+      // The page number is drawn in the page margin, outside the text flow and therefore outside the
+      // scope element, which is the editor's own content box. Scoping its rule would mean it never
+      // matches. It is styled by its class alone, which is still specific to this one profile.
+      const selector =
+        profile.targetType === 'pageNumber' ? `.${cls}` : sel(`.${cls}`)
+      blocks.push(`${selector} {\n${decls.map((d) => `  ${d}`).join('\n')}\n}`)
     }
     if (!isNumbered) continue
 

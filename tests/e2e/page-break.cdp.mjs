@@ -184,6 +184,61 @@ const twice = await evaluate(`(async () => {
 })()`)
 check('re-solving does not add spacers', twice === 1, `${twice} spacer(s) after a second solve`)
 
+console.log('\nCase D: a break restarts the count on the page it opens, not the one it sits on')
+// The engine can anchor its spacer one position inside the block after a break, which leaves that
+// block's box beginning in the previous sheet's bottom margin. Deriving the section from that box
+// started the restart a page early: the page holding the break was numbered 1 and the chapter after
+// it carried on at 2. A page break closes the page it is on, so the section opens on the next one.
+const restart = await evaluate(`(async () => {
+  const filler = (t) => ({ type: 'paragraph', content: [{ type: 'text', text: (t + ' ').repeat(430) }] })
+  window.__ed.commands.setContent({ type: 'doc', content: [
+    filler('Bab satu.'), filler('Masih bab satu.'),
+    { type: 'pageBreak', attrs: { sectionStartAt: 1, sectionFormat: 'numeric' } },
+    { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'BAB II' }] },
+    filler('Bab dua.'),
+  ] })
+  window.__p.page.value.pageNumber = { enabled: true, position: 'bottom-center', format: 'numeric', template: '{number}', startAt: 1 }
+  await new Promise((r) => setTimeout(r, 4000))
+  const root = document.querySelector('.umo-page-content')
+  const ruler = document.createElement('div')
+  ruler.style.cssText = 'position:absolute;visibility:hidden;width:1px'
+  root.appendChild(ruler)
+  const m = (k, f) => { ruler.style.height = 'var(' + k + ', ' + f + ')'; return ruler.getBoundingClientRect().height }
+  const stride = m('--umo-page-height', '29.7cm') + m('--umo-page-sheet-gap', '16px')
+  ruler.remove()
+  const origin = root.getBoundingClientRect().top
+  const brk = document.querySelector('.umo-page-break')
+  return {
+    breakSheet: brk ? Math.floor((brk.getBoundingClientRect().top - origin) / stride) : null,
+    numbers: [...root.querySelectorAll(':scope > .umo-page-number')]
+      .sort((a, b) => Number(a.dataset.sheet) - Number(b.dataset.sheet))
+      .map((e) => e.textContent),
+  }
+})()`)
+{
+  const shot = await call('Page.captureScreenshot', { format: 'png' }, sessionId)
+  await writeFile(path.join(SHOTS, 'page-break-restart.png'), Buffer.from(shot.data, 'base64'))
+}
+
+const breakSheet = restart.breakSheet
+check('the break landed on a sheet that is not the first', breakSheet > 0, `sheet ${breakSheet}`)
+check(
+  'the page holding the break keeps the old count',
+  restart.numbers[breakSheet] === String(breakSheet + 1),
+  `sheet ${breakSheet} shows ${JSON.stringify(restart.numbers[breakSheet])}, expected ${breakSheet + 1}`,
+)
+check(
+  'the page after the break is the one that restarts',
+  restart.numbers[breakSheet + 1] === '1',
+  `sheet ${breakSheet + 1} shows ${JSON.stringify(restart.numbers[breakSheet + 1])}`,
+)
+check(
+  'the restart runs on from there',
+  restart.numbers.slice(breakSheet + 1).join(',') ===
+    restart.numbers.slice(breakSheet + 1).map((_, i) => String(i + 1)).join(','),
+  JSON.stringify(restart.numbers),
+)
+
 console.log('\nscreenshot written to tests/screenshots/page-break-honoured.png')
 if (failures.length) {
   console.log(`\nRESULT: FAILED -- ${failures.length} check(s) failed:`)

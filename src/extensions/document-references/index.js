@@ -627,6 +627,22 @@ export const DocumentReferences = Extension.create({
           textAlign: 'left',
         },
         {
+          // The page number is a block in the page margin, so it is styled like any other block: the
+          // user edits this profile and the generated stylesheet does the rest. It is never numbered
+          // and matches no node in the document; the engine puts its class on the element it draws.
+          id: 'profile-page-number',
+          name: 'Page Number',
+          enabled: false,
+          style: 'numeric',
+          template: '',
+          targetType: 'pageNumber',
+          fontFamily: '',
+          fontSize: '10.5pt',
+          fontWeight: 'normal',
+          lineHeight: '1.2',
+          indent: 0,
+        },
+        {
           id: 'profile-table',
           name: 'Tabel',
           enabled: true,
@@ -781,7 +797,14 @@ export const DocumentReferences = Extension.create({
       if (savedProfiles) {
         const parsed = JSON.parse(savedProfiles)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          this.storage.profiles = parsed
+          // A saved list was written before some built-in profiles existed. Replacing the defaults
+          // outright would mean a new built-in never reaches anyone who has ever saved profiles, so
+          // the ones the saved list does not mention are added back. The user's own edits win.
+          const savedIds = new Set(parsed.map((profile) => profile?.id))
+          const missing = this.storage.profiles.filter(
+            (profile) => !savedIds.has(profile.id),
+          )
+          this.storage.profiles = [...parsed, ...missing]
         }
       }
     } catch {}

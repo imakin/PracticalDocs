@@ -167,6 +167,33 @@ const collectLines = (view, originTop) => {
 }
 
 /**
+ * Where the content after a page break actually starts.
+ *
+ * `coordsAtPos` at the position just past the break is not it. The engine's spacer is a widget
+ * anchored there with `side: -1`, and the coordinates come back from *before* the spacer - so a break
+ * near the foot of a page reported the sheet it sits on rather than the one it opens, and a numbering
+ * section began a page early. Measured on a real document: break at 5530 on sheet 4, coordinates 5561
+ * still on sheet 4, while the content was plainly on sheet 5.
+ *
+ * Reading the DOM and stepping over the spacers answers the question that was actually being asked.
+ */
+const contentTopAfterBreak = (view, pos, node) => {
+  const dom = view.nodeDOM(pos)
+  let sibling = dom?.nextElementSibling ?? null
+  while (sibling?.classList?.contains('umo-page-spacer')) {
+    sibling = sibling.nextElementSibling
+  }
+  if (sibling) {
+    return sibling.getBoundingClientRect().top
+  }
+  try {
+    return view.coordsAtPos(pos + node.nodeSize)?.top ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Manual page breaks the user inserted.
  *
  * `.umo-page-break` carries `break-before: page`, which print honours and this engine used to ignore
@@ -182,16 +209,11 @@ const forcedBreaks = (view, originTop, metrics) => {
       return
     }
     const after = pos + node.nodeSize
-    let coords = null
-    try {
-      coords = view.coordsAtPos(after)
-    } catch {
+    const contentTop = contentTopAfterBreak(view, pos, node)
+    if (contentTop === null) {
       return
     }
-    if (!coords) {
-      return
-    }
-    const top = coords.top - originTop
+    const top = contentTop - originTop
     const sheet = Math.floor(top / metrics.stride)
     const columnTop = sheet * metrics.stride + metrics.marginTop
     // Already opening a column: print would not push it either, and a spacer here would insert a
@@ -293,6 +315,30 @@ const positionAtLineStart = (view, line) => {
   } catch {
     return null
   }
+}
+
+/**
+ * The sheet a page break opens.
+ *
+ * Not the sheet the content after it happens to start on. Measured on a real document: the engine can
+ * anchor its spacer one position *inside* the following heading rather than before it, so that
+ * heading's box begins in the previous sheet's bottom margin while its text renders on the next
+ * sheet. Reading the content's box then reports the sheet the break sits on, and a restart landed a
+ * page early - the page holding the break was numbered 1 and the chapter after it carried on at 2.
+ *
+ * A page break closes the page it is on, so the section it opens begins on the next one. The only
+ * exception is a break that has itself been pushed to the top of a sheet, where the page it closes is
+ * empty and the section starts right there.
+ */
+const sheetOpenedByBreak = (view, pos, metrics, originTop) => {
+  const dom = view.nodeDOM(pos)
+  if (!dom?.getBoundingClientRect) {
+    return null
+  }
+  const top = dom.getBoundingClientRect().top - originTop
+  const sheet = Math.floor(top / metrics.stride)
+  const columnTop = sheet * metrics.stride + metrics.marginTop
+  return top <= columnTop + TOLERANCE ? sheet : sheet + 1
 }
 
 const buildDecorations = (doc, breaks) =>
@@ -528,17 +574,12 @@ class PaginationDriver {
       if (node.type.name !== 'pageBreak') {
         return
       }
-      let coords = null
-      try {
-        coords = this.view.coordsAtPos(pos + node.nodeSize)
-      } catch {
-        return
-      }
-      if (!coords) {
+      const atSheet = sheetOpenedByBreak(this.view, pos, metrics, originTop)
+      if (atSheet === null) {
         return
       }
       sections.push({
-        atSheet: Math.floor((coords.top - originTop) / metrics.stride),
+        atSheet,
         enabled: node.attrs.sectionEnabled,
         position: node.attrs.sectionPosition,
         format: node.attrs.sectionFormat,
@@ -558,7 +599,9 @@ class PaginationDriver {
       let element = existing[index]
       if (!element) {
         element = document.createElement('div')
-        element.className = 'umo-page-number'
+        // The profile class makes this stylable like any other block, through the same Profiles
+        // dialog and the same generated stylesheet.
+        element.className = 'umo-page-number umo-profile-page-number'
         element.setAttribute('contenteditable', 'false')
         element.setAttribute('aria-hidden', 'true')
         host.appendChild(element)

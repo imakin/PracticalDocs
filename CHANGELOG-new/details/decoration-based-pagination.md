@@ -256,6 +256,58 @@ screen exactly, and the physical page count untouched by the restart.
 npm run test:e2e:page-numbers-export
 ```
 
+### The control, and styling it like any other block
+
+`Page > Page Numbers` opens a panel with the document-level settings: shown or hidden, position,
+numeral system, start value, and a template. Per-section changes stay on the page break that opens the
+section.
+
+The number is a block in the page margin, so it is **styled through the Profiles dialog like any other
+block**. A `Page Number` profile was added to the defaults and the drawn element carries its class, so
+changing the profile changes the number: setting it to 18pt bold takes the rendered number from 14px
+to 24px at weight 700.
+
+Three things this needed:
+
+- **The rule cannot be scoped.** Every other profile rule is scoped to the editor's content box, but
+  the page number is drawn in the page margin, which is *outside* that box - it is a sibling of the
+  editor, not a descendant. A scoped rule never matched, and the number silently kept the inherited
+  size. Profiles whose target type is `pageNumber` are emitted by class alone.
+- **A new built-in profile has to reach existing users.** A saved profile list written before this
+  profile existed replaced the defaults outright, so the new one would never appear for anyone who had
+  ever saved profiles. Missing built-ins are now merged back in; the user's own edits still win.
+- **The hardcoded font size had to go** from `editor.less`, or there would be two sources for the same
+  thing.
+
+The template hint renders its placeholders outside the translated string: i18n reads braces as its own
+interpolation, so `{number}` and `{total}` inside a translation get swallowed and the hint read "is
+the page number, the page count".
+
+### A page break does not renumber anything unless asked
+
+Reported by the user: inserting a page break between chapters silently restarted the count. It did,
+and on every break.
+
+`normalizeStart` read `Number(null)` as `0` rather than "not a number", so a break carrying no section
+at all - which is every break the toolbar inserts - was read as a restart at zero, and zero renders as
+"1". Two pages in a row then showed "1". The unit tests missed it because they *omitted* `startAt`,
+where `Number(undefined)` is `NaN` and the code did the right thing; production always sends an
+explicit `null`. Five tests now cover the null, empty-string and several-plain-breaks cases.
+
+The behaviour this restores is what a user should be able to assume: **a page break ends a page and
+nothing else.** A numbering change is opt-in, per break, so a thesis with a break at every chapter
+needs no numbering setup at all, and adding pages to an early chapter cannot disturb later ones.
+
+The opt-in lives in the same panel, under `At this page break`, and is enabled when a break is
+selected: *Follow the previous count* (the default) or *Restart the count at*, plus an optional change
+of numerals. `setPageBreakSection` writes the attributes; `findPageBreakNear` resolves which break the
+user means, whether they clicked it or left the cursor beside it.
+
+Verified by clicking through the real interface: a plain break leaves `1, 2`; selecting it and
+choosing *Restart* gives `1, 1` and sets `sectionStartAt: 1` on the node. Verified on the actual thesis
+too: nine sheets number `i` to `ix` with a plain break, and `i..v, 1..4` once that break is set to
+restart.
+
 ### Superseded note
 
 Measured, not assumed: with `@page { padding }` the container's coordinate space is the **content

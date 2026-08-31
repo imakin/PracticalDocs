@@ -183,3 +183,16 @@ test('a nested div does not confuse the unwrap', () => {
   const body = '<div class="columns"><p>a</p></div>'
   assert.equal(extractDocumentHtml(composeDocumentHtml(body, ALL)), body)
 })
+
+test('a page number profile is not scoped, because it is drawn outside the text flow', () => {
+  const pageNumber = {
+    id: 'profile-page-number', name: 'Page Number', enabled: false, template: '',
+    targetType: 'pageNumber', fontSize: '10.5pt', lineHeight: '1.2',
+  }
+  const css = buildProfileStylesheet([paragraph, pageNumber], { scope: '.editor' })
+  // The block profile is scoped to the editor's content box; the page number lives in the page
+  // margin, which is outside it, so a scoped rule would never match.
+  assert.match(css, /^\.editor \.umo-profile-paragraph \{/m)
+  assert.match(css, /^\.umo-profile-page-number \{/m)
+  assert.doesNotMatch(css, /\.editor \.umo-profile-page-number/)
+})
