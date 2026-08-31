@@ -67,15 +67,12 @@ const options = $ref({
   },
   document: {
     title: 'file-identifier',
-    content: (() => {
-      const cachedJson = localStorage.getItem('document.json')
-      if (cachedJson) {
-        try {
-          return JSON.parse(cachedJson)
-        } catch {}
-      }
-      return localStorage.getItem('document.content') || ''
-    })(),
+    // Deliberately empty on start. Restoring the last document from localStorage made every reload
+    // begin from whatever happened to be cached, which hid bugs behind state nobody could describe
+    // and made "I cannot reproduce it" the usual answer. Opening a document is now always an
+    // explicit act, through Buka / Load. The cache is still written on save and is still readable
+    // through that menu.
+    content: '',
     // structure: 'heading block*',
   },
   page: {

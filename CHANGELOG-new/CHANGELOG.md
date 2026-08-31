@@ -119,6 +119,15 @@
 - `Multi-File Persistence`: Atomic disk writes creating `.enc` encrypted payloads and `.json` metadata snapshots.
 - `Details`: See [Encrypted Storage Server and Multi-File Save/Load Architecture](./details/storage-server-and-multi-file.md).
 
+### Change Case
+
+- `Selection Bar`: Three buttons - `UPPERCASE`, `lowercase`, `Capitalize` - change the case of the selected text and leave its marks alone.
+- `Details`: See [Change Case](./details/text-case.md).
+
+### Documents Are Opened, Never Restored
+
+- `No Automatic Reopen`: Reloading the editor no longer reopens the last document from browser storage. It starts empty, and opening a document is always an explicit act through Buka / Load. Restoring it made every reload begin from state nobody could describe, and left a stale title over an empty document - the case the autosave guard exists to catch.
+
 ### Block Style Profiles & Styling Restoration
 
 - `Per-Profile Styling`: Custom font family (Google Fonts auto-loader), font size, font weight, line height, bottom margin, first-line indent (`text-indent`), text align (`text-align`), and placement templates (`BAB {number}\n`).

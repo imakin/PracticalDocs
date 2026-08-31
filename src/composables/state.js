@@ -3,7 +3,15 @@ export function useState(key, editorOptions) {
   const storageKey = `umo-editor:${options.editorKey || 'default'}:${key}`
 
   if (key === 'document') {
-    return useStorage(storageKey, options.document)
+    // Not persisted. Restoring the document across a reload meant the editor came back holding a
+    // title, and sometimes content, that nobody had asked for - and a stale title over an empty
+    // document is exactly the case the autosave guard exists to catch. Opening a document is an
+    // explicit act, through Buka / Load. Anything left in this key from an older build is cleared so
+    // it cannot leak back in.
+    try {
+      localStorage.removeItem(storageKey)
+    } catch {}
+    return ref({ ...options.document })
   }
   if (key === 'recent') {
     return useStorage(storageKey, {
