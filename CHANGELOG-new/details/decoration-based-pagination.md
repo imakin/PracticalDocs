@@ -308,6 +308,25 @@ choosing *Restart* gives `1, 1` and sets `sectionStartAt: 1` on the node. Verifi
 too: nine sheets number `i` to `ix` with a plain break, and `i..v, 1..4` once that break is set to
 restart.
 
+### Where the number sits, per page
+
+A thesis puts the number at the foot of a chapter's opening page and at the head of every other page.
+`Chapter first page` in the panel sets the first of those; the pages a page break opens, and the first
+page of the document, use it. Left as `Same as other pages`, nothing changes.
+
+The export ignored position entirely and printed every number at the foot. The cause: each number was
+put into the closing band, and that band *is* the ending page's bottom margin. A number destined for
+the head of a page belongs in the opening band that starts it, and the first page's head is the
+canvas header. With that, screen and PDF agree:
+
+```
+screen   1@bottom-center  2@top-right  3@top-right  1@bottom-center  2@top-right
+PDF      1 bottom-centre  2 top-right  3 top-right  1 bottom-centre  2 top-right
+```
+
+`page-numbers-export.cdp.mjs` now reads each number's bounding box out of the PDF rather than only its
+digits, and checks the edge and the alignment against the screen.
+
 ### Superseded note
 
 Measured, not assumed: with `@page { padding }` the container's coordinate space is the **content

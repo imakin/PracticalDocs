@@ -37,6 +37,10 @@ export const PAGE_NUMBER_FORMATS = [
 export const defaultPageNumberSettings = () => ({
   enabled: false,
   position: 'bottom-center',
+  // Where the number sits on a page that opens a chapter - the first page, and every page a page
+  // break opens. null means "wherever the other pages have it"; setting it gives the thesis
+  // convention of bottom centre on a chapter opening and top right elsewhere.
+  firstPagePosition: null,
   format: 'numeric',
   template: '{number}',
   startAt: 1,
@@ -93,6 +97,9 @@ export const computePageNumbers = (sheetCount, settings = {}, sections = []) => 
   let active = {
     enabled: base.enabled !== false,
     position: normalizePosition(base.position, 'bottom-center'),
+    firstPagePosition: PAGE_NUMBER_POSITIONS.includes(base.firstPagePosition)
+      ? base.firstPagePosition
+      : null,
     format: normalizeFormat(base.format, 'numeric'),
     template: base.template ?? '{number}',
   }
@@ -101,12 +108,17 @@ export const computePageNumbers = (sheetCount, settings = {}, sections = []) => 
   const out = []
   for (let sheet = 0; sheet < total; sheet += 1) {
     const section = bySheet.get(sheet)
+    // The first page of the document opens a chapter as surely as one after a page break does.
+    const opensSection = sheet === 0 || bySheet.has(sheet)
     if (section) {
       active = {
         enabled: section.enabled === undefined || section.enabled === null
           ? active.enabled
           : section.enabled !== false,
         position: normalizePosition(section.position, active.position),
+        firstPagePosition: PAGE_NUMBER_POSITIONS.includes(section.firstPagePosition)
+          ? section.firstPagePosition
+          : active.firstPagePosition,
         format: normalizeFormat(section.format, active.format),
         template:
           section.template === undefined || section.template === null
@@ -125,7 +137,13 @@ export const computePageNumbers = (sheetCount, settings = {}, sections = []) => 
       sheet,
       index: sheet + 1,
       visible: active.enabled,
-      position: active.position,
+      opensSection,
+      // Unset means "the same place as everywhere else", resolved here rather than at assignment so
+      // that a section changing only `position` moves its opening page too.
+      position:
+        opensSection && active.firstPagePosition
+          ? active.firstPagePosition
+          : active.position,
       // The number the reader sees in the footer. Purely presentational: it restarts, changes
       // numeral system and can be hidden without any of that affecting `index`.
       value: counter,

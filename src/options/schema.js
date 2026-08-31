@@ -349,6 +349,18 @@ export default new ObjectSchema({
               }
             },
           },
+          firstPagePosition: {
+            merge: 'replace',
+            required: false,
+            validate(value) {
+              // null is meaningful here: "the same place as every other page".
+              if (value && !PAGE_NUMBER_POSITIONS.includes(value)) {
+                throw new Error(
+                  `Key "pageNumber": Key "firstPagePosition" must be one of ${PAGE_NUMBER_POSITIONS.join(', ')}.`,
+                )
+              }
+            },
+          },
           format: {
             merge: 'replace',
             required: false,

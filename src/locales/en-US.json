@@ -25,6 +25,11 @@
     },
     "bgColor": "Background Color of Text",
     "bold": "Bold",
+    "textCase": {
+      "upper": "UPPERCASE",
+      "lower": "lowercase",
+      "capitalize": "Capitalize"
+    },
     "letterSpacing": {
       "text": "Letter Spacing",
       "tip": "Current Spacing: {value} Character",
@@ -488,6 +493,8 @@
       "text": "Page Numbers",
       "enabled": "Show page numbers",
       "position": "Position",
+      "firstPagePosition": "Chapter first page",
+      "samePosition": "Same as other pages",
       "positions": {
         "top-left": "Top left",
         "top-center": "Top centre",

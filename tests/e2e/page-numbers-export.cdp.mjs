@@ -140,14 +140,17 @@ const doc = {
     filler('Isi bab satu.'),
   ],
 }
+// Chapter openings carry the number at the foot, every other page at the head - the thesis
+// convention, and the case that exposed the export printing everything at the bottom right.
 const screen = await evaluate(`(async () => {
   window.__ed.commands.setContent(${JSON.stringify(doc)})
-  window.__p.page.value.pageNumber = { enabled: true, position: 'bottom-center', format: 'roman-lower', template: '{number}', startAt: 1 }
+  window.__p.page.value.pageNumber = { enabled: true, position: 'top-right', firstPagePosition: 'bottom-center', format: 'roman-lower', template: '{number}', startAt: 1 }
   await new Promise((r) => setTimeout(r, 4000))
   return [...document.querySelectorAll('.umo-page-content > .umo-page-number')]
     .sort((a, b) => Number(a.dataset.sheet) - Number(b.dataset.sheet))
-    .map((e) => e.textContent)
+    .map((e) => ({ text: e.textContent, edge: e.dataset.edge, align: e.dataset.align }))
 })()`)
+const screenText = screen.map((e) => e.text)
 
 const failures = []
 const check = (label, ok, detail) => {
@@ -156,8 +159,13 @@ const check = (label, ok, detail) => {
 }
 
 console.log('\nOn screen')
-check('the front matter is lower roman', screen.slice(0, 3).join(',') === 'i,ii,iii', JSON.stringify(screen))
-check('the section restarts the count in decimal', screen.slice(3).join(',') === '1,2', JSON.stringify(screen))
+check('the front matter is lower roman', screenText.slice(0, 3).join(',') === 'i,ii,iii', JSON.stringify(screenText))
+check('the section restarts the count in decimal', screenText.slice(3).join(',') === '1,2', JSON.stringify(screenText))
+check(
+  'a chapter opening carries its number at the foot, the pages after it at the head',
+  screen.map((e) => e.edge).join(',') === 'bottom,top,top,bottom,top',
+  JSON.stringify(screen.map((e) => e.edge + '-' + e.align)),
+)
 
 const srcdoc = await evaluate(`(async () => {
   window.__p.exportFile.value.pdf = true
@@ -184,19 +192,48 @@ const pdfPath = path.join(workDir, 'export.pdf')
 await writeFile(pdfPath, Buffer.from(pdf.data, 'base64'))
 
 const pageCount = Number(execFileSync('pdfinfo', [pdfPath]).toString().match(/Pages:\s+(\d+)/)[1])
+// Read each number with its box, so the position can be checked and not just the digits. A page is
+// 841.89pt tall; anything in the first or last tenth is in a margin strip rather than in the text.
 const pageNumbers = []
 for (let p = 1; p <= pageCount; p += 1) {
-  const text = execFileSync('pdftotext', ['-f', String(p), '-l', String(p), '-layout', pdfPath, '-']).toString()
-  // The footer sits alone on the last line of the page.
-  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
-  const tail = lines[lines.length - 1] || ''
-  pageNumbers.push(/^(?:[ivxlcdm]+|\d+)$/i.test(tail) ? tail : null)
+  const bbox = execFileSync('pdftotext', ['-bbox', '-f', String(p), '-l', String(p), pdfPath, '-']).toString()
+  let found = null
+  for (const line of bbox.split('\n')) {
+    const m = line.match(/<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="[\d.]+">([^<]+)<\/word>/)
+    if (!m) continue
+    const [, xMin, yMin, xMax, word] = m
+    if (!/^(?:[ivxlcdm]+|\d+)$/i.test(word)) continue
+    const y = Number(yMin)
+    if (y > 90 && y < 750) continue
+    const x = (Number(xMin) + Number(xMax)) / 2
+    found = {
+      text: word,
+      edge: y < 400 ? 'top' : 'bottom',
+      align: x < 200 ? 'left' : x < 400 ? 'center' : 'right',
+    }
+    break
+  }
+  pageNumbers.push(found)
 }
 
 console.log('\nIn the exported PDF')
 check('the PDF has one page per on-screen sheet', pageCount === screen.length, `${screen.length} sheets vs ${pageCount} pages`)
 check('every page carries a number', pageNumbers.every(Boolean), JSON.stringify(pageNumbers))
-check('the numbers match the screen exactly', JSON.stringify(pageNumbers) === JSON.stringify(screen), `${JSON.stringify(pageNumbers)} vs ${JSON.stringify(screen)}`)
+check(
+  'the numbers match the screen exactly',
+  JSON.stringify(pageNumbers.map((n) => n?.text ?? null)) === JSON.stringify(screenText),
+  `${JSON.stringify(pageNumbers.map((n) => n?.text ?? null))} vs ${JSON.stringify(screenText)}`,
+)
+check(
+  'each number is printed on the same edge as on screen',
+  JSON.stringify(pageNumbers.map((n) => n?.edge ?? null)) === JSON.stringify(screen.map((e) => e.edge)),
+  `${JSON.stringify(pageNumbers.map((n) => n?.edge ?? null))} vs ${JSON.stringify(screen.map((e) => e.edge))}`,
+)
+check(
+  'and with the same alignment across the page',
+  JSON.stringify(pageNumbers.map((n) => n?.align ?? null)) === JSON.stringify(screen.map((e) => e.align)),
+  `${JSON.stringify(pageNumbers.map((n) => n?.align ?? null))} vs ${JSON.stringify(screen.map((e) => e.align))}`,
+)
 check('the physical page count is untouched by the restart', pageCount === 5, `${pageCount} pages`)
 
 console.log('\nRESULT check')

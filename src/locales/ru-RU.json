@@ -113,7 +113,12 @@
     "subscript": "Нижний индекс",
     "superscript": "Верхний индекс",
     "underline": "Подчеркнутый",
-    "undo": "Отмена"
+    "undo": "Отмена",
+    "textCase": {
+      "upper": "UPPERCASE",
+      "lower": "lowercase",
+      "capitalize": "Capitalize"
+    }
   },
   "insert": {
     "audio": "Аудио",
@@ -490,7 +495,9 @@
         "restart": "Restart the count at",
         "format": "Change numerals to",
         "keepFormat": "Keep the same numerals"
-      }
+      },
+      "firstPagePosition": "Chapter first page",
+      "samePosition": "Same as other pages"
     }
   },
   "export": {

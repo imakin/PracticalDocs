@@ -166,3 +166,30 @@ test('restarting at zero is still possible when asked for explicitly', () => {
   const out = computePageNumbers(3, { enabled: true }, [{ atSheet: 1, startAt: 0 }])
   assert.deepEqual(out.map((r) => r.value), [1, 0, 1])
 })
+
+test('the page that opens a chapter can carry its number somewhere else', () => {
+  // The thesis convention: bottom centre where a chapter starts, top right on the pages that follow.
+  const out = computePageNumbers(
+    5,
+    { enabled: true, position: 'top-right', firstPagePosition: 'bottom-center' },
+    [{ atSheet: 3, startAt: null }],
+  )
+  assert.deepEqual(out.map((r) => r.position), [
+    'bottom-center', 'top-right', 'top-right', 'bottom-center', 'top-right',
+  ])
+})
+
+test('a page break opens a chapter even when it changes nothing about the count', () => {
+  const out = computePageNumbers(
+    4,
+    { enabled: true, position: 'top-right', firstPagePosition: 'bottom-center' },
+    [{ atSheet: 2, enabled: null, position: null, format: null, template: null, startAt: null }],
+  )
+  assert.deepEqual(out.map((r) => r.opensSection), [true, false, true, false])
+  assert.deepEqual(texts(out), ['1', '2', '3', '4'])
+})
+
+test('without a separate first-page position every page uses the same one', () => {
+  const out = computePageNumbers(3, { enabled: true, position: 'top-right' }, [])
+  assert.deepEqual(out.map((r) => r.position), ['top-right', 'top-right', 'top-right'])
+})

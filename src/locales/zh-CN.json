@@ -133,7 +133,12 @@
     "subscript": "下标",
     "superscript": "上标",
     "underline": "下划线",
-    "undo": "撤消"
+    "undo": "撤消",
+    "textCase": {
+      "upper": "UPPERCASE",
+      "lower": "lowercase",
+      "capitalize": "Capitalize"
+    }
   },
   "insert": {
     "audio": "音频",
@@ -540,7 +545,9 @@
         "restart": "Restart the count at",
         "format": "Change numerals to",
         "keepFormat": "Keep the same numerals"
-      }
+      },
+      "firstPagePosition": "Chapter first page",
+      "samePosition": "Same as other pages"
     }
   },
   "view": {

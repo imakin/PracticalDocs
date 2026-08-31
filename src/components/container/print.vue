@@ -65,16 +65,20 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
   const marginBottomPx = (Number(margin?.bottom) || 0) / CM_PER_PX
   const gapPx = 16
 
-  const addNumber = (host, entry, fromBottomPx) => {
+  const addNumber = (host, entry, edge) => {
     if (!entry) return
     const label = document.createElement('div')
     label.className = 'umo-page-number umo-profile-page-number'
     label.textContent = entry.text
+    // Sit inside the margin strip rather than against the paper edge, mirroring what the engine does
+    // on screen so the two agree.
+    const inset =
+      edge === 'top' ? marginTopPx * 0.35 : marginBottomPx * 0.35
     label.style.cssText = [
       'position: absolute',
       'left: 0',
       'right: 0',
-      `bottom: ${fromBottomPx.toFixed(2)}px`,
+      `${edge === 'top' ? 'top' : 'bottom'}: ${inset.toFixed(2)}px`,
       `text-align: ${entry.align === 'center' ? 'center' : entry.align}`,
     ].join(';')
     host.appendChild(label)
@@ -109,7 +113,14 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
       'page-break-after: always',
     ].join(';')
     spacer.textContent = ''
-    addNumber(spacer, numbersBySheet.get(index), marginBottomPx * 0.35)
+    // A number belongs to the page it is printed on, and which band holds it depends on where on that
+    // page it sits: the closing band is the ending page's bottom margin, the opening band is the next
+    // page's top margin. Putting every number in the closing band is what made the export ignore the
+    // position and print them all at the foot of the page.
+    const closingEntry = numbersBySheet.get(index)
+    if (closingEntry?.edge === 'bottom') {
+      addNumber(spacer, closingEntry, 'bottom')
+    }
 
     const opening = document.createElement('div')
     opening.className = 'umo-page-band'
@@ -117,7 +128,12 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
       `height: ${marginTopPx.toFixed(2)}px`,
       'box-sizing: border-box',
       'display: block',
+      'position: relative',
     ].join(';')
+    const openingEntry = numbersBySheet.get(index + 1)
+    if (openingEntry?.edge === 'top') {
+      addNumber(opening, openingEntry, 'top')
+    }
     spacer.after(opening)
   })
 
@@ -125,9 +141,18 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
   // canvas's existing footer does not work: the footer follows the text rather than sitting at the
   // foot of the page, so on a short last page the number floated mid-page. This band snaps to the
   // page boundary like every other, and the footer's own margin becomes redundant.
+  // The first page's top margin is the canvas header, which is already a real block.
+  const first = numbersBySheet.get(0)
+  const header = root.querySelector('.umo-page-node-header')
+  if (first?.edge === 'top' && header) {
+    header.style.position = 'relative'
+    header.style.overflow = 'visible'
+    addNumber(header, first, 'top')
+  }
+
   const last = numbersBySheet.get(spacers.length)
   const footer = root.querySelector('.umo-page-node-footer')
-  if (last) {
+  if (last?.edge === 'bottom') {
     const band = document.createElement('div')
     band.className = 'umo-page-band umo-page-band-closing'
     band.dataset.last = 'true'
@@ -137,7 +162,7 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
       'display: block',
       'position: relative',
     ].join(';')
-    addNumber(band, last, marginBottomPx * 0.35)
+    addNumber(band, last, 'bottom')
     // Into the text flow, not before the footer. `.umo-page-content` is a flex container and the
     // footer is one of its flex items, so a band placed there is laid out by flex rather than after
     // the last line - measured at 96px from the top of the document, stretched to 5515px tall.

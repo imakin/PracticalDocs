@@ -101,7 +101,12 @@
     "subscript": "Pedice",
     "superscript": "Apice",
     "underline": "Sottolineato",
-    "undo": "Annulla"
+    "undo": "Annulla",
+    "textCase": {
+      "upper": "UPPERCASE",
+      "lower": "lowercase",
+      "capitalize": "Capitalize"
+    }
   },
   "insert": {
     "audio": "Audio",
@@ -438,7 +443,9 @@
         "restart": "Restart the count at",
         "format": "Change numerals to",
         "keepFormat": "Keep the same numerals"
-      }
+      },
+      "firstPagePosition": "Chapter first page",
+      "samePosition": "Same as other pages"
     }
   },
   "export": {

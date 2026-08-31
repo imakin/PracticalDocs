@@ -28,6 +28,16 @@
         </div>
 
         <div class="umo-page-number-field">
+          <label>{{ t('page.pageNumber.firstPagePosition') }}</label>
+          <t-select
+            :value="settings.firstPagePosition ?? ''"
+            size="small"
+            :options="firstPagePositionOptions"
+            @change="(value) => update({ firstPagePosition: value || null })"
+          />
+        </div>
+
+        <div class="umo-page-number-field">
           <label>{{ t('page.pageNumber.format') }}</label>
           <t-select
             :value="settings.format"
@@ -138,6 +148,12 @@ const positionOptions = $computed(() =>
     label: t(`page.pageNumber.positions.${value}`),
   })),
 )
+
+// The first page of every chapter - the first page, and every page a page break opens.
+const firstPagePositionOptions = $computed(() => [
+  { value: '', label: t('page.pageNumber.samePosition') },
+  ...positionOptions,
+])
 
 const formatOptions = $computed(() =>
   PAGE_NUMBER_FORMATS.map((value) => ({
