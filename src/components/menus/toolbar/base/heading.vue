@@ -126,14 +126,16 @@
               <span v-if="profile.level"> (H{{ profile.level }})</span>
               <span> &bull; {{ profile.style }}</span>
               <span> &bull; {{ profile.template }}</span>
+              <span v-if="profile.enabled === false" class="profile-numbering-off">
+                &bull; {{ t('references.numbering.numberingOff') }}
+              </span>
             </div>
           </div>
+          <!-- No numbering switch here. It changed a profile's numbering from a list that is meant
+               for choosing which profile to open, so numbering turned on or off without the profile
+               ever being looked at. It lives in the edit dialog, next to everything else the profile
+               decides. The state stays visible below, as text. -->
           <div class="profile-actions">
-            <t-switch
-              :value="profile.enabled !== false"
-              size="small"
-              @change="(val) => toggleProfileEnabled(profile.id, val)"
-            />
             <t-button
               size="small"
               variant="outline"
@@ -464,11 +466,6 @@ const openProfileModal = () => {
   loadProfiles()
   popupVisible.value = false
   profileModalVisible = true
-}
-
-const toggleProfileEnabled = (id, enabled) => {
-  editor.value?.commands.updateNumberingProfile(id, { enabled })
-  loadProfiles()
 }
 
 // The same refusal as the card gallery, in the dialog that offers the same action.
@@ -813,6 +810,10 @@ onClickOutside(
       color: var(--umo-text-color-light);
       margin-top: 2px;
     }
+    .profile-numbering-off {
+      color: var(--umo-text-color-light);
+    }
+
     .profile-actions {
       display: flex;
       align-items: center;

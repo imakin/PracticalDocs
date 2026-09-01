@@ -69,6 +69,7 @@
     "test:e2e:table-caption": "node tests/e2e/table-caption-removal.cdp.mjs",
     "test:e2e:profile-margins": "node tests/e2e/profile-margins.cdp.mjs",
     "test:e2e:toc": "node tests/e2e/toc-page-numbers.cdp.mjs",
+    "test:e2e:profiles-dialog": "node tests/e2e/profiles-dialog.cdp.mjs",
     "test:unit:document-references": "node --test tests/unit/document-references.test.mjs",
     "test:unit:document-file": "node --test tests/unit/document-file.test.mjs",
     "test:unit:profile-stylesheet": "node --test tests/unit/profile-stylesheet.test.mjs",

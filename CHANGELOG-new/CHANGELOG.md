@@ -1,3 +1,15 @@
+### The Profiles List Chooses; The Edit Dialog Sets
+
+- `The Numbering Switch Left The List`: Every row in the Profiles dialog carried one, so a profile's numbering could be turned on or off from a list whose purpose is choosing which profile to open - the setting changed without the profile ever being looked at. The edit dialog already had the same switch, beside every other decision the profile makes, and it is now the only one.
+- `The State Is Still Visible`: A profile with numbering off says `numbering off` in its details line, beside the target type, style and template already there. Removing a control should not remove the fact.
+- `Test script`: `profiles-dialog.cdp.mjs`, 7 checks, own fixture, driven by real clicks through the block gallery arrow and the Manage Profiles bar. The edit dialog's switch is checked against the profile's actual state rather than against a label, because a switch that reflects nothing would pass a label check. Seen to fail on the unpatched build first.
+
+  ```bash
+  npm run test:e2e:profiles-dialog
+  ```
+
+- `Details`: See [The Profiles List Chooses; The Edit Dialog Sets](./details/profiles-dialog-chooses.md).
+
 ### The Table of Contents Points At A Real Page
 
 - `Every Entry Said 1`: `getPageNumber` counted `.umo-page-node` elements and took the heading's index among them. Since ADR 0002 made pagination a set of decorations there is one such element for the whole canvas - a sheet is a region of one tall element, not an element - so every heading resolved to the same node and every entry fell back to 1. Wrong on any document longer than a page, and wrong since the pagination rewrite.
