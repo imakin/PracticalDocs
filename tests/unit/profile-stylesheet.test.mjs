@@ -209,3 +209,48 @@ test('a profile that states no indent says so in the rule', () => {
   assert.match(css, /\.umo-profile-body \{[^}]*text-indent: 2em;/)
   assert.doesNotMatch(css, /\.umo-profile-quiet \{[^}]*text-indent/)
 })
+
+test('a first line indent can be a level or a typed length', () => {
+  // A bare number is a level, kept for the profiles written before lengths were allowed.
+  const byLevel = buildProfileStylesheet(
+    [{ id: 'p1', name: 'A', targetType: 'paragraph', indent: 2 }],
+    { scope: '.s', numbering: false },
+  )
+  assert.match(byLevel, /text-indent: 4em;/)
+
+  // A length is used as it stands. The user asked for this: a dropdown of levels made every indent
+  // a multiple of 2em.
+  for (const [value, expected] of [
+    ['3em', /text-indent: 3em;/],
+    ['4px', /text-indent: 4px;/],
+    ['1.5cm', /text-indent: 1\.5cm;/],
+  ]) {
+    const css = buildProfileStylesheet(
+      [{ id: 'p1', name: 'A', targetType: 'paragraph', indent: value }],
+      { scope: '.s', numbering: false },
+    )
+    assert.match(css, expected)
+  }
+})
+
+test('zero still means no indent, whichever way it is written', () => {
+  for (const value of [0, '0']) {
+    const css = buildProfileStylesheet(
+      [{ id: 'p1', name: 'A', targetType: 'paragraph', indent: value }],
+      { scope: '.s', numbering: false },
+    )
+    assert.match(css, /text-indent: 0em;/)
+  }
+})
+
+test('an absent indent states nothing', () => {
+  // Emitting a rule here would override whatever encloses the block, which a profile that says
+  // nothing about indentation must not do.
+  for (const value of [undefined, null, '']) {
+    const css = buildProfileStylesheet(
+      [{ id: 'p1', name: 'A', targetType: 'paragraph', indent: value }],
+      { scope: '.s', numbering: false },
+    )
+    assert.doesNotMatch(css, /text-indent/)
+  }
+})

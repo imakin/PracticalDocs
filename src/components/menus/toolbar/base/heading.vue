@@ -219,7 +219,12 @@
         <t-select v-model="activeEditingProfile.marginBottom" :options="marginOptions" filterable creatable clearable placeholder="e.g. 8px or 12px" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item label="First Line Indent (Level)">
-        <t-select v-model="activeEditingProfile.indent" :options="indentOptions" clearable placeholder="Select Indent Level (e.g. 0, 1 = 2em, 2 = 4em)" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
+        <!--
+          `filterable creatable`, like the margin fields beside it: the levels are offered as a
+          convenience, and a length can be typed instead. A dropdown alone made every indent a
+          multiple of 2em, which is a decision the profile has no business making for the writer.
+        -->
+        <t-select v-model="activeEditingProfile.indent" :options="indentOptions" filterable creatable clearable placeholder="A level, or a length such as 2em, 4px, 1.5cm" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item label="Text Align">
         <t-select v-model="activeEditingProfile.textAlign" :options="textAlignOptions" clearable placeholder="Left / Center / Right / Justify" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
@@ -440,6 +445,7 @@ const fontFamilyOptions = computed(() => {
   return opts
 })
 
+// Offered, not imposed. The field is `creatable`, so a length can be typed instead of a level.
 const indentOptions = [
   { label: 'None / 0', value: 0 },
   { label: 'Level 1 (2em / First Line Indent)', value: 1 },

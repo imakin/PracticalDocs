@@ -154,9 +154,16 @@ const declarationsFor = (profile) => {
   // named for having no indent should do.
   const statesIndent =
     profile.indent !== undefined && profile.indent !== null && profile.indent !== ''
-  const indent = Number(profile.indent)
-  if (statesIndent && Number.isFinite(indent) && indent >= 0) {
+  // Two ways of saying it, because the user asked to be able to type a length rather than choose a
+  // level. A bare number is a level and means that many steps; anything else is a CSS length written
+  // out - `2em`, `4px`, `1.5cm` - and is used as it stands. `0` still means no indent either way.
+  const raw = String(profile.indent ?? '').trim()
+  const indent = Number(raw)
+  const isLevel = raw !== '' && Number.isFinite(indent)
+  if (statesIndent && isLevel && indent >= 0) {
     out.push(`text-indent: ${indent * INDENT_STEP}em;`)
+  } else if (statesIndent && !isLevel) {
+    out.push(`text-indent: ${raw};`)
   }
   return out
 }
