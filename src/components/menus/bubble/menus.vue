@@ -127,9 +127,13 @@
     <menus-bubble-math />
     <menus-bubble-node-delete />
   </template>
+  <template v-else-if="is('toc')">
+    <!-- A document map has no text to select, so the only place its settings can be reached is the
+         block itself. -->
+    <menus-bubble-toc />
+  </template>
   <template
     v-else-if="
-      is('toc') ||
       is('pageBreak') ||
       is('horizontalRule') ||
       is('codeBlock') ||

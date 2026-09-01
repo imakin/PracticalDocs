@@ -13,10 +13,12 @@
           :class="{
             active: isCardActive(item) && editor?.isEditable,
             disabled: !item.enabled,
+            'not-applicable': !item.applicable,
           }"
-          @click="selectHeadingProfile(item)"
+          :title="item.hint || item.name"
+          @click="applyCard(item)"
         >
-          <div class="title" :class="item.desc" :title="item.name">{{ item.name }}</div>
+          <div class="title" :class="item.desc" :title="item.hint || item.name">{{ item.name }}</div>
           <div class="subtitle">
             {{ item.desc }}<template v-if="!item.enabled"> (OFF)</template>
           </div>
@@ -43,10 +45,12 @@
                   :class="{
                     active: isCardActive(item) && editor?.isEditable,
                     disabled: !item.enabled,
+                    'not-applicable': !item.applicable,
                   }"
-                  @click="selectHeadingProfile(item)"
+                  :title="item.hint || item.name"
+                  @click="applyCard(item)"
                 >
-                  <div class="title" :class="item.desc" :title="item.name">{{ item.name }}</div>
+                  <div class="title" :class="item.desc" :title="item.hint || item.name">{{ item.name }}</div>
                   <div class="subtitle">
                     {{ item.desc }}<template v-if="!item.enabled"> (OFF)</template>
                   </div>
@@ -130,9 +134,16 @@
               size="small"
               @change="(val) => toggleProfileEnabled(profile.id, val)"
             />
-            <t-button size="small" variant="outline" @click="applyProfile(profile.id)">
+            <t-button
+              size="small"
+              variant="outline"
+              :disabled="!!blockHint(profile)"
+              :title="blockHint(profile) || undefined"
+              @click="applyProfile(profile.id)"
+            >
               {{ t('references.numbering.applyToBlock') }}
             </t-button>
+            <span v-if="blockHint(profile)" class="profile-only-for">{{ blockHint(profile) }}</span>
             <t-button size="small" variant="text" @click="editProfile(profile)">
               <icon name="edit" />
             </t-button>
@@ -169,6 +180,14 @@
       </t-form-item>
       <t-form-item v-if="activeEditingProfile.targetType === 'heading'" :label="t('references.numbering.level')">
         <t-input-number v-model="activeEditingProfile.level" :min="1" :max="6" />
+      </t-form-item>
+      <!-- The contents indents by these two and by nothing else. Setting the step to 0 gives a flat
+           list, which is what the tree lines used to prevent. -->
+      <t-form-item v-if="activeEditingProfile.targetType === 'toc'" label="Indent From Heading Level">
+        <t-input-number v-model="activeEditingProfile.tocIndentFrom" :min="1" :max="6" />
+      </t-form-item>
+      <t-form-item v-if="activeEditingProfile.targetType === 'toc'" label="Indent Per Level">
+        <t-select v-model="activeEditingProfile.tocIndent" :options="tocIndentOptions" filterable creatable clearable placeholder="e.g. 2em or 16px, 0 for none" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item :label="t('references.numbering.style')">
         <t-select v-model="activeEditingProfile.style" :options="styleOptions" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
@@ -221,20 +240,34 @@ let editModalVisible = $ref(false)
 let profiles = $ref([])
 let activeEditingProfile = $ref(null)
 
+// Profiles for things that are not a block the cursor can sit in. Clicking one used to stamp it onto
+// whatever block was selected, styling that block by a rule written for a page number or a contents.
+// They stay in the list - hiding them made the user hunt for a profile that was plainly missing - but
+// they cannot be applied, and each says why.
+const NOT_A_BLOCK_STYLE = {
+  toc: 'onlyForToc',
+  pageNumber: 'onlyForPageNumber',
+}
+
 const allCards = computed(() => {
   if (!Array.isArray(profiles)) return []
-  return profiles.map((p) => ({
-    key: p.id,
-    id: p.id,
-    name: p.name || p.id,
-    desc: p.targetType === 'heading' ? `h${p.level || 1}` : p.targetType === 'paragraph' ? 'text' : p.targetType,
-    value: p.level || p.targetType,
-    targetType: p.targetType,
-    level: p.level,
-    enabled: p.enabled !== false,
-    style: p.style,
-    template: p.template,
-  }))
+  return profiles
+    .map((p) => ({
+      applicable: !NOT_A_BLOCK_STYLE[p.targetType],
+      hint: NOT_A_BLOCK_STYLE[p.targetType]
+        ? t(`references.numbering.${NOT_A_BLOCK_STYLE[p.targetType]}`)
+        : '',
+      key: p.id,
+      id: p.id,
+      name: p.name || p.id,
+      desc: p.targetType === 'heading' ? `h${p.level || 1}` : p.targetType === 'paragraph' ? 'text' : p.targetType,
+      value: p.level || p.targetType,
+      targetType: p.targetType,
+      level: p.level,
+      enabled: p.enabled !== false,
+      style: p.style,
+      template: p.template,
+    }))
 })
 
 const isCardActive = (item) => {
@@ -285,6 +318,14 @@ const setHeading = (value) => {
   popupVisible.value = false
 }
 
+// The guard both card lists go through. Leaving the click on `selectHeadingProfile` and hiding the
+// card was the first attempt; showing the card and refusing the click is what the user asked for, and
+// it means the refusal lives in one place rather than in a filter that a later caller can miss.
+const applyCard = (item) => {
+  if (!item.applicable) return
+  selectHeadingProfile(item)
+}
+
 const selectHeadingProfile = (item) => {
   if (!editor.value) return
   if (item.targetType === 'paragraph') {
@@ -312,7 +353,19 @@ const targetTypeOptions = $computed(() => [
   { label: t('references.labels.section'), value: 'heading' },
   { label: t('references.labels.table'), value: 'table' },
   { label: t('references.labels.figure'), value: 'figure' },
+  { label: 'Table of Contents', value: 'toc' },
 ])
+
+const tocIndentOptions = [
+  { label: 'None', value: '0' },
+  { label: '1em', value: '1em' },
+  { label: '1.5em', value: '1.5em' },
+  { label: '2em', value: '2em' },
+  { label: '3em', value: '3em' },
+  { label: '12px', value: '12px' },
+  { label: '16px', value: '16px' },
+  { label: '24px', value: '24px' },
+]
 
 const fontSizeOptions = [
   { label: 'Default', value: '' },
@@ -418,8 +471,15 @@ const toggleProfileEnabled = (id, enabled) => {
   loadProfiles()
 }
 
+// The same refusal as the card gallery, in the dialog that offers the same action.
+const blockHint = (profile) => {
+  const key = NOT_A_BLOCK_STYLE[profile?.targetType]
+  return key ? t(`references.numbering.${key}`) : ''
+}
+
 const applyProfile = (id) => {
   const prof = profiles.find((p) => p.id === id)
+  if (blockHint(prof)) return
   if (prof && prof.targetType === 'heading' && prof.level) {
     editor.value?.chain().focus().toggleHeading({ level: prof.level }).run()
   }
@@ -608,6 +668,12 @@ onClickOutside(
     &.disabled {
       opacity: 0.7;
     }
+    // Shown, so the profile can be found, but not applicable to a block. The hint is on the title
+    // attribute; pointer events stay on so that hovering still explains why.
+    &.not-applicable {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
     .title {
       font-size: 12px;
       line-height: 16px;
@@ -751,6 +817,12 @@ onClickOutside(
       display: flex;
       align-items: center;
       gap: 8px;
+
+      .profile-only-for {
+        font-size: 11px;
+        color: var(--umo-text-color-light);
+        white-space: nowrap;
+      }
     }
   }
 }

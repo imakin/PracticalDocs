@@ -367,11 +367,69 @@ const buildDecorations = (doc, breaks) =>
     ),
   )
 
+/**
+ * The top of a block's first rendered line, rather than the top of its box.
+ *
+ * A block that opens a sheet after a forced break can have a box beginning in the previous sheet's
+ * bottom margin while its text renders on the next one - measured, and recorded as a known fault of
+ * the break spacer's anchoring. Its box would then report the sheet before the one the reader sees it
+ * on. The engine itself measures text rects for the same reason, so this agrees with it.
+ */
+const firstTextTop = (element) => {
+  // Text nodes only. A break's spacer can be anchored inside the block that follows it rather than
+  // before it, and it is a full-width block, so a range over the element's contents returns the
+  // spacer's own rect first - which is the box, in the previous sheet's bottom margin, not the line.
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null)
+  let node
+  while ((node = walker.nextNode())) {
+    if (!node.textContent || !node.textContent.trim()) {
+      continue
+    }
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    for (const rect of range.getClientRects()) {
+      if (rect.height > 0 && rect.width > 0) {
+        return rect.top
+      }
+    }
+  }
+  return element.getBoundingClientRect().top
+}
+
+/**
+ * The sheet an element sits on, and what that sheet is numbered.
+ *
+ * Reads the geometry the engine already solved rather than measuring again: `stride` is the sheet
+ * pitch and the container's top is the origin the engine works from, so a box's offset divided by
+ * the pitch is its sheet. Returns null when the engine has not solved yet - in web layout mode, for
+ * one, where there are no sheets to be on.
+ *
+ * `index` is the physical page, 1..N, which never restarts. `text` is what the reader sees in the
+ * footer, which may restart, change numeral system or be hidden. A caller showing a page reference
+ * wants `text` when it exists and `index` otherwise.
+ */
+export const pageOfElement = (editor, element) => {
+  const storage =
+    editor?.extensionStorage?.pagination || editor?.storage?.pagination
+  const pages = storage?.pages
+  const stride = storage?.stride
+  const host = editor?.view?.dom?.closest('.umo-page-content')
+  if (!element || !host || !(stride > 0) || !(pages?.length > 0)) {
+    return null
+  }
+  const top = firstTextTop(element) - host.getBoundingClientRect().top
+  const sheet = Math.min(pages.length - 1, Math.max(0, Math.floor(top / stride)))
+  return pages[sheet] ?? null
+}
+
 export const Pagination = Extension.create({
   name: 'pagination',
 
   addStorage() {
-    return { pageNumber: defaultPageNumberSettings() }
+    // `pages` is the computed number of every sheet, and `stride` the sheet pitch in pixels; both
+    // are written by the driver on every solve so that anything needing the page a block is on reads
+    // one answer rather than computing a second.
+    return { pageNumber: defaultPageNumberSettings(), pages: [], stride: 0 }
   },
 
   addCommands() {
@@ -406,6 +464,7 @@ export const Pagination = Extension.create({
 
   addProseMirrorPlugins() {
     const { storage } = this
+    const { editor } = this
     return [
       new Plugin({
         key: paginationPluginKey,
@@ -432,16 +491,17 @@ export const Pagination = Extension.create({
             return paginationPluginKey.getState(state)?.decorations
           },
         },
-        view: (editorView) => new PaginationDriver(editorView, storage),
+        view: (editorView) => new PaginationDriver(editorView, storage, editor),
       }),
     ]
   },
 })
 
 class PaginationDriver {
-  constructor(view, storage) {
+  constructor(view, storage, editor) {
     this.storage = storage || { pageNumber: defaultPageNumberSettings() }
     this.view = view
+    this.editor = editor
     this.timer = null
     this.solving = false
     this.schedule()
@@ -542,33 +602,29 @@ class PaginationDriver {
         this.applyBreaks(breaks)
       }
       const sheets = this.padToWholeSheets(metrics)
-      this.renderPageNumbers(metrics, sheets)
+      this.publishPages(metrics, sheets)
+      this.renderPageNumbers(metrics)
     } finally {
       this.solving = false
     }
   }
 
   /**
-   * Draw the page numbers.
+   * Work out what every sheet is numbered and publish it, whether or not the numbers are drawn.
    *
-   * These are plain elements in the page container, not decorations: they belong to the sheet, not to
-   * the document, and putting them in the document flow would change the very layout they describe.
-   * Absolute positioning was measured to survive Chrome's pagination, so the same elements can reach
-   * the export - see ADR 0008.
+   * The table of contents needs the same answer, and it used to compute its own by counting
+   * `.umo-page-node` elements - of which there is one for the whole canvas, so every entry came out
+   * as page 1. Two answers to one question is what produced the pagination-versus-PDF bug in
+   * ADR 0002, so there is one computation here and everything else reads it.
+   *
+   * Published even when numbering is off: the page a heading is on is a fact about the document, and
+   * a reader still wants it in the contents when no folio is printed.
    */
-  renderPageNumbers(metrics, sheetCount) {
-    const host = metrics.sheet
-    const existing = [...host.querySelectorAll(':scope > .umo-page-number')]
+  publishPages(metrics, sheetCount) {
     const settings = this.storage?.pageNumber || defaultPageNumberSettings()
-
-    if (!settings.enabled || !(sheetCount > 0)) {
-      existing.forEach((element) => element.remove())
-      return
-    }
-
     // Which sheet each page break opens. The breaks are already applied, so the content after one
     // sits at the top of its sheet.
-    const originTop = host.getBoundingClientRect().top
+    const originTop = metrics.sheet.getBoundingClientRect().top
     const sections = []
     this.view.state.doc.descendants((node, pos) => {
       if (node.type.name !== 'pageBreak') {
@@ -587,8 +643,32 @@ class PaginationDriver {
         startAt: node.attrs.sectionStartAt,
       })
     })
+    this.storage.pages = computePageNumbers(sheetCount, settings, sections)
+    this.storage.stride = metrics.stride
+    // A plain property on the storage, so nothing watching it can see it change. Anything that
+    // renders a page number it did not compute has to be told, exactly as the profile list does.
+    this.editor?.emit?.('paginationChanged', this.storage.pages)
+  }
 
-    const numbers = computePageNumbers(sheetCount, settings, sections).filter(
+  /**
+   * Draw the page numbers.
+   *
+   * These are plain elements in the page container, not decorations: they belong to the sheet, not to
+   * the document, and putting them in the document flow would change the very layout they describe.
+   * Absolute positioning was measured to survive Chrome's pagination, so the same elements can reach
+   * the export - see ADR 0008.
+   */
+  renderPageNumbers(metrics) {
+    const host = metrics.sheet
+    const existing = [...host.querySelectorAll(':scope > .umo-page-number')]
+    const settings = this.storage?.pageNumber || defaultPageNumberSettings()
+
+    if (!settings.enabled || !(this.storage.pages?.length > 0)) {
+      existing.forEach((element) => element.remove())
+      return
+    }
+
+    const numbers = this.storage.pages.filter(
       (entry) => entry.visible && entry.text !== '',
     )
 

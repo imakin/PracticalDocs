@@ -748,7 +748,11 @@
     "title": "Document Map",
     "show": "Document Map",
     "hide": "Hide Document Map",
-    "empty": "No Document Map Available"
+    "empty": "No Document Map Available",
+    "profile": {
+      "label": "Style",
+      "default": "Default"
+    }
   },
   "spellcheck": {
     "enable": "Enable Spell Check",
@@ -883,6 +887,8 @@
       "cancel": "Cancel",
       "close": "Close",
       "applyToBlock": "Apply to Active Block",
+      "onlyForToc": "Only for Table of Content / Document Map",
+      "onlyForPageNumber": "Only for page numbers",
       "profileName": "Profile Name",
       "targetType": "Target Element Type",
       "level": "Heading Level (1-6)",

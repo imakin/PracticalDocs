@@ -17,6 +17,194 @@ import {
 } from '@/utils/profile-stylesheet'
 import { shortId } from '@/utils/short-id'
 
+/**
+ * The built-in profiles.
+ *
+ * A function rather than a constant: every caller gets its own copy, so nothing edits the defaults
+ * by editing what it was handed. `withBuiltInProfiles` puts back any of these that a saved list does
+ * not mention, which is what stops a profile added after a document was written from being invisible
+ * in that document forever.
+ */
+const defaultProfiles = () => [
+        {
+          id: 'profile-paragraph',
+          name: 'Normal (Text)',
+          enabled: false,
+          style: 'numeric',
+          template: '',
+          targetType: 'paragraph',
+          fontFamily: '',
+          fontSize: '12pt',
+          fontWeight: 'normal',
+          lineHeight: '1.5',
+          marginBottom: '0.25em',
+          indent: 1,
+          textAlign: 'justify',
+        },
+        {
+          id: 'profile-h1',
+          name: 'Title 1 (H1)',
+          enabled: true,
+          style: 'roman-upper',
+          template: 'BAB {number}\n',
+          targetType: 'heading',
+          level: 1,
+          fontFamily: '',
+          fontSize: '14pt',
+          fontWeight: 'bold',
+          lineHeight: '1.5',
+          marginBottom: '4em',
+          indent: 0,
+          textAlign: 'center',
+        },
+        {
+          id: 'profile-h2',
+          name: 'Title 2 (H2)',
+          enabled: true,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 2,
+          fontFamily: '',
+          fontSize: '12pt',
+          fontWeight: 'bold',
+          lineHeight: '1.5',
+          marginBottom: '0.25em',
+          indent: 0,
+          textAlign: 'left',
+        },
+        {
+          id: 'profile-h3',
+          name: 'Title 3 (H3)',
+          enabled: true,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 3,
+          fontFamily: '',
+          fontSize: '12pt',
+          fontWeight: 'bold',
+          lineHeight: '1.5',
+          marginBottom: '0.25em',
+          indent: 0,
+          textAlign: 'left',
+        },
+        {
+          id: 'profile-h4',
+          name: 'Title 4 (H4)',
+          enabled: false,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 4,
+          fontFamily: '',
+          fontSize: '12pt',
+          fontWeight: 'bold',
+          lineHeight: '1.5',
+          marginBottom: '0.25em',
+          indent: 0,
+          textAlign: 'left',
+        },
+        {
+          id: 'profile-h5',
+          name: 'Title 5 (H5)',
+          enabled: false,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 5,
+          fontFamily: '',
+          fontSize: '12pt',
+          fontWeight: 'bold',
+          lineHeight: '1.5',
+          marginBottom: '0.25em',
+          indent: 0,
+          textAlign: 'left',
+        },
+        {
+          id: 'profile-h6',
+          name: 'Title 6 (H6)',
+          enabled: false,
+          style: 'numeric',
+          template: '{number}',
+          targetType: 'heading',
+          level: 6,
+          fontFamily: '',
+          fontSize: '12pt',
+          fontWeight: 'bold',
+          lineHeight: '1.5',
+          marginBottom: '0.25em',
+          indent: 0,
+          textAlign: 'left',
+        },
+        {
+          // The page number is a block in the page margin, so it is styled like any other block: the
+          // user edits this profile and the generated stylesheet does the rest. It is never numbered
+          // and matches no node in the document; the engine puts its class on the element it draws.
+          id: 'profile-page-number',
+          name: 'Page Number',
+          enabled: false,
+          style: 'numeric',
+          template: '',
+          targetType: 'pageNumber',
+          fontFamily: '',
+          fontSize: '10.5pt',
+          fontWeight: 'normal',
+          lineHeight: '1.2',
+          indent: 0,
+        },
+        {
+          id: 'profile-table',
+          name: 'Tabel',
+          enabled: true,
+          style: 'numeric',
+          template: 'Tabel {h1}.{number}',
+          targetType: 'table',
+        },
+        {
+          id: 'profile-figure',
+          name: 'Gambar',
+          enabled: true,
+          style: 'numeric',
+          template: 'Gambar {h1}.{number}',
+          targetType: 'figure',
+        },
+        {
+          // The contents is a block like any other, so it is styled like one. The two fields below
+          // are its own: how far each heading level is indented, and the level indenting starts at.
+          // They live here rather than on the node so that a document's contents is described in the
+          // same place as everything else about how that document looks.
+          id: 'profile-toc',
+          name: 'Table of Contents',
+          enabled: false,
+          style: 'numeric',
+          template: '',
+          targetType: 'toc',
+          fontFamily: '',
+          fontSize: '',
+          fontWeight: 'normal',
+          lineHeight: '1.5',
+          tocIndentFrom: 2,
+          tocIndent: '2em',
+        },
+]
+
+/**
+ * A saved list, plus any built-in it does not mention. The user's own edits always win.
+ *
+ * Needed in two places, and it was in only one. `onCreate` merged, but opening a document called
+ * `setNumberingConfig`, which replaced the list outright - so a built-in added after a document was
+ * saved vanished the moment that document was opened, and the user went looking for it and found
+ * nothing. Anything that replaces the profile list has to go through here.
+ */
+export const withBuiltInProfiles = (saved) => {
+  if (!Array.isArray(saved) || saved.length === 0) {
+    return defaultProfiles()
+  }
+  const present = new Set(saved.map((profile) => profile?.id))
+  return [...saved, ...defaultProfiles().filter((profile) => !present.has(profile.id))]
+}
+
 const SYNC_META = 'documentReferencesSync'
 
 // The profiles own their stylesheet. It is scoped to this editor's own ProseMirror element, so two
@@ -427,6 +615,22 @@ const focusTargetElement = (editor, targetId, targetType) => {
   return true
 }
 
+/**
+ * The profile list, read without going through a command.
+ *
+ * A command would dispatch a transaction for a read, which is a loop when the caller is reactive.
+ * The storage key differs by how the extension was registered, hence the fallbacks.
+ */
+export const getNumberingProfileList = (editor) => {
+  const storage =
+    editor?.storage?.documentReferences ||
+    editor?.storage?.['document-references'] ||
+    editor?.extensionStorage?.documentReferences ||
+    editor?.extensionStorage?.['document-references'] ||
+    null
+  return Array.isArray(storage?.profiles) ? storage.profiles : []
+}
+
 export const CrossReference = Node.create({
   name: 'crossReference',
   inline: true,
@@ -519,151 +723,7 @@ export const DocumentReferences = Extension.create({
         figure: '{label} {number}',
         table: '{label} {number}',
       },
-      profiles: [
-        {
-          id: 'profile-paragraph',
-          name: 'Normal (Text)',
-          enabled: false,
-          style: 'numeric',
-          template: '',
-          targetType: 'paragraph',
-          fontFamily: '',
-          fontSize: '12pt',
-          fontWeight: 'normal',
-          lineHeight: '1.5',
-          marginBottom: '0.25em',
-          indent: 1,
-          textAlign: 'justify',
-        },
-        {
-          id: 'profile-h1',
-          name: 'Title 1 (H1)',
-          enabled: true,
-          style: 'roman-upper',
-          template: 'BAB {number}\n',
-          targetType: 'heading',
-          level: 1,
-          fontFamily: '',
-          fontSize: '14pt',
-          fontWeight: 'bold',
-          lineHeight: '1.5',
-          marginBottom: '4em',
-          indent: 0,
-          textAlign: 'center',
-        },
-        {
-          id: 'profile-h2',
-          name: 'Title 2 (H2)',
-          enabled: true,
-          style: 'numeric',
-          template: '{number}',
-          targetType: 'heading',
-          level: 2,
-          fontFamily: '',
-          fontSize: '12pt',
-          fontWeight: 'bold',
-          lineHeight: '1.5',
-          marginBottom: '0.25em',
-          indent: 0,
-          textAlign: 'left',
-        },
-        {
-          id: 'profile-h3',
-          name: 'Title 3 (H3)',
-          enabled: true,
-          style: 'numeric',
-          template: '{number}',
-          targetType: 'heading',
-          level: 3,
-          fontFamily: '',
-          fontSize: '12pt',
-          fontWeight: 'bold',
-          lineHeight: '1.5',
-          marginBottom: '0.25em',
-          indent: 0,
-          textAlign: 'left',
-        },
-        {
-          id: 'profile-h4',
-          name: 'Title 4 (H4)',
-          enabled: false,
-          style: 'numeric',
-          template: '{number}',
-          targetType: 'heading',
-          level: 4,
-          fontFamily: '',
-          fontSize: '12pt',
-          fontWeight: 'bold',
-          lineHeight: '1.5',
-          marginBottom: '0.25em',
-          indent: 0,
-          textAlign: 'left',
-        },
-        {
-          id: 'profile-h5',
-          name: 'Title 5 (H5)',
-          enabled: false,
-          style: 'numeric',
-          template: '{number}',
-          targetType: 'heading',
-          level: 5,
-          fontFamily: '',
-          fontSize: '12pt',
-          fontWeight: 'bold',
-          lineHeight: '1.5',
-          marginBottom: '0.25em',
-          indent: 0,
-          textAlign: 'left',
-        },
-        {
-          id: 'profile-h6',
-          name: 'Title 6 (H6)',
-          enabled: false,
-          style: 'numeric',
-          template: '{number}',
-          targetType: 'heading',
-          level: 6,
-          fontFamily: '',
-          fontSize: '12pt',
-          fontWeight: 'bold',
-          lineHeight: '1.5',
-          marginBottom: '0.25em',
-          indent: 0,
-          textAlign: 'left',
-        },
-        {
-          // The page number is a block in the page margin, so it is styled like any other block: the
-          // user edits this profile and the generated stylesheet does the rest. It is never numbered
-          // and matches no node in the document; the engine puts its class on the element it draws.
-          id: 'profile-page-number',
-          name: 'Page Number',
-          enabled: false,
-          style: 'numeric',
-          template: '',
-          targetType: 'pageNumber',
-          fontFamily: '',
-          fontSize: '10.5pt',
-          fontWeight: 'normal',
-          lineHeight: '1.2',
-          indent: 0,
-        },
-        {
-          id: 'profile-table',
-          name: 'Tabel',
-          enabled: true,
-          style: 'numeric',
-          template: 'Tabel {h1}.{number}',
-          targetType: 'table',
-        },
-        {
-          id: 'profile-figure',
-          name: 'Gambar',
-          enabled: true,
-          style: 'numeric',
-          template: 'Gambar {h1}.{number}',
-          targetType: 'figure',
-        },
-      ],
+      profiles: defaultProfiles(),
     }
   },
 
@@ -802,14 +862,7 @@ export const DocumentReferences = Extension.create({
       if (savedProfiles) {
         const parsed = JSON.parse(savedProfiles)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // A saved list was written before some built-in profiles existed. Replacing the defaults
-          // outright would mean a new built-in never reaches anyone who has ever saved profiles, so
-          // the ones the saved list does not mention are added back. The user's own edits win.
-          const savedIds = new Set(parsed.map((profile) => profile?.id))
-          const missing = this.storage.profiles.filter(
-            (profile) => !savedIds.has(profile.id),
-          )
-          this.storage.profiles = [...parsed, ...missing]
+          this.storage.profiles = withBuiltInProfiles(parsed)
         }
       }
     } catch {}
@@ -955,10 +1008,16 @@ export const DocumentReferences = Extension.create({
 
   addCommands() {
     return {
+      // Pure reads. Every command dispatches its transaction unless it says otherwise - see
+      // CommandManager in @tiptap/core - so a command that only reads still puts a transaction
+      // through the view. Called from anything reactive, that is a loop: dispatch, state changes,
+      // the reader runs again, dispatch. It hung the editor when the contents profile picker read
+      // the list from a computed.
       getNumberingProfiles:
         (callback) =>
-        () => {
+        ({ tr }) => {
           callback?.(this.storage.profiles)
+          tr.setMeta('preventDispatch', true)
           return true
         },
       addNumberingProfile:
@@ -1179,7 +1238,10 @@ export const DocumentReferences = Extension.create({
             }
           }
           if (Array.isArray(config.profiles)) {
-            this.storage.profiles = config.profiles
+            // Through the merge, not straight in. Opening a document used to replace the list
+            // outright, so a built-in added after that document was saved disappeared the moment it
+            // was opened - which is how the Table of Contents profile became impossible to find.
+            this.storage.profiles = withBuiltInProfiles(config.profiles)
             syncProfileStylesheet(this.editor, this.storage.profiles)
           }
           const tr = createSyncTransaction(state, this.storage)
@@ -1277,8 +1339,9 @@ export const DocumentReferences = Extension.create({
         },
       getActiveReferenceCaption:
         (callback) =>
-        ({ state }) => {
+        ({ state, tr }) => {
           const target = findActiveTarget(state)
+          tr.setMeta('preventDispatch', true)
           callback?.(
             target
               ? {
