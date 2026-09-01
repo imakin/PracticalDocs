@@ -15,7 +15,7 @@
           v-model="marginTop"
           size="small"
           :label="`↥${t('base.margin.top')}:`"
-          placeholder="e.g. 0.25em, 12px"
+          :placeholder="profileMarginTop ? `profile: ${profileMarginTop}` : 'e.g. 0.25em, 12px'"
           clearable
           @change="setMargin"
         />
@@ -23,7 +23,7 @@
           v-model="marginBottom"
           size="small"
           :label="`↧${t('base.margin.bottom')}:`"
-          placeholder="e.g. 0.25em, 12px"
+          :placeholder="profileMarginBottom ? `profile: ${profileMarginBottom}` : 'e.g. 0.25em, 12px'"
           clearable
           @change="setMargin"
         />
@@ -35,7 +35,7 @@
               :key="preset"
               size="small"
               variant="outline"
-              :theme="marginBottom === `${preset}px` || marginBottom === String(preset) ? 'primary' : 'default'"
+              :theme="effectiveMarginBottom === `${preset}px` || effectiveMarginBottom === String(preset) ? 'primary' : 'default'"
               @click="applyBottomMarginPreset(preset)"
             >
               {{ preset }}px
@@ -58,28 +58,44 @@ const editor = inject('editor')
 
 let marginTop = $ref('')
 let marginBottom = $ref('')
+// What the block's profile says, for when the block itself says nothing. Since a profile became a
+// CSS class the block carries no margin attribute of its own, so reading only the attribute left the
+// panel empty for a block that plainly had spacing. These are shown as the placeholder, not as the
+// value: the field means "an override this block carries", and seeding it with the profile's value
+// would turn styling the profile owns into a per-block override on the next keystroke.
+let profileMarginTop = $ref('')
+let profileMarginBottom = $ref('')
+
+const effectiveMarginBottom = $computed(() => marginBottom || profileMarginBottom)
+
+const asText = (value) =>
+  value !== undefined && value !== null && value !== '' ? String(value) : ''
+
+const profileOf = (node) => {
+  const id = node?.attrs?.numberingProfileId
+  if (!id || !editor.value) return null
+  let profiles = []
+  editor.value.commands.getNumberingProfiles?.((list) => {
+    profiles = Array.isArray(list) ? list : []
+  })
+  return profiles.find((profile) => profile.id === id) || null
+}
 
 const setMarginValue = () => {
-  if (popupVisible.value) {
-    const node = editor.value ? getSelectionNode(editor.value) : null
-    if (!node?.attrs?.margin) {
-      marginTop = ''
-      marginBottom = ''
-      return
-    }
-    const { margin } = node.attrs
-    marginTop =
-      margin?.top !== undefined && margin?.top !== null
-        ? String(margin.top)
-        : ''
-    marginBottom =
-      margin?.bottom !== undefined && margin?.bottom !== null
-        ? String(margin.bottom)
-        : ''
-  } else {
+  if (!popupVisible.value) {
     marginTop = ''
     marginBottom = ''
+    profileMarginTop = ''
+    profileMarginBottom = ''
+    return
   }
+  const node = editor.value ? getSelectionNode(editor.value) : null
+  const profile = profileOf(node)
+  profileMarginTop = asText(profile?.marginTop)
+  profileMarginBottom = asText(profile?.marginBottom)
+  const margin = node?.attrs?.margin
+  marginTop = asText(margin?.top)
+  marginBottom = asText(margin?.bottom)
 }
 
 const setMargin = () => {

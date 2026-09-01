@@ -1,3 +1,18 @@
+### A Profile's Top Margin Works, And The Margin Panel Shows It
+
+- `Top Margin Was Outranked, Not Ignored`: The rule was emitted correctly and lost in the cascade. `.umo-editor-content .umo-editor > * + *:not(.umo-floating-node)` scores three classes against a profile rule's two, and sets `margin-top` to a variable that resolves to `0`, so a profile's Top Margin was zeroed at every value. Measured in Chrome, not inferred.
+- `Why Bottom Margin Worked All Along`: Nothing competes for `margin-bottom`. The container reset sets `margin: 0` on both, but at one class and one element it loses to a profile - so one half of the same field worked and the other did nothing.
+- `The Gap Is A Default And Now Says So`: That rule is wrapped in `:where()` and scores nothing, so a profile that states a top margin wins and a block without one still takes the gap. Nothing moves on screen today, since the variable is `0`.
+- `The Margin Panel Knew Only About Overrides`: It read `node.attrs.margin` alone. Since a profile became a CSS class, a block styled only by its profile carries no margin attribute, so the panel opened blank on a block that plainly had spacing.
+- `The Panel Shows The Profile As The Placeholder`: `profile: 5em` under an empty field. Placeholder and not value on purpose - the field means "an override this block carries", and seeding it would make the next keystroke write a per-block override nobody asked for. With an override set, the override is the value and the profile stays visible underneath. The Bottom Margin presets highlight against the effective value.
+- `Test script`: `profile-margins.cdp.mjs`, 13 checks, own fixture. It measures computed pixels at two different `em` values, checks a block with no profile top margin still takes the default, and opens the real panel by pressing its own arrow handle. Seen to fail on the unpatched build first - 5 of 13 red - and to pass after.
+
+  ```bash
+  npm run test:e2e:profile-margins
+  ```
+
+- `Details`: See [A Profile's Top Margin, and What the Margin Panel Shows](./details/profile-top-margin-and-margin-panel.md).
+
 ### Tables Carry No Text The User Did Not Write
 
 - `The Composed Caption Is Gone`: A table rendered a `<caption>` holding the numbering profile's label pasted in front of the stored caption, so it read "Tabel 1: Ringkasan". The label half was not the user's text and the element was not editable in place, so it could be neither corrected nor removed from the page.

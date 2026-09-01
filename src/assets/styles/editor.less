@@ -90,13 +90,19 @@
       }
     }
 
+    // The gap between blocks is a default, so it is wrapped in :where() and scores nothing. Nested
+    // normally it compiled to `.umo-editor-content .umo-editor > * + *:not(.umo-floating-node)`,
+    // three classes, which outranked a profile rule's two and silently zeroed every top margin a
+    // profile declared - measured in Chrome, and the reason a profile's Top Margin did nothing at
+    // any value while its Bottom Margin worked. Nothing else sets margin-top on a block, so a
+    // profile now wins and a block without one still takes this.
+    :where(& > * + *:not(.umo-floating-node)) {
+      margin-top: var(--umo-content-node-bottom);
+    }
+
     > * {
       position: relative;
       z-index: 1;
-
-      + *:not(.umo-floating-node) {
-        margin-top: var(--umo-content-node-bottom);
-      }
 
       &.umo-node-focused,
       &.ProseMirror-selectednoderange {
