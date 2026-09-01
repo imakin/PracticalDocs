@@ -909,7 +909,7 @@
     },
     "caption": {
       "text": "Caption",
-      "tip": "Edit the active figure or table caption",
+      "tip": "Edit the active figure caption",
       "field": "Caption text",
       "placeholder": "Enter a caption",
       "save": "Apply Caption"

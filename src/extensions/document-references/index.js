@@ -96,8 +96,10 @@ const getTargetType = (node) => {
 }
 
 const getTargetTitle = (node, targetType) => {
+  // A table has no caption of its own any more, and its text content is every cell in it, which is
+  // not a title. A cross-reference to a table shows its label.
   if (targetType === 'table') {
-    return normalizeText(node.attrs.caption)
+    return ''
   }
   if (targetType === 'citation') {
     return normalizeText(node.attrs.caption)
@@ -368,13 +370,13 @@ export const findActiveTarget = (state) => {
   const { selection } = state
   if (
     selection instanceof NodeSelection &&
-    ['image', 'table'].includes(selection.node?.type?.name) &&
-    !(selection.node.type.name === 'image' && selection.node.attrs.inline)
+    selection.node?.type?.name === 'image' &&
+    !selection.node.attrs.inline
   ) {
     return {
       node: selection.node,
       pos: selection.from,
-      targetType: selection.node.type.name === 'image' ? 'figure' : 'table',
+      targetType: 'figure',
     }
   }
 
@@ -383,14 +385,14 @@ export const findActiveTarget = (state) => {
   const { depth: maxDepth } = $from
   for (let depth = maxDepth; depth > 0; depth -= 1) {
     const node = $from.node(depth)
-    if (['image', 'table'].includes(node.type.name)) {
-      if (node.type.name === 'image' && node.attrs.inline) {
+    if (node.type.name === 'image') {
+      if (node.attrs.inline) {
         continue
       }
       return {
         node,
         pos: $from.before(depth),
-        targetType: node.type.name === 'image' ? 'figure' : 'table',
+        targetType: 'figure',
       }
     }
   }
@@ -398,9 +400,7 @@ export const findActiveTarget = (state) => {
 }
 
 export const getTargetCaption = (target) =>
-  target?.targetType === 'table'
-    ? normalizeText(target.node.attrs.caption)
-    : normalizeText(target?.node.textContent)
+  normalizeText(target?.node.textContent)
 
 const escapeSelector = (value) => {
   if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
@@ -843,7 +843,9 @@ export const DocumentReferences = Extension.create({
           decorations: (state) => {
             const decorations = []
             state.doc.descendants((node, pos) => {
-              if (!['heading', 'paragraph', 'table'].includes(node.type.name)) {
+              // Not tables. The widget would be anchored inside the table, where the only thing a
+              // table accepts is a row, and the label is not the user's text to begin with.
+              if (!['heading', 'paragraph'].includes(node.type.name)) {
                 return
               }
               const displayLabel = node.attrs.referenceLabel
@@ -1258,25 +1260,18 @@ export const DocumentReferences = Extension.create({
           }
           const normalizedCaption = normalizeText(caption)
           const { tr } = state
-          if (target.targetType === 'table') {
-            tr.setNodeMarkup(target.pos, undefined, {
+          const content = normalizedCaption
+            ? Fragment.from(state.schema.text(normalizedCaption))
+            : Fragment.empty
+          const image = target.node.type.create(
+            {
               ...target.node.attrs,
-              caption: normalizedCaption,
-            })
-          } else {
-            const content = normalizedCaption
-              ? Fragment.from(state.schema.text(normalizedCaption))
-              : Fragment.empty
-            const image = target.node.type.create(
-              {
-                ...target.node.attrs,
-                showTitle: true,
-              },
-              content,
-              target.node.marks,
-            )
-            tr.replaceWith(target.pos, target.pos + target.node.nodeSize, image)
-          }
+              showTitle: true,
+            },
+            content,
+            target.node.marks,
+          )
+          tr.replaceWith(target.pos, target.pos + target.node.nodeSize, image)
           dispatch?.(tr)
           return true
         },

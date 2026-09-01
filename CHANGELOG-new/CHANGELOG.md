@@ -1,3 +1,18 @@
+### Tables Carry No Text The User Did Not Write
+
+- `The Composed Caption Is Gone`: A table rendered a `<caption>` holding the numbering profile's label pasted in front of the stored caption, so it read "Tabel 1: Ringkasan". The label half was not the user's text and the element was not editable in place, so it could be neither corrected nor removed from the page.
+- `The Extra Row Fixed`: The table schema accepts only rows and nothing parses `<caption>`, so opening a saved document made ProseMirror wrap that text into a row of its own. A second path made it compound: a table with no caption wrote an empty `data-caption`, and the parse fell back to the caption element's text, promoting the automatic label into a caption the user was deemed to have written. Every save and load added one more row.
+- `Old Documents Neutralised`: The table's parse rules now ignore `<caption>` outright, so a document already carrying one loses it instead of growing a row. The caption text in those documents is dropped, not converted - a caption that was really typed has to be typed again as an ordinary block.
+- `Reference Identity Kept`: The table still carries its reference id, label and number, so a cross-reference to a table still finds it and still reads "Table 1".
+- `Caption Dialog Is For Figures`: `Insert > Caption` is disabled with a table selected and the command refuses one, so a caption cannot be stored where nothing would render it. A table caption is written as a block above or below the table, styled and numbered by a profile, which is what `Tabel {h1}.{number}` was already for.
+- `Test script`: `table-caption-removal.cdp.mjs`, 21 checks, own fixture. It measures the rendered table - row count, cell text, and every text node inside the table that is not in a cell - across three save and load round trips, then opens a document in the old format and requires the caption to disappear rather than become a row. Seen to fail on the unpatched build first - 19 of 21 red, the table growing to three, four and five rows across the round trips - and to pass after.
+
+  ```bash
+  npm run test:e2e:table-caption
+  ```
+
+- `Details`: See [Tables Carry No Text The User Did Not Write](./details/table-caption-removed.md).
+
 ### Readable Documents, Encryption Gone For Good
 
 - `Encryption Removed Entirely`: All twelve stored documents were converted to folders, and the `.enc` files, the archive reader and `crypto-utils.js` were deleted. Nothing encrypts or decrypts any more. `migrate-legacy.mjs` performed the conversion and is kept for reference.

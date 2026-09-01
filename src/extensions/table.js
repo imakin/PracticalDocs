@@ -4,25 +4,26 @@ import { TableCell } from '@tiptap/extension-table/cell'
 import { TableHeader } from '@tiptap/extension-table/header'
 import { TableRow } from '@tiptap/extension-table/row'
 
+/**
+ * A table carries its reference identity as attributes only.
+ *
+ * It used to also carry a `<caption>` element holding `label: caption`, composed by the editor. That
+ * text was not the user's: the label came from the numbering profile and the element was not
+ * editable in place, so there was no way to correct or remove it from the page. It also could not
+ * survive a save. The table schema is `tableRow+` and nothing parses `<caption>`, so on reopening the
+ * file ProseMirror had to fit that text somewhere and wrapped it into a row of its own - one more row
+ * on every save and load. A caption is now written the way any other text is, as a block above or
+ * below the table, styled and numbered by a profile.
+ */
 class ReferenceTableView extends TableView {
   constructor(node, cellMinWidth) {
     super(node, cellMinWidth)
-    this.caption = document.createElement('caption')
-    this.caption.className = 'umo-node-table-caption'
-    this.caption.contentEditable = 'false'
-    this.table.insertBefore(this.caption, this.colgroup)
     this.updateReferenceAttributes(node)
   }
 
   updateReferenceAttributes(node) {
-    const { caption, referenceId, referenceLabel, referenceNumber } = node.attrs
-    const captionText = String(caption || '').trim()
-    this.caption.textContent = captionText
-      ? `${referenceLabel}: ${captionText}`
-      : referenceLabel || ''
-
+    const { referenceId, referenceLabel, referenceNumber } = node.attrs
     const attributes = {
-      'data-caption': captionText,
       'data-reference-id': referenceId,
       'data-reference-label': referenceLabel,
       'data-reference-number': referenceNumber,
@@ -59,20 +60,16 @@ const CustomTable = Table.extend({
       View: ReferenceTableView,
     }
   },
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      caption: {
-        default: '',
-        parseHTML: (element) =>
-          element.getAttribute('data-caption') ||
-          element.querySelector('caption')?.textContent ||
-          '',
-        renderHTML: ({ caption }) => ({
-          'data-caption': caption || '',
-        }),
-      },
-    }
+  /**
+   * Drop any `<caption>` a stored document still carries.
+   *
+   * Without this the text inside it is parsed as table content, and since the table accepts only
+   * rows, ProseMirror wraps it into one. Documents written before captions were removed would grow a
+   * row every time they were opened. An `ignore` rule keeps its own name in ProseMirror's schema
+   * rules rather than being bound to this node, so the element is skipped wherever it appears.
+   */
+  parseHTML() {
+    return [...(this.parent?.() ?? []), { tag: 'caption', ignore: true }]
   },
   renderHTML({ node, HTMLAttributes }) {
     const { colgroup, tableWidth, tableMinWidth } = createColGroup(
@@ -83,22 +80,9 @@ const CustomTable = Table.extend({
     const style =
       userStyles ||
       (tableWidth ? `width: ${tableWidth}` : `min-width: ${tableMinWidth}`)
-    const { caption, referenceLabel } = node.attrs
-    const captionText = String(caption || '').trim()
-    const renderedCaption = captionText
-      ? `${referenceLabel}: ${captionText}`
-      : referenceLabel || ''
     const table = [
       'table',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { style }),
-      [
-        'caption',
-        {
-          class: 'umo-node-table-caption',
-          contenteditable: 'false',
-        },
-        renderedCaption,
-      ],
       colgroup,
       ['tbody', 0],
     ]
