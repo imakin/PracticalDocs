@@ -311,10 +311,40 @@ const positionAtLineStart = (view, line) => {
     return null
   }
   try {
-    return view.posAtDOM(node, answer)
+    return beforeBlockIfAtItsStart(view, view.posAtDOM(node, answer))
   } catch {
     return null
   }
+}
+
+/**
+ * A break at a block's first line belongs before the block, not inside it.
+ *
+ * The spacer is a widget anchored at this position. Anchored inside the block, it becomes the first
+ * thing in that block's content - and `text-indent` applies to the block's first line box, which the
+ * spacer then occupies, so **the text starts on the second line and is not indented at all.**
+ *
+ * Measured on a four sheet document with a profile stating a 2 level indent: paragraphs in the middle
+ * of a sheet started 56px in, and every paragraph that opened a sheet started at 0 while its computed
+ * `text-indent` still read 56px. The rule was right; the line it applied to was empty.
+ *
+ * This is the anchoring fault recorded as real bug 3, which STATE described as "not known to break
+ * anything else". It is now known.
+ */
+const beforeBlockIfAtItsStart = (view, pos) => {
+  if (typeof pos !== 'number' || pos <= 0) {
+    return pos
+  }
+  try {
+    const $pos = view.state.doc.resolve(pos)
+    // `parentOffset === 0` says the position is at the very start of its text block's content.
+    if ($pos.parent?.isTextblock && $pos.parentOffset === 0 && $pos.depth > 0) {
+      return $pos.before($pos.depth)
+    }
+  } catch {
+    return pos
+  }
+  return pos
 }
 
 /**
