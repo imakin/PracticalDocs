@@ -337,3 +337,29 @@ would collide with the last line.
 
 This section recorded an interim state in which the numbers were dropped from the export rather than
 misplaced. That is no longer the case; see above.
+
+
+## Page numbers were lost on save
+
+A document saved with page numbering on came back with numbering off, and the format, position,
+template and start value were gone with it.
+
+`validatePage` in `utils/document-file.js` is a whitelist - it names the page fields a document file
+carries, and drops everything else, so that a session-only value like the zoom level never reaches
+the file. The page number settings were added after it and never added to it, so they were dropped in
+both directions: on the way into the file and on the way back out.
+
+They are now carried, and read back permissively. A document is not refused because one setting is
+unreadable: an unknown position or format falls back to the default and the file still opens. Two
+values are distinguished carefully, because both are meaningful and both look like nothing:
+`firstPagePosition: null` means a chapter opening page carries its number wherever the other pages
+carry theirs, and `startAt: null` means the count carries on rather than restarting. A file written
+before the settings existed opens with the defaults.
+
+The per-section changes are not part of this. They live on the page break nodes, so they travel with
+the content and were never affected.
+
+Covered by four checks in `tests/unit/document-file.test.mjs` and by
+`tests/e2e/page-number-persistence.cdp.mjs`, which sets the numbers, saves through the real save path,
+clears them, opens the saved file and confirms the numbers are drawn again in the format the file
+asked for.

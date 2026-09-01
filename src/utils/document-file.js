@@ -1,3 +1,9 @@
+import {
+  defaultPageNumberSettings,
+  PAGE_NUMBER_FORMATS,
+  PAGE_NUMBER_POSITIONS,
+} from './page-numbering.js'
+
 export const DOCUMENT_FILE_FORMAT = 'umodoc'
 export const DOCUMENT_FILE_VERSION = 1
 
@@ -92,6 +98,39 @@ const validateContent = (value) => {
   return content
 }
 
+// The page number settings are optional: files written before they existed have none, and a
+// document that never turned numbering on has nothing worth keeping. Anything unreadable falls back
+// to the default rather than refusing the file, since a bad position is not a reason to lose a
+// document. The per-section changes are not here - they live on the page break nodes, so they
+// travel with the content.
+const validatePageNumber = (value) => {
+  const defaults = defaultPageNumberSettings()
+  if (!isRecord(value)) {
+    return defaults
+  }
+  const pick = (field, allowed) =>
+    allowed.includes(value[field]) ? value[field] : defaults[field]
+  const startAt =
+    value.startAt === null || value.startAt === undefined || value.startAt === ''
+      ? null
+      : Number.isFinite(Number(value.startAt))
+        ? Number(value.startAt)
+        : defaults.startAt
+  return {
+    enabled: typeof value.enabled === 'boolean' ? value.enabled : defaults.enabled,
+    position: pick('position', PAGE_NUMBER_POSITIONS),
+    // null is a real setting here: it means a chapter opening page carries its number wherever the
+    // other pages carry theirs.
+    firstPagePosition: PAGE_NUMBER_POSITIONS.includes(value.firstPagePosition)
+      ? value.firstPagePosition
+      : null,
+    format: pick('format', PAGE_NUMBER_FORMATS),
+    template:
+      typeof value.template === 'string' ? value.template : defaults.template,
+    startAt,
+  }
+}
+
 const validatePage = (value) => {
   const page = requireRecord(value, 'page')
   const size = requireRecord(page.size, 'page.size')
@@ -153,6 +192,7 @@ const validatePage = (value) => {
     showLineNumber: requireBoolean(page.showLineNumber, 'page.showLineNumber'),
     showBookmark: requireBoolean(page.showBookmark, 'page.showBookmark'),
     showToc: requireBoolean(page.showToc, 'page.showToc'),
+    pageNumber: validatePageNumber(page.pageNumber),
   }
 }
 

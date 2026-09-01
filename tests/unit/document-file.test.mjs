@@ -150,3 +150,52 @@ test('creates safe and identifiable JSON file names', () => {
   assert.equal(getDocumentFileName(''), 'Untitled Document.umodoc.json')
   assert.equal(getDocumentFileName('CON'), '_CON.umodoc.json')
 })
+
+test('page number settings survive the round trip', () => {
+  // They were dropped by the page whitelist, so a document saved with numbering on came back with
+  // numbering off and the user's format, position and start value gone.
+  const fixture = createFixture()
+  fixture.page.pageNumber = {
+    enabled: true,
+    position: 'top-right',
+    firstPagePosition: 'bottom-center',
+    format: 'roman-lower',
+    template: '- {number} -',
+    startAt: 3,
+  }
+  const parsed = parseDocumentFile(
+    serializeDocumentSnapshot(createDocumentSnapshot(fixture)),
+  )
+  assert.deepEqual(parsed.page.pageNumber, fixture.page.pageNumber)
+})
+
+test('a page number section that continues the count keeps its null start', () => {
+  // null means "carry on counting", and Number(null) is 0, so it must not be coerced.
+  const fixture = createFixture()
+  fixture.page.pageNumber = {
+    enabled: true,
+    position: 'bottom-center',
+    firstPagePosition: null,
+    format: 'numeric',
+    template: '{number}',
+    startAt: null,
+  }
+  const snapshot = createDocumentSnapshot(fixture)
+  assert.equal(snapshot.page.pageNumber.startAt, null)
+  assert.equal(snapshot.page.pageNumber.firstPagePosition, null)
+})
+
+test('a file with no page number settings opens with the defaults', () => {
+  const snapshot = createDocumentSnapshot(createFixture())
+  assert.equal(snapshot.page.pageNumber.enabled, false)
+  assert.equal(snapshot.page.pageNumber.position, 'bottom-center')
+})
+
+test('an unreadable page number setting falls back instead of refusing the file', () => {
+  const fixture = createFixture()
+  fixture.page.pageNumber = { enabled: true, position: 'middle-of-nowhere', format: 'klingon' }
+  const snapshot = createDocumentSnapshot(fixture)
+  assert.equal(snapshot.page.pageNumber.enabled, true)
+  assert.equal(snapshot.page.pageNumber.position, 'bottom-center')
+  assert.equal(snapshot.page.pageNumber.format, 'numeric')
+})
