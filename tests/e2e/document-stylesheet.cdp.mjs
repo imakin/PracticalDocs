@@ -238,7 +238,29 @@ const LEGACY = [
   '<span style="font-family: &quot;Times New Roman&quot;; font-size: 12pt;">Kalimat lama.</span></p>',
 ].join('')
 
+// The profiles this fixture's inline styles are the old form of. Set here rather than assumed: the
+// migration only strips an inline value that matches the block's profile, so without this the case
+// measures whatever profiles the browser happened to have stored - and it failed the day the user's
+// own `Normal (Text)` had no font family, because `font-family: Times New Roman` then read as a
+// deliberate override and was correctly kept.
+const ASSUMED = [
+  {
+    id: 'profile-h1', name: 'Title 1 (H1)', enabled: true, style: 'roman-upper',
+    template: `BAB {number}${String.fromCharCode(10)}`, targetType: 'heading', level: 1,
+    fontFamily: '', fontSize: '14pt', fontWeight: 'bold', lineHeight: '1.5',
+    marginBottom: '4em', indent: 0, textAlign: 'center',
+  },
+  {
+    id: 'profile-paragraph', name: 'Normal (Text)', enabled: false, style: 'numeric',
+    template: '', targetType: 'paragraph',
+    fontFamily: 'Times New Roman', fontSize: '12pt', fontWeight: 'normal', lineHeight: '1.5',
+    marginBottom: '0.25em', indent: 1, textAlign: 'justify',
+  },
+]
+
 const migrated = await evaluate(`(async () => {
+  window.__ed.commands.setNumberingConfig({ profiles: ${JSON.stringify(ASSUMED)} })
+  await new Promise((r) => setTimeout(r, 800))
   window.__ed.commands.setContent(${JSON.stringify(LEGACY)})
   window.__ed.commands.syncDocumentReferences()
   await new Promise((r) => setTimeout(r, 1500))

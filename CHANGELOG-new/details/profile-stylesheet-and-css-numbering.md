@@ -281,3 +281,20 @@ Separately, a profile stating an indent of zero now says so in its rule. `text-i
 only for a positive indent, so zero produced no declaration at all and the block took its indent from
 whatever enclosed it. A profile that never mentions indent still emits nothing, which is the
 difference that matters: saying "no indent" and saying nothing are not the same instruction.
+
+
+## Amended 2026-09-01: the migration case now sets the profiles it assumes
+
+`document-stylesheet.cdp.mjs` case C feeds the editor a document in the old inline-style format and
+requires the migration to strip it. The migration only removes an inline value that **matches the
+block's profile** - a value that differs is the user's and is kept, which is the rule this whole
+change is built on.
+
+The case carried its own document but not its own profiles, so it measured whatever profile list the
+browser happened to have stored. It went red the day the user's own `Normal (Text)` profile had no
+font family: `font-family: Times New Roman` then correctly read as a deliberate override and was
+correctly kept, and the check that inline styles are gone correctly failed. The test was wrong, not
+the code.
+
+It now sets the two profiles its fixture is the old form of, immediately before loading it. A fixture
+is not only the document; it is every setting the assertion depends on.
