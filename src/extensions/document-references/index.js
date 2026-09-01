@@ -962,20 +962,21 @@ export const DocumentReferences = Extension.create({
       addNumberingProfile:
         (profile) =>
         ({ state, dispatch }) => {
+          // Everything the dialog set is kept, and only the fields a profile cannot do without are
+          // defaulted. Listing the style fields one by one silently dropped the two that were added
+          // later, `indent` and `textAlign`, so a new profile could not turn indentation off or
+          // choose its own alignment - it came out looking like the profile it was made to differ
+          // from. An empty template is also a choice, meaning "number it but show nothing", so it
+          // is no longer replaced by the default.
           const newProfile = {
+            ...profile,
             id: profile.id || `profile-${shortId(8)}`,
             name: profile.name || 'New Profile',
             enabled: profile.enabled !== false,
             style: profile.style || 'numeric',
-            template: profile.template || '{number}',
+            template: profile.template ?? '{number}',
             targetType: profile.targetType || 'heading',
             level: profile.level || 1,
-            fontSize: profile.fontSize,
-            fontWeight: profile.fontWeight,
-            lineHeight: profile.lineHeight,
-            marginTop: profile.marginTop,
-            marginBottom: profile.marginBottom,
-            fontFamily: profile.fontFamily,
           }
           this.storage.profiles = [...this.storage.profiles, newProfile]
           syncProfileStylesheet(this.editor, this.storage.profiles)

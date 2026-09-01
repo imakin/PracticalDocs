@@ -196,3 +196,16 @@ test('a page number profile is not scoped, because it is drawn outside the text 
   assert.match(css, /^\.umo-profile-page-number \{/m)
   assert.doesNotMatch(css, /\.editor \.umo-profile-page-number/)
 })
+
+test('a profile that states no indent says so in the rule', () => {
+  // Emitting nothing for zero left the block taking its indent from whatever encloses it, so a
+  // profile made to have no indent was indistinguishable from one that never mentions indent.
+  const css = buildProfileStylesheet([
+    { id: 'profile-noindent', name: 'Normal noindent', targetType: 'paragraph', indent: 0 },
+    { id: 'profile-body', name: 'Normal', targetType: 'paragraph', indent: 1 },
+    { id: 'profile-quiet', name: 'Unset', targetType: 'paragraph' },
+  ])
+  assert.match(css, /\.umo-profile-noindent \{[^}]*text-indent: 0em;/)
+  assert.match(css, /\.umo-profile-body \{[^}]*text-indent: 2em;/)
+  assert.doesNotMatch(css, /\.umo-profile-quiet \{[^}]*text-indent/)
+})

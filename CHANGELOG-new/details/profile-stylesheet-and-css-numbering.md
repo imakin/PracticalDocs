@@ -258,3 +258,26 @@ A document that starts at `h2` with no `h1` renders `0.1` under CSS counters whe
 
 Unrelated and pre-existing: `tests/e2e/document-references.cdp.mjs` fails at "Automatic reference labels
 were not synchronized". Confirmed to fail identically on a clean tree with this work stashed.
+
+
+## A new profile could not differ from the one it was made from
+
+The user made a "Normal noindent" profile beside "Normal", and applying one and then the other left
+the block looking the same.
+
+`addNumberingProfile` built the new profile by naming its fields one at a time. `indent` and
+`textAlign` were added to profiles later and never added to that list, so both were dropped the
+moment a profile was created - the two fields a profile named for its indentation is made of. The
+same call also replaced an empty template with the default, which since the numbering work means
+"number this block but show nothing". A profile is now created from what it was given, with defaults
+only for the fields a profile cannot do without.
+
+Until this week the loss was masked: the sync filled a profile's empty fields from whichever block it
+happened to scan first, so the new profile quietly picked up the indent of an existing paragraph -
+which is precisely why the two profiles behaved as one. That seeding was removed as part of the
+profile bleed fix, which left the dropped fields visible.
+
+Separately, a profile stating an indent of zero now says so in its rule. `text-indent` was emitted
+only for a positive indent, so zero produced no declaration at all and the block took its indent from
+whatever enclosed it. A profile that never mentions indent still emits nothing, which is the
+difference that matters: saying "no indent" and saying nothing are not the same instruction.

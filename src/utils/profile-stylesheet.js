@@ -149,8 +149,13 @@ const declarationsFor = (profile) => {
     if (value === undefined || value === null || value === '') continue
     out.push(`${property}: ${field === 'fontFamily' ? `"${value}"` : value};`)
   }
+  // A profile that states an indent of zero says so explicitly, so the rule says so too. Emitting
+  // nothing left the block taking its indent from whatever encloses it, which is not what a profile
+  // named for having no indent should do.
+  const statesIndent =
+    profile.indent !== undefined && profile.indent !== null && profile.indent !== ''
   const indent = Number(profile.indent)
-  if (Number.isFinite(indent) && indent > 0) {
+  if (statesIndent && Number.isFinite(indent) && indent >= 0) {
     out.push(`text-indent: ${indent * INDENT_STEP}em;`)
   }
   return out
