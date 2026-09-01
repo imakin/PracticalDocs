@@ -57,6 +57,7 @@ import {
   TaskItemExtension as TaskItem,
 } from './list-item'
 import Margin from './margin'
+import MarkdownBlock from './markdown-block'
 import Mention from './mention'
 import getUsersSuggestion from './mention/suggestion'
 import NodeAlign from './node-align'
@@ -172,6 +173,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     }),
     'horizontal-rule': HorizontalRule,
     toc: Toc,
+    'markdown-block': MarkdownBlock,
     'text-box': TextBox,
     'web-page': Iframe,
   }

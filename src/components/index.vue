@@ -825,6 +825,12 @@ const setContent = (
       .setContent(doc, { emitUpdate: options.emitUpdate })
       .focus(options.focusPosition, options.focusOptions)
       .run()
+    // A markdown block's source is the truth and its rendering is derived from it (ADR 0012). The
+    // rendering cannot drift while the document is open, because it is not typeable, but the file
+    // can be edited by hand - ADR 0005 exists so that it can be - and then the stored rendering is
+    // stale. Rebuild from the source on the way in. The command compares before it writes, so a
+    // document that already agrees with itself is not marked as changed by opening it.
+    editor.value.commands.rebuildMarkdownBlocks()
   } catch (error) {
     const isSelectionPositionError =
       error instanceof RangeError &&
@@ -1294,6 +1300,9 @@ const getDocumentSnapshot = (savedAt = new Date().toISOString()) => {
     document: options.value.document,
     page: page.value,
     profiles: refStorage?.profiles || [],
+    // Markdown styling is its own group beside the profiles, not one of them. It has to travel with
+    // the document or a file would open looking different from how it was saved.
+    markdownStyles: refStorage?.markdownStyles || null,
     editorVersion: version,
     savedAt,
   })
@@ -1332,7 +1341,10 @@ const applyDocumentSnapshot = async (snapshot) => {
       // when the editor was created. A document's own profiles then had no CSS rule at all, so its
       // blocks fell back to the browser's sizes - a heading on a 14pt profile rendered at 35px.
       if (editor.value?.commands.setNumberingConfig) {
-        editor.value.commands.setNumberingConfig({ profiles: value.profiles })
+        editor.value.commands.setNumberingConfig({
+          profiles: value.profiles,
+          ...(value.markdownStyles ? { markdownStyles: value.markdownStyles } : {}),
+        })
       } else {
         const refStorage = getRefStorage()
         if (refStorage) {

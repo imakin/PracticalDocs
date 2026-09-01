@@ -67,6 +67,12 @@
         </div>
         <div class="umo-virtual-group">
           <menus-toolbar-base-markdown v-if="!disableMenu('markdown')" />
+          <menus-toolbar-base-markdown-block
+            v-if="!disableMenu('markdown-block')"
+          />
+          <menus-toolbar-base-markdown-styles
+            v-if="!disableMenu('markdown-styles')"
+          />
           <menus-toolbar-base-render-markdown
             v-if="!disableMenu('render-markdown')"
           />

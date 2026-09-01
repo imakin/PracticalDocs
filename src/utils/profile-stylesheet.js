@@ -9,6 +9,8 @@
 // number, and the number is still derived: editing "BAB" to "BEB" in the generated stylesheet
 // renumbers every chapter without the editor being involved.
 
+import { markdownStyleRules } from './markdown-styles.js'
+
 const CSS_NUMBER_STYLES = {
   numeric: 'decimal',
   'roman-upper': 'upper-roman',
@@ -179,11 +181,15 @@ export const DOCUMENT_SCOPE = '.umo-document'
  */
 export const buildProfileStylesheet = (
   profiles = [],
-  { scope = DOCUMENT_SCOPE, numbering = true } = {},
+  { scope = DOCUMENT_SCOPE, numbering = true, markdownStyles = null } = {},
 ) => {
   const list = Array.isArray(profiles) ? profiles.filter(Boolean) : []
-  if (list.length === 0) return ''
   const prefix = String(scope || '').trim()
+  // Markdown styling is its own group, so it is appended here rather than being made to look like a
+  // profile. One stylesheet either way, because the screen and the saved file must come from one
+  // generator - the rule ADR 0007 exists for.
+  const markdownCss = markdownStyles ? markdownStyleRules(markdownStyles, prefix) : ''
+  if (list.length === 0) return markdownCss
   const sel = (rest) => (prefix ? `${prefix} ${rest}` : rest)
 
   const byLevel = headingProfilesByLevel(list)
@@ -247,6 +253,9 @@ export const buildProfileStylesheet = (
       // The page number is drawn in the page margin, outside the text flow and therefore outside the
       // scope element, which is the editor's own content box. Scoping its rule would mean it never
       // matches. It is styled by its class alone, which is still specific to this one profile.
+      // The page number is drawn in the page margin, outside the scope element, so scoping its rule
+      // would mean it never matches. It is styled by its class alone, which is still specific to
+      // this one profile.
       const selector =
         profile.targetType === 'pageNumber' ? `.${cls}` : sel(`.${cls}`)
       blocks.push(`${selector} {\n${decls.map((d) => `  ${d}`).join('\n')}\n}`)
@@ -274,6 +283,9 @@ export const buildProfileStylesheet = (
     blocks.push(`${sel(`.${cls}`)}::before {\n${before.map((d) => `  ${d}`).join('\n')}\n}`)
   }
 
+  if (markdownCss) {
+    blocks.push(markdownCss)
+  }
   return blocks.join('\n\n')
 }
 

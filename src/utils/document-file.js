@@ -224,6 +224,14 @@ export const validateDocumentSnapshot = (value) => {
   const document = requireRecord(snapshot.document, 'document')
   const title = requireString(document.title, 'document.title')
   const profiles = Array.isArray(snapshot.profiles) ? snapshot.profiles : []
+  // This function is a whitelist, so a field that is not named here is dropped on the way in **and**
+  // on the way out. That is exactly how page number settings were silently lost: a document saved
+  // with numbering on reopened with it off, because `pageNumber` had never been added to
+  // `validatePage`. Read permissively - an unrecognised shape falls back to nothing rather than
+  // refusing the file.
+  const markdownStyles = isRecord(snapshot.markdownStyles)
+    ? snapshot.markdownStyles
+    : null
 
   return {
     format: DOCUMENT_FILE_FORMAT,
@@ -234,6 +242,7 @@ export const validateDocumentSnapshot = (value) => {
     content: validateContent(snapshot.content),
     page: validatePage(snapshot.page),
     profiles,
+    ...(markdownStyles ? { markdownStyles } : {}),
   }
 }
 
@@ -242,6 +251,7 @@ export const createDocumentSnapshot = ({
   document,
   page,
   profiles,
+  markdownStyles,
   editorVersion,
   savedAt = new Date().toISOString(),
 }) =>
@@ -256,6 +266,7 @@ export const createDocumentSnapshot = ({
     content,
     page,
     profiles,
+    ...(markdownStyles ? { markdownStyles } : {}),
   })
 
 export const parseDocumentFile = (source) => {

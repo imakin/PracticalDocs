@@ -15,6 +15,10 @@ import {
   profileClassName,
   profileIdFromClass,
 } from '@/utils/profile-stylesheet'
+import {
+  defaultMarkdownStyles,
+  withMarkdownStyleDefaults,
+} from '@/utils/markdown-styles'
 import { shortId } from '@/utils/short-id'
 
 /**
@@ -197,6 +201,14 @@ const defaultProfiles = () => [
  * saved vanished the moment that document was opened, and the user went looking for it and found
  * nothing. Anything that replaces the profile list has to go through here.
  */
+/**
+ * How markdown looks: its own group, kept beside the profiles rather than inside them.
+ *
+ * The data lives here because this is the bag of settings that already round-trips through a saved
+ * document and already owns the generated stylesheet. The rules about what a markdown setting *is*
+ * live in `src/utils/markdown-styles.js`, which is where a new setting gets added. ADR 0012,
+ * amendment 3.
+ */
 export const withBuiltInProfiles = (saved) => {
   if (!Array.isArray(saved) || saved.length === 0) {
     return defaultProfiles()
@@ -223,7 +235,7 @@ const profileStyleScope = (editor) => {
   return `[${PROFILE_STYLE_ATTR}="${id}"]`
 }
 
-const syncProfileStylesheet = (editor, profiles) => {
+const syncProfileStylesheet = (editor, profiles, markdownStyles) => {
   if (typeof document === 'undefined' || !editor?.view?.dom) return
   const scope = profileStyleScope(editor)
   const id = editor.view.dom.getAttribute(PROFILE_STYLE_ATTR)
@@ -233,7 +245,11 @@ const syncProfileStylesheet = (editor, profiles) => {
     element.setAttribute(PROFILE_STYLE_ATTR, id)
     document.head.appendChild(element)
   }
-  const css = buildProfileStylesheet(profiles, { scope, numbering: false })
+  const css = buildProfileStylesheet(profiles, {
+    scope,
+    numbering: false,
+    markdownStyles,
+  })
   if (element.textContent !== css) {
     element.textContent = css
   }
@@ -301,6 +317,16 @@ const getTargetId = (node, targetType) =>
 const collectTargetDescriptors = (doc) => {
   const descriptors = []
   doc.descendants((node, pos) => {
+    // Nothing inside a markdown block takes part in numbering or in the per-block profile system.
+    // It is styled by the one markdown profile instead (ADR 0012, amendment 2). Skipping the whole
+    // subtree is what gives `numberingProfileId` a single owner: an earlier attempt corrected these
+    // nodes after the plan had written them, and the two writers overwrote each other forever.
+    //
+    // A heading in here is still a heading, so the contents still lists it. It simply has no label
+    // and consumes no number, which is what the user chose when asked.
+    if (node.type.name === 'markdownBlock') {
+      return false
+    }
     const targetType = getTargetType(node)
     if (!targetType || (targetType === 'figure' && node.attrs.inline)) {
       return
@@ -724,6 +750,8 @@ export const DocumentReferences = Extension.create({
         table: '{label} {number}',
       },
       profiles: defaultProfiles(),
+      // Markdown styling is its own group, not a profile. See `src/utils/markdown-styles.js`.
+      markdownStyles: defaultMarkdownStyles(),
     }
   },
 
@@ -1237,12 +1265,26 @@ export const DocumentReferences = Extension.create({
               ...config.templates,
             }
           }
+          if (config.markdownStyles) {
+            this.storage.markdownStyles = withMarkdownStyleDefaults(
+              config.markdownStyles,
+            )
+            syncProfileStylesheet(
+              this.editor,
+              this.storage.profiles,
+              this.storage.markdownStyles,
+            )
+          }
           if (Array.isArray(config.profiles)) {
             // Through the merge, not straight in. Opening a document used to replace the list
             // outright, so a built-in added after that document was saved disappeared the moment it
             // was opened - which is how the Table of Contents profile became impossible to find.
             this.storage.profiles = withBuiltInProfiles(config.profiles)
-            syncProfileStylesheet(this.editor, this.storage.profiles)
+            syncProfileStylesheet(
+              this.editor,
+              this.storage.profiles,
+              this.storage.markdownStyles,
+            )
           }
           const tr = createSyncTransaction(state, this.storage)
           if (tr) {

@@ -81,7 +81,9 @@
     "lint": "oxlint --fix src",
     "analyzer": "vite-bundle-visualizer",
     "prepare": "husky",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test:e2e:markdown-block": "node tests/e2e/markdown-block.cdp.mjs",
+    "test:unit:markdown": "node --test tests/unit/markdown.test.mjs"
   },
   "dependencies": {
     "@eslint/object-schema": "3.0.2",

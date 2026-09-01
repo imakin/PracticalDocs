@@ -10,6 +10,23 @@
     @node-change="nodeChange"
   >
     <div class="umo-block-menu-hander">
+      <!--
+        Which mode this block is in, shown where its other controls are. Not in the page: a label
+        inside the document occupies a line the writer did not write.
+
+        It is also a button, and that is the point: reaching the source by clicking into the block
+        means landing a click inside it, which the writer found hard to do. Pressing this asks the
+        block for its source and puts the cursor there.
+      -->
+      <button
+        v-if="isMarkdownBlock"
+        type="button"
+        class="umo-block-menu-mode"
+        :title="t('blockMenu.openMarkdownSource')"
+        @click="openMarkdownSource"
+      >
+        <icon name="markdown" />
+      </button>
       <menus-block-node
         :node="selectedNode"
         :pos="selectedNodePos"
@@ -32,6 +49,17 @@ const editor = inject('editor')
 let selectedNode = $ref(null)
 let selectedNodePos = $ref(null)
 
+const isMarkdownBlock = $computed(
+  () => selectedNode?.type?.name === 'markdownBlock',
+)
+
+const openMarkdownSource = () => {
+  if (selectedNodePos === null) {
+    return
+  }
+  editor.value?.commands.openMarkdownSource({ pos: selectedNodePos })
+}
+
 const nodeChange = ({ node, pos }) => {
   selectedNode = node || null
   if (pos !== null) {
@@ -45,6 +73,23 @@ const dropdownVisible = (visible) => {
 </script>
 
 <style lang="less">
+.umo-block-menu-mode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--umo-text-color-light, #8c8c8c);
+  border-radius: 3px;
+
+  &:hover {
+    background-color: var(--umo-color-hover, #f5f5f5);
+    color: var(--umo-text-color, #1f1f1f);
+  }
+}
+
 .umo-block-menu {
   .umo-menu-button {
     color: var(--umo-text-color-light) !important;

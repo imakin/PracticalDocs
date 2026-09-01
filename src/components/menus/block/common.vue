@@ -25,6 +25,22 @@
           @menu-click="clearTextFormatting"
         />
       </t-dropdown-item>
+      <t-dropdown-item v-if="canConvertToMarkdown">
+        <menus-button
+          ico="markdown"
+          :text="t('blockMenu.toMarkdown')"
+          :tooltip="false"
+          @menu-click="convertToMarkdown"
+        />
+      </t-dropdown-item>
+      <t-dropdown-item v-if="isMarkdownBlock">
+        <menus-button
+          ico="markdown"
+          :text="t('blockMenu.fromMarkdown')"
+          :tooltip="false"
+          @menu-click="convertFromMarkdown"
+        />
+      </t-dropdown-item>
       <t-dropdown-item divider>
         <menus-button
           ico="node-duplicate"
@@ -90,6 +106,22 @@ const popupProps = {
     menuActive = visible
     emits('dropdown-visible', visible)
   },
+}
+
+// The route into markdown mode, and the route back out. Without these the block can only be created
+// empty from the Insert menu, so a paragraph already written could never become one.
+const isMarkdownBlock = $computed(() => props.node?.type?.name === 'markdownBlock')
+const canConvertToMarkdown = $computed(() => {
+  const { node } = props
+  // An atom or a leaf carries no text to become markdown; converting one would delete it.
+  return !!node && !isMarkdownBlock && !node.isAtom && !node.isLeaf
+})
+
+const convertToMarkdown = () => {
+  editor.value?.commands.convertToMarkdownBlock({ pos: props.pos })
+}
+const convertFromMarkdown = () => {
+  editor.value?.commands.unwrapMarkdownBlock({ pos: props.pos })
 }
 
 const clearTextFormatting = () => {

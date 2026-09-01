@@ -129,7 +129,13 @@
       "renderSuccess": "Markdown rendered.",
       "renderEmpty": "There is no Markdown text to render.",
       "renderNoActiveBlock": "Place the cursor in a text block first.",
-      "renderError": "Markdown could not be rendered."
+      "renderError": "Markdown could not be rendered.",
+      "toBlock": "Markdown Block",
+      "toBlockTip": "Write this block in Markdown, or turn it back into WYSIWYG",
+      "styles": "Markdown Styles",
+      "stylesTip": "How Markdown blocks look. A separate group from the block style profiles.",
+      "stylesHint": "Leave a field empty to keep the default. These settings apply to every Markdown block in this document.",
+      "close": "Close"
     },
     "quote": "Quote",
     "redo": "Redo",
@@ -642,7 +648,11 @@
     "duplicate": "Duplicate",
     "copy": "Copy",
     "cut": "Cut",
-    "delete": "Delete"
+    "delete": "Delete",
+    "toMarkdown": "Change to Markdown",
+    "fromMarkdown": "Change to WYSIWYG",
+    "isMarkdown": "This block is written in Markdown",
+    "openMarkdownSource": "Markdown block. Click to edit its source"
   },
   "bubbleMenu": {
     "code": {
@@ -1017,5 +1027,11 @@
       "title": "Notice",
       "body": "The clipboard content has been pasted, but included images were not processed correctly. Please manually copy and replace the unprocessed images in the document."
     }
+  },
+  "markdownBlock": {
+    "name": "Markdown",
+    "rendered": "Rendered",
+    "source": "Source",
+    "placeholder": "Write Markdown here. Use $...$ for a formula and $$...$$ for a displayed one."
   }
 }
