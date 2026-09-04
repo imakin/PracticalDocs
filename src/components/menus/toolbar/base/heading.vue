@@ -6,9 +6,14 @@
     :disabled="!editor?.isEditable"
   >
     <div class="umo-heading-container">
-      <template v-for="(item, index) in allCards" :key="item.key">
+      <!--
+        Every profile, in a strip that scrolls sideways. Four at a time meant the rest could only be
+        reached through the dropdown, and a profile the writer uses constantly could sit behind it.
+        The scrolling is plain CSS overflow, deliberately: the strip is never unmounted, so wherever
+        the writer leaves it scrolled is where it stays, and nothing moves it back on their behalf.
+      -->
+      <template v-for="item in allCards" :key="item.key">
         <div
-          v-if="index < 4"
           class="card"
           :class="{
             active: isCardActive(item) && editor?.isEditable,
@@ -38,9 +43,8 @@
         <template #content>
           <div ref="popupContentRef" class="umo-heading-container popup-content">
             <div class="block-cards-list">
-              <template v-for="(item, index) in allCards" :key="item.key">
+              <template v-for="item in allCards" :key="item.key">
                 <div
-                  v-if="index >= 4"
                   class="card"
                   :class="{
                     active: isCardActive(item) && editor?.isEditable,
@@ -333,17 +337,42 @@ const applyCard = (item) => {
   selectHeadingProfile(item)
 }
 
+/**
+ * Apply a profile to the block the cursor is in, changing its type first only if it has to.
+ *
+ * Two things here are deliberate and were both paid for by the same report - a second paragraph, at
+ * the end of a document, that would not take a profile no matter how many times its card was clicked.
+ *
+ * **The type is only changed when it is actually different.** Converting a paragraph to a paragraph
+ * is not free: it runs `clearNodes` over the selection, and at the end of a document that reaches the
+ * footnotes node and throws `Invalid content for node type footnotes`. The exception came out of the
+ * click handler, so the next line never ran and the profile was never applied. Measured: three
+ * transactions, all with zero steps, and an uncaught RangeError on the click.
+ *
+ * **Applying the profile is not inside that try.** Whatever happens while changing the block's type,
+ * the thing the writer actually asked for still has to happen. A failure in a preparatory step must
+ * not silently swallow the request.
+ */
 const selectHeadingProfile = (item) => {
   if (!editor.value) return
-  if (item.targetType === 'paragraph') {
-    editor.value.chain().focus().setParagraph().run()
-    editor.value.commands.applyNumberingProfile(item.id || null)
-  } else if (item.targetType === 'heading' && item.level) {
-    editor.value.chain().focus().toggleHeading({ level: item.level }).run()
-    editor.value.commands.applyNumberingProfile(item.id || null)
-  } else {
-    editor.value.commands.applyNumberingProfile(item.id || null)
+  // The skip is only safe for a plain cursor. `isActive` answers about the selection as a whole, so
+  // across a mixed run - a heading and some paragraphs - it can report the type as already set and
+  // leave half the selection unconverted. With something selected, always convert.
+  const single = editor.value.state.selection.empty
+  try {
+    if (item.targetType === 'paragraph') {
+      if (!single || !editor.value.isActive('paragraph')) {
+        editor.value.chain().focus().setParagraph().run()
+      }
+    } else if (item.targetType === 'heading' && item.level) {
+      if (!single || !editor.value.isActive('heading', { level: item.level })) {
+        editor.value.chain().focus().toggleHeading({ level: item.level }).run()
+      }
+    }
+  } catch (error) {
+    console.warn('Could not change the block type before applying the profile.', error)
   }
+  editor.value.commands.applyNumberingProfile(item.id || null)
   popupVisible.value = false
 }
 
@@ -641,14 +670,38 @@ onClickOutside(
   display: flex;
   background-color: var(--umo-button-hover-background);
   padding: 2px 5px;
-  flex-flow: row wrap;
+  flex-flow: row nowrap;
   align-content: flex-start;
   border-radius: var(--umo-radius);
   box-sizing: border-box;
   border: solid 1px transparent;
   white-space: nowrap;
+  // Sideways, and only sideways. The cards below declare a fixed basis, so they queue up rather
+  // than squeezing to fit.
+  overflow-x: auto;
+  overflow-y: hidden;
+  // The strip stops before the dropdown button rather than running under it. Padding was not enough:
+  // it only pads the end of the content, so while the strip is scrolled part way, cards still pass
+  // beneath the button and a sliver of one shows past its right edge.
+  width: calc(100% - 40px);
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--umo-border-color, #d9d9d9);
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
   &.popup-content {
     flex-direction: column;
+    // The popup is a list, not a strip, and has no button beside it.
+    overflow-x: visible;
+    width: auto;
   }
   .card {
     background-color: var(--umo-color-white);
@@ -668,8 +721,13 @@ onClickOutside(
     &.active {
       border-color: var(--umo-primary-color);
     }
-    &.disabled {
-      opacity: 0.7;
+    // Numbering off is dimmed no further than this. A profile that does not number its blocks is
+    // perfectly usable - body text is the common case - and dimming it said "unusable" about
+    // something that works, so the user read their own custom paragraph profile as greyed out and
+    // stopped trying to click it. The `(OFF)` in the subtitle already carries the fact, which is
+    // what has to survive; the appearance of being unavailable is what must not.
+    &.disabled .subtitle {
+      opacity: 0.65;
     }
     // Shown, so the profile can be found, but not applicable to a block. The hint is on the title
     // attribute; pointer events stay on so that hovering still explains why.
@@ -725,12 +783,17 @@ onClickOutside(
     align-items: center;
     justify-content: center;
     position: absolute;
-    right: 8px;
+    right: 4px;
     top: 8px;
+    // Wide enough to aim at. It was the width of its own icon, which is a 12px target beside cards
+    // of 68px.
+    width: 32px;
     height: 40px;
     border-radius: 3px;
     cursor: pointer;
     z-index: 20;
+    // The strip scrolls underneath, so the button needs a ground of its own or cards show through.
+    background-color: var(--umo-button-hover-background);
     &:hover {
       background-color: rgba(0, 0, 0, 0.05);
     }

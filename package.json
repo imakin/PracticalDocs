@@ -83,7 +83,8 @@
     "prepare": "husky",
     "prepublishOnly": "npm run build",
     "test:e2e:markdown-block": "node tests/e2e/markdown-block.cdp.mjs",
-    "test:unit:markdown": "node --test tests/unit/markdown.test.mjs"
+    "test:unit:markdown": "node --test tests/unit/markdown.test.mjs",
+    "test:e2e:profile-switch": "node tests/e2e/profile-switch.cdp.mjs"
   },
   "dependencies": {
     "@eslint/object-schema": "3.0.2",

@@ -1,3 +1,19 @@
+### A Block Can Be Moved Between Two Profiles Of The Same Kind
+
+- `The Click Handler Threw Before It Applied Anything`: Choosing a profile called `setParagraph()` on a block that was already a paragraph, which runs `clearNodes` over the selection and, at the end of a document, reaches the footnotes node and raises `Invalid content for node type footnotes`. The exception left the handler before the profile was applied, so a second block would not take a profile however many times its card was clicked, while the first usually would - a short document does not reach the trailing node. The type is only changed when it differs now, and applying the profile is outside the `try`.
+- `An Indent Stored As A Length Was Never Emitted`: `Normal` held its first line indent as the string `2em`, and the generator read that field as a level number - `Number('2em')` is `NaN` - so no `text-indent` rule was written at all. `Normal` had no indent on screen, and moving a block to and from another paragraph profile looked exactly like nothing happening. A bare number is a level now, anything else is a length used as it stands.
+- `Numbering Off Is Not The Same As Unusable`: A profile with numbering turned off dimmed its whole card to 0.7 opacity beside numbered profiles at 1, so the user's own paragraph profiles both looked unavailable. Body text is the ordinary case for numbering off. The subtitle still reads `(OFF)` - the fact survives - but only `Page Number` and `Table of Contents`, which genuinely cannot be applied to a block, stay dimmed.
+- `A Paragraph Profile Has No Heading Level`: `addNumberingProfile` wrote `level: 1` onto every profile it created, including paragraph ones. It only writes a level for a heading now.
+- `Every Profile Is In The Bar, And The Bar Scrolls`: The bar showed four cards and the rest sat behind the dropdown, so a profile in constant use could be out of sight. It holds every profile now, in a strip that scrolls sideways on plain CSS overflow, so wherever it is left scrolled is where it stays. The dropdown button was the width of its own 12px icon beside 68px cards and is 32px now, and the strip stops before it rather than running underneath. Measured: shift with the wheel scrolls it, a sideways wheel or trackpad gesture scrolls it, and there is a scrollbar to drag - but a plain vertical wheel does not.
+- `A Profile Applies To Every Selected Block`: A profile applies to a block, and a block is a node of one of four types - paragraph, heading, image, table - wherever it sits. Not "a direct child of the document": a paragraph inside a table cell is a paragraph like any other, which is why the saved file carries the class on the `p` and not on the cell. Selecting several blocks and choosing a profile now styles all of them, including every cell of a table, where before only the block under the cursor was touched. The selection is read as ranges rather than as a start and an end, because a cell selection is several disjoint ranges. With a plain cursor, nothing changes.
+- `Test script`: `profile-switch.cdp.mjs`, 32 checks in five cases, own fixture built from the user's real profile shapes, cards clicked with real mouse input, and the third case is the reported sequence itself - empty document, type, click, Enter, type, click. All three faults were put back and measured: 0px in both directions, 0.7 opacity against 1, and the second block stuck at 32px with the RangeError.
+
+  ```bash
+  npm run test:e2e:profile-switch
+  ```
+
+- `Details`: See [A Block Can Be Moved Between Two Profiles Of The Same Kind](./details/profile-switching.md).
+
 ### A Markdown Block Keeps Its Markdown
 
 - `No Chrome`: A markdown block carries no label, no toolbar and no panel. At rest it is indistinguishable from the blocks around it, because nothing may occupy a line of the page that the writer did not write. Which mode a block is in is shown by an icon on its handle, the floating panel that appears on hover.

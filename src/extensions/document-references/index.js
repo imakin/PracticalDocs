@@ -1065,7 +1065,10 @@ export const DocumentReferences = Extension.create({
             style: profile.style || 'numeric',
             template: profile.template ?? '{number}',
             targetType: profile.targetType || 'heading',
-            level: profile.level || 1,
+            // Only a heading has a level. A paragraph profile was being given `level: 1` as well,
+            // which makes it compare equal to Title 1 wherever a card is matched by level - the
+            // user's own `Normal-noindent` carries it.
+            level: profile.targetType === 'heading' ? profile.level || 1 : undefined,
           }
           this.storage.profiles = [...this.storage.profiles, newProfile]
           syncProfileStylesheet(this.editor, this.storage.profiles)
@@ -1162,64 +1165,118 @@ export const DocumentReferences = Extension.create({
           if (syncTr) dispatch?.(syncTr)
           return true
         },
+      /**
+       * Put every block the selection covers under a profile.
+       *
+       * **What a block is here**, because it is not obvious from the saved file: a block is a node of
+       * one of the four types in `TARGET_NODE_TYPES` - `paragraph`, `heading`, `image`, `table` -
+       * wherever it sits in the tree. It is **not** "a direct child of `.umo-document`". A paragraph
+       * inside a table cell is a paragraph like any other, which is why a profile lands on it and why
+       * the class comes out on the `<p>` in the saved file rather than on the cell.
+       *
+       * With a cursor and no selection, the nearest such node enclosing it. With anything selected,
+       * **every** matching node the selection covers - which is what makes a table work: a cell
+       * selection carries one range per cell, so the paragraphs in all of them are found together.
+       * Before this, only the one node under `$from` was touched, so selecting a whole table and
+       * choosing a profile styled a single cell.
+       */
       applyNumberingProfile:
         (profileId) =>
         ({ state, dispatch }) => {
           const { selection } = state
           const { $from } = selection
-          let targetPos = null
-          let targetNode = null
-          for (let { depth } = $from; depth >= 0; depth -= 1) {
-            const node = $from.node(depth)
-            if (['heading', 'image', 'table', 'paragraph'].includes(node.type.name)) {
-              targetPos = $from.before(depth)
-              targetNode = node
-              break
+          const profile = this.storage.profiles.find((p) => p.id === profileId)
+
+          // Which node types this profile can sit on. Without this, dragging across a table and
+          // choosing a paragraph profile would also stamp it on the table node, which is styled by a
+          // profile of its own.
+          const wanted =
+            profile?.targetType === 'table'
+              ? ['table']
+              : profile?.targetType === 'figure'
+                ? ['image']
+                : ['paragraph', 'heading']
+
+          const found = []
+          const seen = new Set()
+          const collect = (node, pos) => {
+            if (!wanted.includes(node.type.name) || seen.has(pos)) return
+            seen.add(pos)
+            found.push({ pos, node })
+          }
+
+          if (selection.empty) {
+            for (let { depth } = $from; depth >= 0; depth -= 1) {
+              const node = $from.node(depth)
+              if (TARGET_NODE_TYPES.has(node.type.name)) {
+                found.push({ pos: $from.before(depth), node })
+                break
+              }
+            }
+          } else {
+            // `ranges` rather than from/to: a cell selection is several disjoint ranges, one per
+            // cell, and reading only `from`/`to` would sweep everything between them as well.
+            for (const range of selection.ranges) {
+              state.doc.nodesBetween(range.$from.pos, range.$to.pos, collect)
+            }
+            // A whole node selected - an image, a table - is a range of one node that `nodesBetween`
+            // reports, but only if its type is wanted. Fall back to the enclosing block so that
+            // choosing a profile with something selected never silently does nothing.
+            if (found.length === 0) {
+              for (let { depth } = $from; depth >= 0; depth -= 1) {
+                const node = $from.node(depth)
+                if (TARGET_NODE_TYPES.has(node.type.name)) {
+                  found.push({ pos: $from.before(depth), node })
+                  break
+                }
+              }
             }
           }
-          if (targetPos === null) {
+
+          if (found.length === 0) {
             return false
           }
           const { tr } = state
-          const profile = this.storage.profiles.find((p) => p.id === profileId)
-          const nextAttrs = {
-            ...targetNode.attrs,
-            numberingProfileId: profileId,
-          }
-          if (profile) {
-            if (profile.template !== undefined && profile.template !== '') {
-              nextAttrs.numberTemplate = profile.template
-            }
-            if (profile.style !== undefined && profile.style !== '') {
-              nextAttrs.numberStyle = profile.style
-            }
-            // Applying a profile means "this block follows that profile", so any per-block
-            // override the user had set is cleared and the profile's rule shows through. Writing the
-            // profile's values in here would recreate the overrides this change exists to remove.
-            nextAttrs.lineHeight = null
-            nextAttrs.fontSize = null
-            nextAttrs.fontWeight = null
-            nextAttrs.fontFamily = null
-            nextAttrs.indent = null
-            nextAttrs.textAlign = null
-            nextAttrs.margin = null
-          }
-          tr.setNodeMarkup(targetPos, undefined, nextAttrs)
-          if (profile) {
-            clearProfileFontMarks(tr, state.schema, targetPos, targetNode)
-          }
 
-          if (
-            profile &&
-            (profile.targetType === 'paragraph' || profile.fontWeight === 'normal')
-          ) {
-            const boldMarkType = state.schema.marks.bold
-            if (boldMarkType && targetNode.nodeSize > 2) {
-              tr.removeMark(
-                targetPos + 1,
-                targetPos + targetNode.nodeSize - 1,
-                boldMarkType,
-              )
+          for (const { pos: targetPos, node: targetNode } of found) {
+            const nextAttrs = {
+              ...targetNode.attrs,
+              numberingProfileId: profileId,
+            }
+            if (profile) {
+              if (profile.template !== undefined && profile.template !== '') {
+                nextAttrs.numberTemplate = profile.template
+              }
+              if (profile.style !== undefined && profile.style !== '') {
+                nextAttrs.numberStyle = profile.style
+              }
+              // Applying a profile means "this block follows that profile", so any per-block
+              // override the user had set is cleared and the profile's rule shows through. Writing
+              // the profile's values in here would recreate the overrides this change exists to
+              // remove.
+              nextAttrs.lineHeight = null
+              nextAttrs.fontSize = null
+              nextAttrs.fontWeight = null
+              nextAttrs.fontFamily = null
+              nextAttrs.indent = null
+              nextAttrs.textAlign = null
+              nextAttrs.margin = null
+            }
+            // Mapped, because earlier writes in this same transaction may have moved later positions.
+            const at = tr.mapping.map(targetPos)
+            tr.setNodeMarkup(at, undefined, nextAttrs)
+            if (profile) {
+              clearProfileFontMarks(tr, state.schema, at, targetNode)
+            }
+
+            if (
+              profile &&
+              (profile.targetType === 'paragraph' || profile.fontWeight === 'normal')
+            ) {
+              const boldMarkType = state.schema.marks.bold
+              if (boldMarkType && targetNode.nodeSize > 2) {
+                tr.removeMark(at + 1, at + targetNode.nodeSize - 1, boldMarkType)
+              }
             }
           }
 
