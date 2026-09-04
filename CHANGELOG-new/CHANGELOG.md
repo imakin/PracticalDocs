@@ -1,3 +1,14 @@
+### A List Longer Than A Page Is Paginated All The Way Down
+
+- `The Break Was The Symptom`: the report was that a page break added on the second page of a long numbered list did nothing. It did nothing because **the solve had already given up**, several breaks earlier - everything below the first break inside a list had stopped being paginated, and the list simply ran off the sheet.
+- `Why It Gave Up`: `posAtDOM` on a text node inside a list item's node view returns the position *before* the paragraph rather than inside it. That is not a text block start, so the anchor was left as it was and the spacer landed inside the item. A list item's marker is drawn beside its content rather than in it, so the text moved down and the marker did not - and the marker is a text node the engine counts as a line. That line could never move, so the same line overflowed every round, the next anchor was never past the previous one, and the loop stopped rather than spin.
+- `A Break Belongs Before Everything It Begins`: the anchor now walks out of every list structure whose start it shares - out of the paragraph, out of the item, and out of the list when it is the first item. The marker travels with its text, and the solve gets past it.
+- `Test script`: `list-pagination.cdp.mjs`, 6 checks - own fixture of forty items, and what is asserted is that no line of text sits below the bottom of its column, read from the engine's own geometry so the test cannot drift from it. Seen red first: three checks failed on the unpatched build, the document staying at three sheets when a break was added and item 30's text running 26px past its column.
+
+  ```bash
+  npm run test:e2e:list-pagination
+  ```
+
 ### Numbering Continues, Whatever Is In Between
 
 - `One Rule`: the number a list continues at is the last number at its own indent level, plus one. That is the whole of it. It does not ask what sits between the two lists - a paragraph, a table, a figure, a page break or a whole new chapter makes no difference, because none of those is a number at that level. The old rule looked for an ordered list that was a sibling of this one under the same parent, so the ordinary case in a thesis (a list, some prose, a figure, the list resumes) could not continue at all.

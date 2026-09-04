@@ -331,20 +331,56 @@ const positionAtLineStart = (view, line) => {
  * This is the anchoring fault recorded as real bug 3, which STATE described as "not known to break
  * anything else". It is now known.
  */
+const LIST_ITEM_NODES = new Set(['listItem', 'taskItem'])
+const LIST_STRUCTURE = new Set([
+  'listItem',
+  'taskItem',
+  'orderedList',
+  'bulletList',
+  'taskList',
+])
+
 const beforeBlockIfAtItsStart = (view, pos) => {
   if (typeof pos !== 'number' || pos <= 0) {
     return pos
   }
   try {
     const $pos = view.state.doc.resolve(pos)
-    // `parentOffset === 0` says the position is at the very start of its text block's content.
-    if ($pos.parent?.isTextblock && $pos.parentOffset === 0 && $pos.depth > 0) {
-      return $pos.before($pos.depth)
+    // `parentOffset === 0` says the position is at the very start of whatever holds it.
+    if ($pos.parentOffset !== 0 || $pos.depth <= 0) {
+      return pos
     }
+    // Either inside a text block at its first character, or already between nodes at the start of a
+    // list item - `posAtDOM` on a text node inside a list item's node view returns the position
+    // before the paragraph rather than inside it, which is the same hazard the markdown block
+    // records. Both mean the same thing: the line about to be pushed is the first thing here.
+    const insideListItem = LIST_ITEM_NODES.has($pos.parent?.type?.name)
+    if (!$pos.parent?.isTextblock && !insideListItem) {
+      return pos
+    }
+    let depth = $pos.depth
+    // Walk out of every list structure this line also begins.
+    //
+    // A list item's marker is drawn beside its content, not inside it, so a spacer anchored inside
+    // the item moves the text and leaves the marker on the page before - and the marker is a text
+    // node the engine counts as a line, so that line never moves however many breaks are placed.
+    // The solve then cannot get past it: the same line overflows every round, the anchor is never
+    // beyond the previous one, and the loop gives up. Everything after that point stops being
+    // paginated, a manual page break included.
+    //
+    // Measured on a forty item list: one spacer and then nothing, the list running off the sheet,
+    // and a page break added below it doing nothing at all.
+    while (
+      depth > 1 &&
+      $pos.index(depth - 1) === 0 &&
+      LIST_STRUCTURE.has($pos.node(depth - 1).type.name)
+    ) {
+      depth -= 1
+    }
+    return $pos.before(depth)
   } catch {
     return pos
   }
-  return pos
 }
 
 /**
