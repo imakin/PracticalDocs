@@ -76,6 +76,7 @@
           <code>{{ numberToken }}</code> {{ t('page.pageNumber.tokenNumber') }},
           <code>{{ totalToken }}</code> {{ t('page.pageNumber.tokenTotal') }}
         </p>
+        <p class="umo-page-number-hint">{{ t('page.pageNumber.emptyTemplateHint') }}</p>
         <p class="umo-page-number-hint">{{ t('page.pageNumber.styleHint') }}</p>
         <p class="umo-page-number-hint">{{ t('page.pageNumber.sectionHint') }}</p>
 
@@ -112,6 +113,58 @@
               @change="(value) => setSection({ sectionFormat: value || null })"
             />
           </div>
+
+          <!--
+            Position, chapter first page and template, the same three the document above has. The
+            engine resolved all of them per section from the start; only the panel offered two, so a
+            break could change how a number was counted but not where it sat or what it read.
+            An empty option means "keep whatever the section before this one used".
+          -->
+          <div class="umo-page-number-field">
+            <label>{{ t('page.pageNumber.section.position') }}</label>
+            <t-select
+              :value="section.position ?? ''"
+              size="small"
+              :options="sectionPositionOptions"
+              @change="(value) => setSection({ sectionPosition: value || null })"
+            />
+          </div>
+
+          <div class="umo-page-number-field">
+            <label>{{ t('page.pageNumber.section.firstPagePosition') }}</label>
+            <t-select
+              :value="section.firstPagePosition ?? ''"
+              size="small"
+              :options="sectionPositionOptions"
+              @change="
+                (value) => setSection({ sectionFirstPagePosition: value || null })
+              "
+            />
+          </div>
+
+          <!--
+            A template needs three states, not two: follow the section before, or use one of its own -
+            which may be empty. An input alone cannot say the difference between "inherit" and
+            "show nothing", so the choice is explicit.
+          -->
+          <t-checkbox
+            :checked="section.template !== null"
+            @change="onSectionTemplateToggle"
+          >
+            {{ t('page.pageNumber.section.ownTemplate') }}
+          </t-checkbox>
+          <div v-if="section.template !== null" class="umo-page-number-field umo-page-number-field-wide">
+            <label>{{ t('page.pageNumber.template') }}</label>
+            <t-input
+              :value="section.template"
+              size="small"
+              :placeholder="'{number}'"
+              @change="(value) => setSection({ sectionTemplate: value ?? '' })"
+            />
+          </div>
+          <p v-if="section.template !== null" class="umo-page-number-hint">
+            {{ t('page.pageNumber.emptyTemplateHint') }}
+          </p>
         </template>
       </div>
     </template>
@@ -181,8 +234,18 @@ const section = $computed(() => {
   return {
     startAt: found.node.attrs.sectionStartAt ?? null,
     format: found.node.attrs.sectionFormat ?? null,
+    position: found.node.attrs.sectionPosition ?? null,
+    firstPagePosition: found.node.attrs.sectionFirstPagePosition ?? null,
+    // Kept as null rather than coerced: null means follow the section before, and an empty string
+    // means show nothing at all. They are different answers.
+    template: found.node.attrs.sectionTemplate ?? null,
   }
 })
+
+const sectionPositionOptions = $computed(() => [
+  { value: '', label: t('page.pageNumber.section.keepPosition') },
+  ...positionOptions,
+])
 
 const sectionFormatOptions = $computed(() => [
   { value: '', label: t('page.pageNumber.section.keepFormat') },
@@ -191,6 +254,12 @@ const sectionFormatOptions = $computed(() => [
 
 const setSection = (attrs) => {
   editor.value?.commands.setPageBreakSection(attrs)
+}
+
+// Off puts it back to following the section before; on starts from whatever the document uses, so
+// turning it on changes nothing until the writer edits it.
+const onSectionTemplateToggle = (checked) => {
+  setSection({ sectionTemplate: checked ? settings.template : null })
 }
 
 const onSectionModeChange = (value) => {

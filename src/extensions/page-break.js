@@ -54,6 +54,18 @@ export default Node.create({
         renderHTML: ({ sectionPosition }) =>
           sectionPosition ? { 'data-section-position': sectionPosition } : {},
       },
+      // Where the number sits on the page this break opens - the thesis convention of a folio at
+      // the foot of a chapter's opening page and at the head elsewhere. The engine already resolved
+      // this per section; only the break had no way to say it.
+      sectionFirstPagePosition: {
+        default: null,
+        parseHTML: (element) =>
+          element.getAttribute('data-section-first-page-position') || null,
+        renderHTML: ({ sectionFirstPagePosition }) =>
+          sectionFirstPagePosition
+            ? { 'data-section-first-page-position': sectionFirstPagePosition }
+            : {},
+      },
       sectionFormat: {
         default: null,
         parseHTML: (element) => element.getAttribute('data-section-format') || null,

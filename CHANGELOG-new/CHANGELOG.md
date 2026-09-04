@@ -1,3 +1,16 @@
+### A Page Break Carries A Whole Numbering Section
+
+- `Every Setting, Not Two`: `At this page break` offered the count and the numerals. It offers the position, the chapter first page and a template of its own as well. Nothing had been stopping them: the break node already carried the fields and the engine already resolved all of them per section, so the capability had been sitting unreachable behind a panel that showed two of it. Only the chapter first page needed the model extending; the other two needed a control.
+- `A Template Has Three States`: Follow the section before, or use one of its own - which may be empty. An input alone cannot say the difference between inherit and show-nothing, so the choice is explicit.
+- `An Empty Template Prints Nothing And Keeps Counting`: Leave the template empty and those pages carry no number, while the pages after them come back with the numbers they would have had. It hides a folio rather than resetting a count, and the physical page the contents and PDF navigation read is untouched. The same freedom applies to the document's own template.
+- `Test script`: `page-numbering.test.mjs` grew six checks, and `page-number-section.cdp.mjs` adds 12 - own fixture, opening the panel by pressing the Page tab and then the button, and measuring the drawn numbers move. It closes the debt item that said this panel was covered only by a throwaway probe.
+
+  ```bash
+  npm run test:e2e:page-number-section
+  ```
+
+- `Details`: See [A Page Break Carries A Whole Numbering Section](./details/page-break-sections.md).
+
 ### A Block Can Be Moved Between Two Profiles Of The Same Kind
 
 - `The Click Handler Threw Before It Applied Anything`: Choosing a profile called `setParagraph()` on a block that was already a paragraph, which runs `clearNodes` over the selection and, at the end of a document, reaches the footnotes node and raises `Invalid content for node type footnotes`. The exception left the handler before the profile was applied, so a second block would not take a profile however many times its card was clicked, while the first usually would - a short document does not reach the trailing node. The type is only changed when it differs now, and applying the profile is outside the `try`.

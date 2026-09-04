@@ -530,8 +530,13 @@
         "follow": "Follow the previous count",
         "restart": "Restart the count at",
         "format": "Change numerals to",
-        "keepFormat": "Keep the same numerals"
-      }
+        "keepFormat": "Keep the same numerals",
+        "position": "Position",
+        "firstPagePosition": "Chapter first page",
+        "keepPosition": "Keep the same position",
+        "ownTemplate": "Use its own template"
+      },
+      "emptyTemplateHint": "Leave the template empty to print no number on these pages. The count carries on underneath, so later pages keep their numbers."
     },
     "margin": "Margins",
     "orientation": {

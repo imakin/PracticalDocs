@@ -193,3 +193,90 @@ test('without a separate first-page position every page uses the same one', () =
   const out = computePageNumbers(3, { enabled: true, position: 'top-right' }, [])
   assert.deepEqual(out.map((r) => r.position), ['top-right', 'top-right', 'top-right'])
 })
+
+test('a section can change where the number sits, not only how it counts', () => {
+  // The engine resolved this from the start; the panel simply never offered it. Asserted here so
+  // that stays true.
+  const pages = computePageNumbers(
+    4,
+    { enabled: true, position: 'bottom-center', format: 'numeric', startAt: 1, template: '{number}' },
+    [{ atSheet: 2, position: 'top-right' }],
+  )
+  assert.deepEqual(pages.map((p) => p.position), [
+    'bottom-center', 'bottom-center', 'top-right', 'top-right',
+  ])
+  // Changing only the position leaves the running count alone.
+  assert.deepEqual(pages.map((p) => p.text), ['1', '2', '3', '4'])
+})
+
+test('a section can put its own number somewhere else on the page it opens', () => {
+  const pages = computePageNumbers(
+    4,
+    { enabled: true, position: 'top-right', format: 'numeric', startAt: 1, template: '{number}' },
+    [{ atSheet: 2, firstPagePosition: 'bottom-center' }],
+  )
+  // The thesis convention: a folio at the foot of a chapter's opening page, at the head elsewhere.
+  assert.deepEqual(pages.map((p) => p.position), [
+    'top-right', 'top-right', 'bottom-center', 'top-right',
+  ])
+})
+
+test('a section can carry its own template', () => {
+  const pages = computePageNumbers(
+    4,
+    { enabled: true, position: 'bottom-center', format: 'numeric', startAt: 1, template: '{number}' },
+    [{ atSheet: 2, template: 'Halaman {number} dari {total}' }],
+  )
+  assert.deepEqual(pages.map((p) => p.text), [
+    '1', '2', 'Halaman 3 dari 4', 'Halaman 4 dari 4',
+  ])
+})
+
+test('an empty template prints nothing and the count carries on underneath', () => {
+  // Asked for by name. The pages in the section show no number at all, and the pages after it come
+  // back with the numbers they would have had - so this hides a folio rather than resetting a count.
+  const pages = computePageNumbers(
+    6,
+    { enabled: true, position: 'bottom-center', format: 'numeric', startAt: 1, template: '{number}' },
+    [{ atSheet: 1, template: '' }, { atSheet: 3, template: '{number}' }],
+  )
+  assert.deepEqual(pages.map((p) => p.text), ['1', '', '', '4', '5', '6'])
+  // The count itself never stopped: the physical page and the visible number stay in step.
+  assert.deepEqual(pages.map((p) => p.index), [1, 2, 3, 4, 5, 6])
+})
+
+test('a section that says nothing changes nothing', () => {
+  const withSection = computePageNumbers(
+    3,
+    { enabled: true, position: 'bottom-center', format: 'numeric', startAt: 1, template: '{number}' },
+    [{ atSheet: 1 }],
+  )
+  const without = computePageNumbers(
+    3,
+    { enabled: true, position: 'bottom-center', format: 'numeric', startAt: 1, template: '{number}' },
+    [],
+  )
+  assert.deepEqual(
+    withSection.map((p) => [p.text, p.position]),
+    without.map((p) => [p.text, p.position]),
+  )
+})
+
+test('the document template is free text, and empty means no number anywhere', () => {
+  // The same freedom as a section, asked for by name: whatever the writer types is what is printed,
+  // and nothing at all is a legitimate answer.
+  const free = computePageNumbers(
+    3,
+    { enabled: true, position: 'bottom-center', format: 'roman-lower', startAt: 1, template: '- {number} -' },
+  )
+  assert.deepEqual(free.map((p) => p.text), ['- i -', '- ii -', '- iii -'])
+
+  const silent = computePageNumbers(
+    3,
+    { enabled: true, position: 'bottom-center', format: 'numeric', startAt: 1, template: '' },
+  )
+  assert.deepEqual(silent.map((p) => p.text), ['', '', ''])
+  // The physical page is a fact about the document, so it is still counted and still published for
+  // the contents and for PDF navigation.
+  assert.deepEqual(silent.map((p) => p.index), [1, 2, 3])
+})

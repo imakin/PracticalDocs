@@ -668,6 +668,7 @@ class PaginationDriver {
         atSheet,
         enabled: node.attrs.sectionEnabled,
         position: node.attrs.sectionPosition,
+        firstPagePosition: node.attrs.sectionFirstPagePosition,
         format: node.attrs.sectionFormat,
         template: node.attrs.sectionTemplate,
         startAt: node.attrs.sectionStartAt,
