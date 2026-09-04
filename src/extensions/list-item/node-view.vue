@@ -13,6 +13,7 @@
       overlay-class-name="umo-list-item-popup"
       :visible="editor?.isEditable && markerMenuVisible"
       size="small"
+      :max-column-width="260"
       :popup-props="popupProps"
     >
       <span
@@ -26,17 +27,53 @@
       </span>
       <template #dropdown>
         <t-dropdown-menu>
+          <!--
+            What level this list is at, because that is the whole of what the count is keyed on.
+            A writer choosing Continue is asking to follow the numbers at this indentation, so the
+            level has to be visible for the choice to mean anything.
+
+            It has to be a `t-dropdown-item`: `t-dropdown-menu` renders only the children it
+            recognises and drops anything else, so a plain element here vanished without a word.
+          -->
+          <t-dropdown-item class="umo-list-item-menu-info">
+            <div class="umo-list-item-menu-info-row" @click.stop.prevent>
+              <span>{{ t('list.ordered.indentLevel') }}: {{ indentLevel }}</span>
+              <!--
+                The same two actions as Tab and Shift-Tab, next to the level they change, so the
+                level is not only reported but adjustable from where it is read.
+              -->
+              <button
+                type="button"
+                class="umo-list-item-menu-indent-button"
+                :title="t('base.outdent')"
+                @click.stop.prevent="changeIndent(-1)"
+              >
+                <icon name="outdent" />
+              </button>
+              <button
+                type="button"
+                class="umo-list-item-menu-indent-button"
+                :title="t('base.indent')"
+                @click.stop.prevent="changeIndent(1)"
+              >
+                <icon name="indent" />
+              </button>
+            </div>
+          </t-dropdown-item>
+          <!--
+            Both actions are always offered. They used to be greyed out whenever they would change
+            nothing, which hid the one the writer wanted most of the time and gave no reason. The
+            no-op is handled in the command instead, where it belongs.
+          -->
           <t-dropdown-item
             class="umo-list-item-menu-item"
-            :disabled="menuState.continuePreviousDisabled"
             @click="continueNumbering"
           >
             <icon name="continued-outlined" />
-            <span>{{ t('list.ordered.continuePrevious') }}</span>
+            <span>{{ t('list.ordered.continuePrevious') }} ({{ continueNumber }})</span>
           </t-dropdown-item>
           <t-dropdown-item
             class="umo-list-item-menu-item"
-            :disabled="menuState.startNewDisabled"
             @click="startNewList"
           >
             <icon name="new-outlined" />
@@ -45,11 +82,17 @@
           <t-dropdown-item
             divider
             class="umo-list-item-menu-item"
-            :disabled="menuState.changeStartDisabled"
             @click="openStartDialog"
           >
             <icon name="reset-outlined" />
             <span>{{ t('list.ordered.changeStart') }}</span>
+          </t-dropdown-item>
+          <t-dropdown-item
+            class="umo-list-item-menu-item"
+            @click="openTemplateDialog"
+          >
+            <icon name="ordered-list" />
+            <span>{{ t('list.ordered.markerTemplate') }}</span>
           </t-dropdown-item>
           <t-dropdown-item class="umo-list-item-menu-item">
             <t-dropdown
@@ -147,6 +190,25 @@
         </t-input-number>
       </div>
     </modal>
+    <modal
+      :visible="templateDialogVisible"
+      width="420px"
+      :header="t('list.ordered.markerTemplate')"
+      :confirm-btn="t('list.ordered.apply')"
+      destroy-on-close
+      @close="closeTemplateDialog"
+      @confirm="applyTemplate"
+    >
+      <div class="umo-list-item-start-dialog">
+        <t-input v-model="pendingTemplate" autofocus />
+        <div class="umo-list-item-template-hint">
+          {{ t('list.ordered.markerTemplateHint') }}
+        </div>
+        <div class="umo-list-item-template-preview">
+          {{ t('list.ordered.markerTemplatePreview') }}: {{ templatePreview }}
+        </div>
+      </div>
+    </modal>
     <node-view-content
       as="div"
       class="umo-list-item-content"
@@ -159,8 +221,11 @@
 import { NodeViewContent, nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3'
 
 import {
+  DEFAULT_MARKER_TEMPLATE,
+  formatOrderedValue,
+  getContinueOrderedListStart,
   getListItemContext,
-  isContinueOrderedListNumberingUnchanged,
+  renderMarkerTemplate,
   normalizeOrderedListStart,
   observeListItemMetricResize,
   unobserveListItemMetricResize,
@@ -172,6 +237,10 @@ const BULLET_MARKERS = {
   square: '▪',
 }
 
+// The position a menu was asked for, read by whichever node view mounts there. Module scope on
+// purpose: the instance that asked is often not the instance that answers.
+let pendingMenuPos = null
+
 const props = defineProps(nodeViewProps)
 
 const container = inject('container')
@@ -181,13 +250,15 @@ const listItemState = $computed(() => editor?.storage?.listItem?.state)
 let wrapperRef = $ref(null)
 let markerMenuVisible = $ref(false)
 let startDialogVisible = $ref(false)
+let templateDialogVisible = $ref(false)
+let pendingTemplate = $ref('')
 let pendingStart = $ref(1)
 let syncFrame = $ref(0)
-let menuState = $ref({
-  continuePreviousDisabled: true,
-  startNewDisabled: true,
-  changeStartDisabled: true,
-})
+// The two facts the menu shows: which indentation this list is at, and the number Continue would
+// give it. Read when the menu opens rather than kept in step with the document, because they are
+// only ever looked at while it is open.
+let indentLevel = $ref(0)
+let continueNumber = $ref(1)
 let stopMetricObservationWatch = null
 let stopMetricSyncWatch = null
 let observedContentElement = null
@@ -486,20 +557,10 @@ const popupProps = $computed(() => ({
 const refreshMenuState = () => {
   const context = orderedContext
   if (!context) {
-    menuState = {
-      continuePreviousDisabled: true,
-      startNewDisabled: true,
-      changeStartDisabled: true,
-    }
     return
   }
-
-  menuState = {
-    continuePreviousDisabled: isContinueOrderedListNumberingUnchanged(context),
-    startNewDisabled:
-      context.listItemIndex === 0 && context.orderedListStart === 1,
-    changeStartDisabled: false,
-  }
+  indentLevel = context.indentLevel
+  continueNumber = getContinueOrderedListStart(context)
 }
 
 const closeMarkerMenu = () => {
@@ -519,9 +580,6 @@ const handleMarkerMenuVisibleChange = (visible) => {
 }
 
 const openStartDialog = () => {
-  if (menuState.changeStartDisabled) {
-    return
-  }
   pendingStart = currentNumber
   closeMarkerMenu()
   startDialogVisible = true
@@ -530,6 +588,54 @@ const openStartDialog = () => {
 const closeStartDialog = () => {
   startDialogVisible = false
   pendingStart = currentNumber
+}
+
+/**
+ * The template belongs to the list, so every item in it says the same kind of thing.
+ *
+ * Written straight onto the list rather than through a start-value command, because it changes what
+ * a marker says and nothing about where the count begins.
+ */
+const openTemplateDialog = () => {
+  pendingTemplate =
+    typeof orderedContext?.orderedListNode?.attrs?.template === 'string'
+      ? orderedContext.orderedListNode.attrs.template
+      : DEFAULT_MARKER_TEMPLATE
+  closeMarkerMenu()
+  templateDialogVisible = true
+}
+
+const closeTemplateDialog = () => {
+  templateDialogVisible = false
+}
+
+const templatePreview = $computed(() => {
+  const context = orderedContext
+  if (!context) {
+    return ''
+  }
+  const own = formatOrderedValue(
+    context.currentNumber,
+    context.orderedListNode.attrs.listType,
+  )
+  return (
+    renderMarkerTemplate(pendingTemplate, context.parentMarkerText, own) ||
+    t('list.ordered.markerTemplateEmpty')
+  )
+})
+
+const applyTemplate = () => {
+  const pos = focusListItem()
+  if (typeof pos !== 'number') {
+    templateDialogVisible = false
+    return
+  }
+  editor.value
+    ?.chain()
+    .focus()
+    .updateAttributes('orderedList', { template: pendingTemplate })
+    .run()
+  templateDialogVisible = false
 }
 
 const applyStartValue = () => {
@@ -553,17 +659,54 @@ const runOrderedListCommand = (command, options = {}) => {
   closeMarkerMenu()
 }
 
-const continueNumbering = () => {
-  if (menuState.continuePreviousDisabled) {
+/**
+ * Indent or outdent this item from the menu, and keep the menu on it.
+ *
+ * Indenting always moves the item into a different list, and the node view that was showing the
+ * menu goes with it - measured: the panel simply vanished on the first press. A writer moving an
+ * item two levels would have to find the marker again in between, which is the thing the panel was
+ * added to save them.
+ *
+ * So the item asks for the menu at its new position and whichever node view ends up there opens
+ * it. Both routes are needed because ProseMirror may reuse this instance or build a new one, and
+ * which of the two happens is not something to depend on.
+ */
+const changeIndent = (direction) => {
+  const pos = focusListItem()
+  if (typeof pos !== 'number') {
     return
   }
+  editor.value
+    ?.chain()
+    .focus()
+    [direction > 0 ? 'setIndent' : 'setOutdent']()
+    .run()
+  const next = getListItemContext(editor.value?.state)?.listItemPos
+  if (typeof next !== 'number') {
+    return
+  }
+  pendingMenuPos = next
+  editor.value?.emit?.('listItemMenuRequested', next)
+}
+
+const openMenuHere = () => {
+  pendingMenuPos = null
+  refreshMenuState()
+  markerMenuVisible = true
+}
+
+const onMenuRequested = (pos) => {
+  if (pos !== props.getPos?.()) {
+    return
+  }
+  nextTick(openMenuHere)
+}
+
+const continueNumbering = () => {
   runOrderedListCommand('continueOrderedListNumberingAtItem')
 }
 
 const startNewList = () => {
-  if (menuState.startNewDisabled) {
-    return
-  }
   runOrderedListCommand('startNewOrderedListAtItem')
 }
 
@@ -652,9 +795,17 @@ onMounted(() => {
     },
     { immediate: true },
   )
+
+  editor.value?.on?.('listItemMenuRequested', onMenuRequested)
+  // A node view built at the position that asked for the menu answers on arrival, because the
+  // event fired before it existed.
+  if (pendingMenuPos !== null && pendingMenuPos === props.getPos?.()) {
+    nextTick(openMenuHere)
+  }
 })
 
 onBeforeUnmount(() => {
+  editor.value?.off?.('listItemMenuRequested', onMenuRequested)
   stopMetricObservationWatch?.()
   stopMetricSyncWatch?.()
   if (syncFrame) {
@@ -675,6 +826,44 @@ ol {
 .umo-list-item-popup {
   .umo-popup__content {
     min-width: 180px;
+  }
+}
+
+.umo-list-item-menu-info {
+  // A row that states a fact rather than offering an action, so it must not look like one.
+  font-size: 12px;
+  color: var(--umo-text-color-light, #8c8c8c);
+  cursor: default;
+  user-select: none;
+
+  &:hover {
+    background-color: transparent;
+  }
+}
+
+.umo-list-item-menu-info-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.umo-list-item-menu-indent-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background-color: transparent;
+  color: var(--umo-text-color, #1f1f1f);
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--umo-button-hover-background, rgb(0 0 0 / 6%));
   }
 }
 
@@ -701,6 +890,22 @@ ol {
   align-items: center;
   font-size: 18px;
   line-height: 1;
+}
+
+// A list held directly by a list, which is what an empty level looks like (adr/0014).
+//
+// A nested list normally gets its indentation for free: it sits in an item's content column, which
+// begins after that item's marker. Here there is no item above and so no marker, and the step has
+// to be drawn. Measured against the classic shape, an item's content column starts 26px in at the
+// default size, so this is set close to it - an approximation on purpose, because that column grows
+// with the number inside it and no static rule can follow it. Override the variable to taste.
+.umo-editor {
+  ol > ol,
+  ol > ul,
+  ul > ol,
+  ul > ul {
+    padding-left: var(--umo-list-nested-indent, calc(1.35em + 0.5em));
+  }
 }
 
 .umo-list-item {
@@ -849,6 +1054,19 @@ ol {
     width: 100%;
     flex: 1;
   }
+}
+
+.umo-list-item-template-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--umo-text-color-light, #8c8c8c);
+}
+
+.umo-list-item-template-preview {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--umo-text-color, #1f1f1f);
 }
 
 .umo-list-item-start-dialog {

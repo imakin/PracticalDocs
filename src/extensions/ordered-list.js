@@ -6,7 +6,6 @@ import { ReplaceAroundStep } from '@tiptap/pm/transform'
 import {
   getContinueOrderedListStart,
   getOrderedListContext,
-  isContinueOrderedListNumberingUnchanged,
   normalizeOrderedListStart,
 } from './list-item/utils'
 
@@ -15,32 +14,24 @@ const focusListItem = (tr, listItemPos) => {
   return tr.setSelection(TextSelection.near(tr.doc.resolve(nextPos)))
 }
 
-const syncNestedOrderedListType = (tr, from, to, listType) => {
-  tr.doc.nodesBetween(from, to, (node, pos) => {
-    if (node.type.name !== 'orderedList' || node.attrs.listType === listType) {
-      return
-    }
-
-    tr.setNodeMarkup(pos, undefined, {
-      ...node.attrs,
-      listType,
-    })
-  })
-
-  return tr
-}
+/*
+ * There was a `syncNestedOrderedListType` here, called by every command that sets a start value. It
+ * walked the whole list and rewrote the `listType` of every list nested inside it to match the
+ * outer one.
+ *
+ * Nothing asked it to. Choosing Reset Counter on item 4 turned `2.a` and `2.b` into `2.1` and `2.2`,
+ * because resetting a count also rewrote the numerals of every nested list - a change to a level the
+ * writer was not even pointing at. A command that is asked to set a start sets a start.
+ *
+ * Changing the numeral style has its own route, `Number Type`, which updates the one list the cursor
+ * is in and leaves the rest alone.
+ */
 
 const updateOrderedListStart = (tr, context, start) => {
   tr.setNodeMarkup(context.orderedListPos, undefined, {
     ...context.orderedListNode.attrs,
     start: normalizeOrderedListStart(start),
   })
-  syncNestedOrderedListType(
-    tr,
-    context.orderedListPos,
-    context.orderedListPos + context.orderedListNode.nodeSize,
-    context.orderedListNode.attrs.listType || 'decimal',
-  )
   return focusListItem(tr, context.listItemPos)
 }
 
@@ -77,19 +68,7 @@ const splitOrderedListAtItem = (tr, context, start) => {
     new Slice(Fragment.fromArray([firstList, secondList]), 0, 0),
   )
 
-  syncNestedOrderedListType(
-    tr,
-    context.orderedListPos,
-    context.orderedListPos + firstList.nodeSize,
-    context.orderedListNode.attrs.listType || 'decimal',
-  )
   const secondListPos = context.orderedListPos + firstList.nodeSize
-  syncNestedOrderedListType(
-    tr,
-    secondListPos,
-    secondListPos + secondList.nodeSize,
-    context.orderedListNode.attrs.listType || 'decimal',
-  )
   return focusListItem(tr, secondListPos + 1)
 }
 
@@ -99,9 +78,15 @@ const applyOrderedListStartAtItem = (tr, context, start) => {
     : updateOrderedListStart(tr, context, start)
 }
 
-const isStartNewOrderedListUnchanged = (context) =>
-  context.listItemIndex === 0 && context.orderedListStart === 1
-
+/**
+ * Whether a start would leave the numbering exactly as it is.
+ *
+ * The one guard all three commands share, and it is about the document rather than about the menu:
+ * every command stays offered whatever the state, because a writer cannot tell why an item is
+ * greyed out and the old menu greyed out the important one most of the time. This only stops a
+ * transaction that would change nothing from being dispatched, which would otherwise mark the
+ * document unsaved for a click that did nothing.
+ */
 const isOrderedListStartUnchanged = (context, start) => {
   const nextStart = normalizeOrderedListStart(start)
 
@@ -207,7 +192,18 @@ const sinkOrderedListItemWithType =
   }
 
 export default OrderedList.extend({
-  content: 'listItem*',
+  // A list may hold a list directly, not only through an item.
+  //
+  // Indenting means nesting, and nesting used to need an item above to nest under - so the first
+  // item of a list could not be indented at all, and a writer could not put `a.` and `b.` under a
+  // `3.` that was the start of its own list. There is nothing to nest under there, and inventing an
+  // empty numbered item to be the parent would put a number on the page that nobody typed.
+  //
+  // A list inside a list says the same thing without inventing anything: level 1 sits under level 0
+  // even when level 0 holds no item of its own. It is also how Word writes it.
+  //
+  // `adr/0014-a-list-may-hold-a-list.md`.
+  content: '(listItem | orderedList | bulletList)*',
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -221,6 +217,14 @@ export default OrderedList.extend({
             'data-type': listType,
           }
         },
+      },
+      // What the marker says. `null` is "the writer has not chosen", which is not the same as an
+      // empty template - that one is a deliberate marker that says nothing.
+      template: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-marker-template'),
+        renderHTML: ({ template }) =>
+          typeof template === 'string' ? { 'data-marker-template': template } : {},
       },
       start: {
         default: 1,
@@ -244,11 +248,12 @@ export default OrderedList.extend({
       ...this.parent?.(),
       continueOrderedListNumberingAtItem: createOrderedListStartCommand({
         getStart: getContinueOrderedListStart,
-        shouldSkip: isContinueOrderedListNumberingUnchanged,
+        shouldSkip: (context) =>
+          isOrderedListStartUnchanged(context, getContinueOrderedListStart(context)),
       }),
       startNewOrderedListAtItem: createOrderedListStartCommand({
         getStart: () => 1,
-        shouldSkip: isStartNewOrderedListUnchanged,
+        shouldSkip: (context) => isOrderedListStartUnchanged(context, 1),
       }),
       sinkOrderedListItemWithType,
       setOrderedListStartAtItem: createOrderedListStartCommand({

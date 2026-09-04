@@ -1,7 +1,7 @@
 import nzh from 'nzh'
 
-const LIST_ITEM_NODE_NAMES = new Set(['listItem', 'taskItem'])
-const LIST_NODE_NAMES = new Set(['orderedList', 'bulletList', 'taskList'])
+export const LIST_ITEM_NODE_NAMES = new Set(['listItem', 'taskItem'])
+export const LIST_NODE_NAMES = new Set(['orderedList', 'bulletList', 'taskList'])
 const BULLET_MARKERS = {
   disc: '•',
   circle: '◦',
@@ -9,6 +9,21 @@ const BULLET_MARKERS = {
 }
 const metricResizeCallbacks = new WeakMap()
 let listItemMetricResizeObserver = null
+
+/**
+ * How many list items come before a child index, ignoring nested lists.
+ *
+ * A list may hold a list directly (adr/0014), so a child index is no longer an item ordinal.
+ */
+const countItemsBefore = (listNode, childIndex) => {
+  let count = 0
+  for (let index = 0; index < childIndex; index += 1) {
+    if (LIST_ITEM_NODE_NAMES.has(listNode.child(index)?.type?.name)) {
+      count += 1
+    }
+  }
+  return count
+}
 
 export const normalizeOrderedListStart = (value) => {
   const nextValue = Number(value)
@@ -57,6 +72,30 @@ const toLatin = (value) => {
     current = Math.floor(current / 26)
   }
   return result
+}
+
+/**
+ * What a marker says, one level at a time.
+ *
+ * A marker used to be every level's number joined with dots and a dot on the end, and there was no
+ * way to say anything else - a sub-item under `2.` read `2.a.` and could not be made to read `a.`,
+ * which is an element of the page the writer could not control.
+ *
+ * A template is a property of the list, so every item in it agrees. `{number}` is this level's own
+ * value in this list's numerals, `{parent}` is the marker of the level above, already rendered by
+ * its own template. `2.a.` is `{parent}{number}.` all the way down, which is the default; `a.` is
+ * `{number}.`, and `2. a` is `{parent} {number}`.
+ *
+ * An empty template is a marker that says nothing, and is allowed - the same freedom the page number
+ * template has. `null` means the writer has not set one, which is not the same as setting an empty
+ * one.
+ */
+export const DEFAULT_MARKER_TEMPLATE = '{parent}{number}.'
+
+export const renderMarkerTemplate = (template, parent, number) => {
+  const source =
+    typeof template === 'string' ? template : DEFAULT_MARKER_TEMPLATE
+  return source.replace(/\{parent\}/g, parent).replace(/\{number\}/g, number)
 }
 
 export const formatOrderedValue = (value, listType) => {
@@ -142,34 +181,55 @@ export const getListItemContext = (state, listItemPos = null) => {
     listItemIndex,
     itemTypeName: listItemNode.type.name,
     checked: listItemNode.attrs?.checked === true,
+    // What the reader sees as the indentation, and the only thing a count is keyed on.
+    indentLevel: getListLevelAt($pos.doc, listPos),
   }
 
   if (listNode.type.name === 'orderedList') {
     const orderedListStart = normalizeOrderedListStart(listNode.attrs.start)
-    const currentNumber = orderedListStart + listItemIndex
-    const markerSegments = []
+    const currentNumber = orderedListStart + countItemsBefore(listNode, listItemIndex)
+    let markerText = ''
+    // The marker of everything above this item's own level, which is what `{parent}` stands for.
+    let parentMarkerText = ''
 
+    // One segment per ordered list on the way down, and each segment is the number of the item that
+    // owns the level below it.
+    //
+    // Counted in items, not in children, because a list can now be a child of a list: a nested list
+    // sitting between two items must not consume a number, or the item after it would be numbered
+    // one too high.
+    //
+    // A level whose nested list has no item above it contributes no segment at all. That is the
+    // empty level 0 - the writer indented the first item of a list, so there is no parent number,
+    // and printing one would be inventing it.
     for (let depth = 1; depth < listItemDepth; depth += 1) {
       const currentNode = $pos.node(depth)
       if (currentNode?.type?.name !== 'orderedList') {
         continue
       }
+      const childIndex = $pos.index(depth)
+      const itemsBefore = countItemsBefore(currentNode, childIndex)
       const start = normalizeOrderedListStart(currentNode.attrs.start)
-      const index = $pos.index(depth)
-      const value = start + index
-      markerSegments.push(formatOrderedValue(value, currentNode.attrs.listType))
-    }
+      const child = currentNode.child(childIndex)
 
-    const parentDepth = listDepth - 1
-    const parentNode = $pos.node(parentDepth)
-    const orderedListIndexInParent = $pos.index(parentDepth)
-    let previousOrderedList = null
-
-    for (let index = orderedListIndexInParent - 1; index >= 0; index -= 1) {
-      const sibling = parentNode.child(index)
-      if (sibling?.type?.name === 'orderedList') {
-        previousOrderedList = sibling
-        break
+      if (depth === listDepth) {
+        parentMarkerText = markerText
+      }
+      if (LIST_ITEM_NODE_NAMES.has(child?.type?.name)) {
+        markerText = renderMarkerTemplate(
+          currentNode.attrs.template,
+          markerText,
+          formatOrderedValue(start + itemsBefore, currentNode.attrs.listType),
+        )
+        continue
+      }
+      if (itemsBefore > 0) {
+        // A nested list belongs to the last item above it.
+        markerText = renderMarkerTemplate(
+          currentNode.attrs.template,
+          markerText,
+          formatOrderedValue(start + itemsBefore - 1, currentNode.attrs.listType),
+        )
       }
     }
 
@@ -180,11 +240,8 @@ export const getListItemContext = (state, listItemPos = null) => {
       orderedListNode: listNode,
       orderedListStart,
       currentNumber,
-      markerText: `${markerSegments.join('.')}.`,
-      previousOrderedList,
-      previousOrderedListStart: previousOrderedList
-        ? normalizeOrderedListStart(previousOrderedList.attrs.start)
-        : null,
+      markerText,
+      parentMarkerText,
     }
   }
 
@@ -212,41 +269,87 @@ export const getOrderedListContext = (state, listItemPos = null) => {
 export const getActiveListItemPos = (state) =>
   getListItemContext(state)?.listItemPos ?? null
 
+/**
+ * How deeply a list is nested, counted in lists rather than in document depth.
+ *
+ * Level 0 is a list that sits in the document, level 1 a list inside a list item, and so on. Every
+ * kind of list counts, because the level is meant to say what the reader sees - a numbered list
+ * inside a bullet list is indented once, the same as one inside a numbered list, so the two are at
+ * the same level and share one count.
+ */
+export const getListLevelAt = (doc, listPos) => {
+  const $pos = doc.resolve(listPos)
+  let level = 0
+  for (let depth = 1; depth <= $pos.depth; depth += 1) {
+    if (LIST_NODE_NAMES.has($pos.node(depth)?.type?.name)) {
+      level += 1
+    }
+  }
+  return level
+}
+
+/**
+ * The last number used at one indent level, anywhere before a position.
+ *
+ * This is the whole rule for continuing a count, and it is deliberately the only one. It does not
+ * ask what sits between the two lists: a paragraph, an image, a table, a page break or a new
+ * chapter makes no difference, because none of those is a number at this level. It does not ask
+ * whether the lists share a parent either - the previous one may be in another section entirely.
+ *
+ * The list holding `before` is counted like any other: only its items above `before` are, which is
+ * what makes continuing at the third item of a list of five mean the number the second item had.
+ *
+ * Returns null when nothing at this level precedes the position, which is a list that has nothing
+ * to continue from and therefore starts at 1.
+ */
+export const getLastOrderedNumberBefore = (doc, before, level) => {
+  let last = null
+
+  doc.descendants((node, pos) => {
+    if (pos >= before) {
+      return false
+    }
+    if (node.type.name !== 'orderedList') {
+      return true
+    }
+    if (getListLevelAt(doc, pos) !== level) {
+      return true
+    }
+
+    const start = normalizeOrderedListStart(node.attrs.start)
+    let counted = 0
+    node.forEach((child, offset) => {
+      // `pos + 1` is the first child's position; a child before the cut counts, one after it does
+      // not. For a list that ends before the cut this counts every item. Nested lists are children
+      // too now, and are not numbers at this level, so they do not count.
+      if (pos + 1 + offset < before && LIST_ITEM_NODE_NAMES.has(child.type.name)) {
+        counted += 1
+      }
+    })
+    if (counted > 0) {
+      last = start + counted - 1
+    }
+    return true
+  })
+
+  return last
+}
+
+/**
+ * The number this item takes when the writer asks it to continue.
+ *
+ * One line, because there is one rule: the last number at this indent level, plus one.
+ */
 export const getContinueOrderedListStart = (context) => {
   if (!context) {
     return null
   }
-
-  if (context.listItemIndex > 0) {
-    return context.currentNumber
-  }
-
-  if (context.previousOrderedList) {
-    return (
-      context.previousOrderedListStart + context.previousOrderedList.childCount
-    )
-  }
-
-  return context.orderedListStart
-}
-
-export const isContinueOrderedListNumberingUnchanged = (context) => {
-  if (!context) {
-    return true
-  }
-
-  const nextStart = getContinueOrderedListStart(context)
-  if (context.listItemIndex > 0) {
-    const previousSegmentEnd =
-      context.orderedListStart + context.listItemIndex - 1
-    return previousSegmentEnd + 1 === nextStart
-  }
-
-  if (!context.previousOrderedList) {
-    return true
-  }
-
-  return nextStart === context.orderedListStart
+  const last = getLastOrderedNumberBefore(
+    context.$pos.doc,
+    context.listItemPos,
+    context.indentLevel,
+  )
+  return (last ?? 0) + 1
 }
 
 const LIST_STRUCTURE_NODE_NAMES = new Set([
