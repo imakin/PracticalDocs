@@ -711,7 +711,14 @@ ol {
   justify-content: flex-start;
   gap: 0.5em;
   min-width: 0;
-  word-break: break-all;
+  // No `word-break` here. `break-all` breaks between any two characters, so ordinary prose in a
+  // list came out cut mid-word - `latensi` as `la` and `tensi` - while the same prose in a
+  // paragraph was fine. Overflow was never the reason it was needed: `.umo-editor` sets
+  // `overflow-wrap: anywhere`, which is inherited and breaks a token genuinely too long for the
+  // line and nothing else, and `min-width: 0` above is what keeps this flex item from being pushed
+  // wide by one. It also put the Word Wrap control out of reach for list text, because the
+  // `wordWrap` extension emits nothing for its `normal` default and so could not turn an inherited
+  // `break-all` off.
   list-style-type: none;
   line-height: inherit;
   font-size: inherit;

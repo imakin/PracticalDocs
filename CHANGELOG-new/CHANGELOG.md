@@ -1,3 +1,14 @@
+### A Word In A List Is Not Cut In Half
+
+- `One Declaration`: `.umo-list-item` carried `word-break: break-all`, which breaks between any two characters rather than only when a word cannot fit a line by itself. Prose under bullets and numbering came out cut mid-word - `latensi` as `la` and `tensi` - while the same prose in an ordinary paragraph was fine. It is gone.
+- `Overflow Was Never The Reason`: `.umo-editor` already sets `overflow-wrap: anywhere`, which is inherited and breaks a token genuinely too long for the line and nothing else, and `min-width: 0` is what stops a long token pushing the flex row wide. Nothing was holding the layout together that needed a word cut.
+- `It Also Put Word Wrap Out Of Reach`: the `wordWrap` extension emits nothing for its `normal` default, so an inherited `break-all` could not be turned off from the toolbar at all. List text answers to the Word Wrap control now, and `break-all` is available there for anyone who wants it.
+- `Test script`: `list-word-break.cdp.mjs`, 26 checks - own fixture, every word measured through the rectangles of a Range over it, across all five alignments, with a plain paragraph of the same prose as the control. Seen red first: 11 checks failed on the unpatched build, cutting the same words the report named.
+
+  ```bash
+  npm run test:e2e:list-word-break
+  ```
+
 ### A Page Break Carries A Whole Numbering Section
 
 - `Every Setting, Not Two`: `At this page break` offered the count and the numerals. It offers the position, the chapter first page and a template of its own as well. Nothing had been stopping them: the break node already carried the fields and the engine already resolved all of them per section, so the capability had been sitting unreachable behind a panel that showed two of it. Only the chapter first page needed the model extending; the other two needed a control.
