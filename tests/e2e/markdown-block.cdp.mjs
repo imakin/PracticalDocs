@@ -61,6 +61,17 @@ const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: t
 await call('Runtime.enable', {}, sessionId)
 await call('Page.enable', {}, sessionId)
 
+// A viewport this test decides, not the one the writer's window happens to have.
+//
+// Measured the hard way: with the browser window at 978px, a toolbar card reported by
+// `getBoundingClientRect` at x=1089 is **outside the viewport**, `document.elementFromPoint` there
+// returns nothing, and every dispatched click and wheel silently does nothing while every
+// command-driven check still passes. A test whose verdict depends on how wide someone left their
+// window is not a verdict.
+await call('Emulation.setDeviceMetricsOverride', {
+  width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false,
+}, sessionId).catch(() => {})
+
 const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
