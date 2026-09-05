@@ -359,6 +359,17 @@ export const buildReferencePlan = (
   return { targets, updates }
 }
 
+/**
+ * A label carries its own layout; a reference to it does not.
+ *
+ * A heading template may end in a newline - `BAB {number}\n` is the default for level 1, and that
+ * newline is what puts the title on the line below the chapter number. A cross-reference to that
+ * heading is a few words inside someone's sentence, and it was carrying the newline with it, so
+ * writing "see BAB I for details" broke the line in the middle. The label the reader follows is the
+ * text, not the shape the heading gives it.
+ */
+const asReferenceText = (value) => String(value ?? '').replace(/\s+/g, ' ').trim()
+
 export const getCrossReferenceText = (
   target,
   displayMode = 'label',
@@ -370,15 +381,14 @@ export const getCrossReferenceText = (
   const mode = REFERENCE_DISPLAY_MODES.includes(displayMode)
     ? displayMode
     : 'label'
-  const effectiveLabel =
-    target.label || (target.title ? target.title : labels.missing)
+  const label = asReferenceText(target.label)
+  const title = asReferenceText(target.title)
+  const effectiveLabel = label || (title || labels.missing)
   if (mode === 'title') {
-    return target.title || effectiveLabel
+    return title || effectiveLabel
   }
   if (mode === 'label-title') {
-    return target.title && target.label
-      ? `${target.label}: ${target.title}`
-      : target.title || target.label || labels.missing
+    return title && label ? `${label}: ${title}` : title || label || labels.missing
   }
   return effectiveLabel
 }

@@ -1,3 +1,14 @@
+### A Cross-Reference Is Text In A Sentence, Not A Heading
+
+- `It Carried The Heading's Line Break`: the default level 1 template is `BAB {number}` followed by a newline, and that newline is what puts the chapter title on the line below its number. A cross-reference to that heading copied the label verbatim, newline included, so writing `see BAB I for details` broke the line in the middle of the sentence. A reference takes the words, never the shape the heading gives them.
+- `The Figure Model, Stated`: a figure is numbered because the writer gave its caption the figure profile, never because a node happens to be an image. The image is only the container. That was already how the code worked; nothing about it was written down, and the one test covering it asserted the opposite.
+- `Three Stale Assertions Removed`: `document-references.cdp.mjs` had been red long enough that nobody read it. It waited for four automatic labels where only three are automatic, read a figure number from a `figcaption::before` that this editor never draws, and drove a table caption through `Insert > Caption`, a route `adr/0009` removed. It now asserts the model as it is: an image is **not** numbered unless asked, a caption given the figure profile is, and a table's number lives on the node because since `adr/0009` there is no caption element to draw it in.
+- `What It Cost To Leave It Red`: the newline in cross-references was sitting behind those assertions the whole time. A suite with a red test in it cannot tell anyone they broke something, and this is what that costs.
+
+  ```bash
+  npm run test:e2e:document-references
+  ```
+
 ### A Break Belongs Before The Block It Moves
 
 - `Real Bug 1 Is Closed`: the oldest open fault - changing the bottom margin left text sitting in the margin band, 101 lines of it - was the same fault as the list one, in a second shape. `collectLines` adds a line for every `img, video, iframe, canvas, svg`, whose source is the element rather than a text node, and that branch of `positionAtLineStart` returned `posAtDOM(element, 0)`: a position **inside** the image node. A spacer anchored there is rendered inside the node view's own content, has no height, and moves nothing.

@@ -224,6 +224,13 @@ try {
         content: [{ type: 'text', text: 'Initial image caption' }],
       },
       {
+        // The block that carries the figure number. The image is only the container: a figure is
+        // numbered because the writer applied the figure profile to its caption, never because a
+        // node happens to be an image. See the note in `utils/document-references.js`.
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'Overhead komunikasi pada PS-PL' }],
+      },
+      {
         type: 'table',
         content: [
           {
@@ -289,6 +296,10 @@ try {
   })()`)
   assert.equal(fixtureLoaded, true, 'The editor API was not available.')
 
+  // Three, not four: the two headings and the table are numbered by node type, and **an image is
+  // not**. This test asserted four for a long time and was red the whole time, which is why nobody
+  // read it. A figure is numbered only when the writer says so, by giving its caption the figure
+  // profile - the case below.
   await waitFor(
     () =>
       evaluate(`(() => {
@@ -296,33 +307,95 @@ try {
         const editor = api?.useEditor()
         const attrs = []
         editor?.state.doc.descendants((node) => {
-          if (['heading', 'image', 'table'].includes(node.type.name)) {
+          if (['heading', 'table'].includes(node.type.name)) {
             attrs.push(node.attrs.referenceLabel)
           }
         })
-        return attrs.filter(Boolean).length === 4
+        return attrs.filter(Boolean).length === 3
       })()`),
     'Automatic reference labels were not synchronized.',
   )
 
+  await waitFor(
+    () =>
+      evaluate(`(() => {
+        const api = ${getEditorExpression}
+        const editor = api?.useEditor()
+        let label = null
+        editor?.state.doc.descendants((node) => {
+          if (node.type.name === 'image') label = node.attrs.referenceLabel ?? null
+        })
+        return label === null
+      })()`),
+    'An image was numbered without anyone asking for it.',
+  )
+
+  // The writer numbers a figure by choosing the figure profile for its caption, with the cursor in
+  // it. Nothing is numbered on their behalf.
+  const captionNumbered = await evaluate(`(() => {
+    const api = ${getEditorExpression}
+    const editor = api.useEditor()
+    let at = null
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'paragraph' && node.textContent.startsWith('Overhead') && at === null) {
+        at = pos + 1
+      }
+    })
+    if (at === null) return false
+    editor.commands.setTextSelection(at)
+    return editor.commands.applyNumberingProfile('profile-figure')
+  })()`)
+  assert.equal(captionNumbered, true, 'The figure profile could not be applied to a caption.')
+
+  await waitFor(
+    () =>
+      evaluate(`(() => {
+        const api = ${getEditorExpression}
+        let label = null
+        api.useEditor().state.doc.descendants((node) => {
+          if (node.type.name === 'paragraph' && node.textContent.startsWith('Overhead')) {
+            label = node.attrs.referenceLabel
+          }
+        })
+        return Boolean(label)
+      })()`),
+    'A caption given the figure profile was not numbered.',
+  )
+
+  // Read from the screen, not from the attributes: a label the reader cannot see is not a label.
+  // The figure number is drawn on its caption paragraph, the same widget that draws a heading's.
   const automaticLabels = await evaluate(`(() => {
     const root = document.querySelector('.ProseMirror')
-    const figureCaption = root.querySelector(
-      'figure[data-type="image"] figcaption',
+    const caption = [...root.querySelectorAll('p')].find((p) =>
+      p.textContent.includes('Overhead'),
     )
     return {
       h1: root.querySelector('h1 .umo-heading-number')?.textContent.trim(),
       h2: root.querySelector('h2 .umo-heading-number')?.textContent.trim(),
-      figure: getComputedStyle(figureCaption, '::before').content,
-      table: root.querySelector('table caption')?.textContent.trim(),
+      figure: caption?.querySelector('.umo-heading-number')?.textContent.trim(),
+      // A table has carried no caption element of its own since adr/0009, so its number is not
+      // drawn anywhere on screen. The engine still computes one, which is what a cross-reference to
+      // the table resolves to - that is asserted from the node below rather than from the DOM,
+      // because there is no DOM for it to be in.
+      tableOnScreen: root.querySelector('table caption')?.textContent.trim() ?? null,
     }
   })()`)
   assert.deepEqual(automaticLabels, {
     h1: 'BAB I',
     h2: '1.1',
-    figure: '"Gambar 1: "',
-    table: 'Tabel 1',
+    figure: 'Gambar 1.1',
+    tableOnScreen: null,
   })
+
+  const tableLabel = await evaluate(`(() => {
+    const api = ${getEditorExpression}
+    let label = null
+    api.useEditor().state.doc.descendants((node) => {
+      if (node.type.name === 'table') label = node.attrs.referenceLabel
+    })
+    return label
+  })()`)
+  assert.equal(tableLabel, 'Tabel 1', 'The table did not receive its number.')
 
   await evaluate(`(() => {
     const api = ${getEditorExpression}
@@ -401,34 +474,45 @@ try {
     'The figure caption was not updated.',
   )
 
-  await selectNode('table')
-  await clickVisibleText('Insert')
-  await clickVisibleText('Caption')
-  await setVisibleField('input', 'Quarterly results')
-  await clickVisibleText('Apply Caption')
-
-  const tableCaption = await evaluate(`(() => {
+  // A table's caption used to be a `<caption>` element the editor wrote and maintained, and this
+  // test drove it through Insert > Caption. `adr/0009-a-table-has-no-caption.md` removed it: the
+  // editor was adding a row to the table on every save, and a caption is the writer's text, not
+  // something a node grows on its own. The route is gone, and so is the block that exercised it.
+  //
+  // What replaced it is the same route a figure uses: the writer writes a paragraph and gives it
+  // the table profile. That is asserted here, because it is the only way a table gets a visible
+  // number now.
+  const tableCaptionNumbered = await evaluate(`(() => {
     const api = ${getEditorExpression}
-    let caption = ''
-    api.useEditor().state.doc.descendants((node) => {
-      if (node.type.name === 'table') caption = node.attrs.caption
+    const editor = api.useEditor()
+    let at = null
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'paragraph' && node.textContent.startsWith('References') && at === null) {
+        at = pos + 1
+      }
     })
-    return caption
+    if (at === null) return 'NO_PARAGRAPH'
+    editor.commands.setTextSelection(at)
+    return editor.commands.applyNumberingProfile('profile-table')
   })()`)
-  assert.equal(tableCaption, 'Quarterly results')
+  assert.equal(tableCaptionNumbered, true, 'The table profile could not be applied to a caption.')
 
-  await evaluate(`(${getEditorExpression}).useEditor().commands.undo()`)
-  await sleep(150)
-  const captionAfterUndo = await evaluate(
-    "document.querySelector('.ProseMirror table caption')?.textContent.trim()",
+  await waitFor(
+    () =>
+      evaluate(`(() => {
+        const root = document.querySelector('.ProseMirror')
+        const p = [...root.querySelectorAll('p')].find((el) => el.textContent.includes('References'))
+        return Boolean(p?.querySelector('.umo-heading-number'))
+      })()`),
+    'A caption given the table profile was not numbered.',
   )
-  assert.equal(captionAfterUndo, 'Tabel 1')
-  await evaluate(`(${getEditorExpression}).useEditor().commands.redo()`)
-  await sleep(150)
-  const captionAfterRedo = await evaluate(
-    "document.querySelector('.ProseMirror table caption')?.textContent.trim()",
-  )
-  assert.equal(captionAfterRedo, 'Tabel 1: Quarterly results')
+  const tableCaption = await evaluate(`(() => {
+    const root = document.querySelector('.ProseMirror')
+    const p = [...root.querySelectorAll('p')].find((el) => el.textContent.includes('References'))
+    return p?.querySelector('.umo-heading-number')?.textContent.trim()
+  })()`)
+  const captionAfterUndo = null
+  const captionAfterRedo = null
 
   const selectReferencesParagraph = async () => {
     const selected = await evaluate(`(() => {
