@@ -178,6 +178,7 @@ watch(
     defaultBackground,
     defaultMargin,
     defaultOrientation,
+    defaultLanguage,
     watermark,
     showBreakMarks,
     showBookmark,
@@ -191,6 +192,10 @@ watch(
       margin: defaultMargin,
       background: defaultBackground,
       orientation: defaultOrientation,
+      // What the exported document says it is written in. It reaches the PDF as `<html lang>`, which
+      // is what a screen reader and an accessibility checker believe. It was hardcoded `zh-CN` for
+      // every document this editor ever exported.
+      language: defaultLanguage,
       watermark,
       showBreakMarks,
       showBookmark,

@@ -167,6 +167,12 @@ const validatePage = (value) => {
       'landscape',
     ]),
     background: requireString(page.background, 'page.background'),
+    // Read permissively: every document saved before this field existed has none, and refusing them
+    // would be refusing the writer's own work over a label. An empty or missing value is en-US.
+    language:
+      typeof page.language === 'string' && page.language.trim() !== ''
+        ? page.language.trim()
+        : 'en-US',
     watermark: {
       type: requireEnum(watermark.type, 'page.watermark.type', [
         'compact',

@@ -1,5 +1,27 @@
 <template>
   <iframe ref="iframeRef" class="umo-print-iframe" :srcdoc="iframeCode" />
+  <modal
+    :visible="askVisible"
+    width="420px"
+    :header="printing ? t('print.title') : t('export.pdf.title')"
+    :confirm-btn="printing ? t('print.confirm') : t('export.pdf.confirm')"
+    destroy-on-close
+    @close="cancelPrint"
+    @confirm="confirmPrint"
+  >
+    <div class="umo-print-dialog">
+      <p class="umo-print-dialog-message">
+        {{ printing ? t('print.message') : t('export.pdf.message') }}
+      </p>
+      <!--
+        The language the document is written in, not the language of this interface. It reaches the
+        exported file as `<html lang>`, which is what a screen reader and an accessibility checker
+        believe - and it was hardcoded to Chinese for every document this editor ever exported.
+      -->
+      <t-input v-model="draftLanguage" :label="t('print.language')" />
+      <p class="umo-print-dialog-hint">{{ t('print.languageHint') }}</p>
+    </div>
+  </modal>
 </template>
 
 <script setup>
@@ -253,7 +275,7 @@ const getIframeCode = () => {
   /* eslint-disable */
   return `
     <!DOCTYPE html>
-    <html lang="zh-CN" theme-mode="${options.value.theme}">
+    <html lang="${page.value.language || 'en-US'}" theme-mode="${options.value.theme}">
     <head>
       <title>${options.value.document?.title}</title>
       <meta charset="UTF-8">
@@ -366,29 +388,54 @@ const getIframeCode = () => {
   /* eslint-enable */
 }
 
+let askVisible = $ref(false)
+let draftLanguage = $ref('en-US')
+
+/**
+ * Ask before printing, and let the writer say what the document is written in.
+ *
+ * This was a plain confirm with a message in it. The language field is the reason it is a dialog of
+ * its own now: it is the one thing about the exported file that the editor cannot know and the
+ * writer can, and it is easiest to answer at the moment they are exporting.
+ */
 const printPage = () => {
   editor.value?.commands.blur()
+  draftLanguage = page.value.language || 'en-US'
+  // Built when the dialog opens, not only when it is confirmed. The export document is what the
+  // pagination and bookmark tests read to see what would be printed, and they must not have to press
+  // a button that opens Chrome's print preview to get it. It is built again on confirm, because by
+  // then the writer may have changed the language.
   iframeCode = getIframeCode()
+  askVisible = true
+}
 
-  const dialog = useConfirm({
-    attach: container,
-    theme: 'info',
-    header: printing.value ? t('print.title') : t('export.pdf.title'),
-    body: printing.value ? t('print.message') : t('export.pdf.message'),
-    confirmBtn: printing.value ? t('print.confirm') : t('export.pdf.confirm'),
-    onConfirm() {
-      dialog.destroy()
-      setTimeout(() => {
-        if (iframeRef && iframeRef.contentWindow) {
-          iframeRef.contentWindow.print()
-        }
-      }, 300)
-    },
-    onClosed() {
-      printing.value = false
-      exportFile.value.pdf = false
-    },
-  })
+const closeAsk = () => {
+  askVisible = false
+  printing.value = false
+  exportFile.value.pdf = false
+}
+
+const cancelPrint = () => {
+  closeAsk()
+}
+
+const confirmPrint = () => {
+  const next = String(draftLanguage || '').trim() || 'en-US'
+  // Remembered on the page settings, so it is saved with the document and the next export does not
+  // ask again from scratch.
+  if (page.value.language !== next) {
+    page.value.language = next
+  }
+  // Built after the language is set, because the language is in it.
+  iframeCode = getIframeCode()
+  askVisible = false
+  setTimeout(() => {
+    if (iframeRef && iframeRef.contentWindow) {
+      iframeRef.contentWindow.print()
+    }
+    printing.value = false
+    exportFile.value.pdf = false
+  }, 400)
 }
 
 watch(
@@ -403,6 +450,20 @@ watch(
 </script>
 
 <style lang="less" scoped>
+.umo-print-dialog {
+  .umo-print-dialog-message {
+    margin: 0 0 16px;
+    line-height: 1.6;
+  }
+
+  .umo-print-dialog-hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--umo-text-color-light, #8c8c8c);
+  }
+}
+
 .umo-print-iframe {
   position: absolute;
   width: 0;

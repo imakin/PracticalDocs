@@ -25,6 +25,11 @@ export default {
       bottom: 2.54,
     },
     defaultOrientation: 'portrait',
+    // The language an exported document declares. `en-US` rather than the interface's own locale:
+    // the document is what the writer wrote, and this editor's interface language says nothing about
+    // it. It was hardcoded `zh-CN` in the print template, so every PDF ever exported claimed to be
+    // Chinese - which a screen reader believes.
+    defaultLanguage: 'en-US',
     defaultBackground: '#fff',
     showBreakMarks: false,
     showLineNumber: false,

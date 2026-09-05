@@ -307,6 +307,13 @@ export default new ObjectSchema({
         },
         required: false,
       },
+      // Any BCP 47 tag the writer types. Not a fixed list: the set of languages a thesis can be
+      // written in is not this editor's to decide.
+      defaultLanguage: {
+        merge: 'replace',
+        validate: 'string',
+        required: false,
+      },
       defaultBackground: {
         merge: 'replace',
         validate: 'string',

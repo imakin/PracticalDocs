@@ -1036,7 +1036,9 @@
     "text": "Print",
     "title": "Print Document",
     "message": "Before printing the document, please ensure that all images on the pages have finished loading. To ensure that all content is displayed correctly, please check the 'Background graphics' option in the print dialog box and set the 'Margins' to 'None.'",
-    "confirm": "Print Now"
+    "confirm": "Print Now",
+    "language": "Document language",
+    "languageHint": "The language the document is written in, as a tag like en-US or id-ID. It is written into the exported file, where a screen reader reads it."
   },
   "dialog": {
     "cancel": "Cancel"

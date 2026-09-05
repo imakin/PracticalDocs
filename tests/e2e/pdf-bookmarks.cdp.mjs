@@ -181,6 +181,36 @@ const srcdoc = await evaluate(`(async () => {
 })()`)
 check('the export document was captured', Boolean(srcdoc), `${String(srcdoc).length} characters`)
 
+// The language the exported file declares. It was hardcoded `zh-CN` for every document this editor
+// ever exported, which is what a screen reader believes and an accessibility checker reports.
+const declaredLanguage = (html) => (String(html).match(/<html lang="([^"]*)"/) || [])[1]
+check('the exported document declares English by default',
+  declaredLanguage(srcdoc) === 'en-US', JSON.stringify(declaredLanguage(srcdoc)))
+
+const changedLanguage = await evaluate(`(async () => {
+  window.__p.page.value.language = 'id-ID'
+  await new Promise((r) => setTimeout(r, 300))
+  window.__p.exportFile.value.pdf = true
+  await new Promise((r) => setTimeout(r, 2200))
+  const dialog = [...document.querySelectorAll('.t-dialog')].find((d) => d.offsetParent !== null)
+  const input = dialog && dialog.querySelector('input')
+  const prefilled = input ? input.value : null
+  // Never press confirm here: it calls print(), which opens Chrome's print preview and blocks.
+  const cancel = dialog && [...dialog.querySelectorAll('button')].find((b) => /cancel|batal|取消/i.test(b.textContent))
+  if (cancel) cancel.click()
+  await new Promise((r) => setTimeout(r, 700))
+  const iframe = document.querySelector('.umo-print-iframe')
+  return { prefilled, html: iframe ? iframe.getAttribute('srcdoc') || '' : '' }
+})()`)
+check('the writer\'s language reaches the exported document',
+  declaredLanguage(changedLanguage.html) === 'id-ID',
+  JSON.stringify(declaredLanguage(changedLanguage.html)))
+check('and the dialog offers it back rather than asking again from scratch',
+  changedLanguage.prefilled === 'id-ID', JSON.stringify(changedLanguage.prefilled))
+
+await evaluate(`(() => { window.__p.page.value.language = 'en-US'; return true })()`)
+await sleep(400)
+
 const printTarget = await call('Target.createTarget', { url: 'about:blank' })
 const printSession = (await call('Target.attachToTarget', { targetId: printTarget.targetId, flatten: true })).sessionId
 await call('Page.enable', {}, printSession)

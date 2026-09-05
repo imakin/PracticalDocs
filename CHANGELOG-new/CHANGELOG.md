@@ -1,3 +1,10 @@
+### An Exported Document Says What Language It Is In
+
+- `It Said Chinese`: `<html lang="zh-CN">` was hardcoded in the print template, so every PDF this editor has ever exported declared itself Chinese. A screen reader believes that, and so does an accessibility checker. The default is `en-US` now.
+- `And The Writer Can Say Otherwise`: the export dialog carries a Document language field. Any BCP 47 tag - `id-ID`, `en-GB`, whatever the document is actually in - because the set of languages a thesis can be written in is not this editor's to decide. The choice is kept on the page settings, so it is saved with the document and offered back at the next export rather than asked from scratch.
+- `Read Permissively On The Way In`: a document saved before this field existed has none, and is opened as `en-US` rather than refused. That is the rule `validatePage` already learned the hard way with page numbers.
+- `The Export Document Is Built When The Dialog Opens`: it used to be built at that moment and this change nearly moved it to the confirm button, which would have broken every test that reads what would be printed without pressing print - `pagination-pdf-parity` among them. It is built at both points now: once to be read, once more on confirm in case the language changed.
+
 ### PDF Bookmarks, Written In The Browser
 
 - `A Second Door, Not A Replacement`: Export to PDF is untouched. Beside it is **PDF Bookmarks**: export as you always have, hand the saved file back, and the editor writes the outline, the page labels and the title into it. The file never leaves the machine, no server is involved, and nothing was added to `storage-server`.
