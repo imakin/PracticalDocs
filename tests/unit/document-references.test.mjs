@@ -110,9 +110,11 @@ test('supports custom placement templates and styles', () => {
     })),
     [
       { targetType: 'heading', number: 'I', label: 'BAB I' },
-      // An image is a container, not a numbered block: the caption that carries a profile is.
+      // Neither an image nor a table is a numbered block. Both are containers, and what carries the
+      // number is the caption the writer wrote and gave a profile to. A heading is different
+      // because a heading *is* the thing being numbered.
       { targetType: 'figure', number: '', label: '' },
-      { targetType: 'table', number: '1', label: 'Tabel 1' },
+      { targetType: 'table', number: '', label: '' },
     ],
   )
 })
@@ -153,7 +155,7 @@ test('respects global ON/OFF numbering toggle', () => {
   )
 })
 
-test('builds independent heading, figure, table, and citation counters', () => {
+test('builds independent heading and citation counters, and numbers no container', () => {
   let generatedId = 0
   const { targets } = buildReferencePlan(
     [
@@ -181,7 +183,7 @@ test('builds independent heading, figure, table, and citation counters', () => {
     [
       { targetType: 'heading', number: '1', label: '1' },
       { targetType: 'figure', number: '', label: '' },
-      { targetType: 'table', number: '1', label: 'Table 1' },
+      { targetType: 'table', number: '', label: '' },
       { targetType: 'figure', number: '', label: '' },
       { targetType: 'citation', number: '1', label: '[1]' },
       { targetType: 'heading', number: '1.1', label: '1.1' },

@@ -62,6 +62,21 @@ async function runFullCDPAudit() {
 
   browser.on('message', (data) => {
     const message = JSON.parse(String(data))
+    // The editor asks "leave without saving?" through a beforeunload handler whenever the document
+    // has unsaved changes, and a navigation from here raises that as a real Chrome dialog. It
+    // blocks the run and, worse, it blocks the browser the writer is using. Accept it: this tab is
+    // the test's own, and leaving it is the intent.
+    if (message.method === 'Page.javascriptDialogOpening') {
+      browser.send(
+        JSON.stringify({
+          id: 100000 + Math.floor(Math.random() * 10000),
+          method: 'Page.handleJavaScriptDialog',
+          params: { accept: true },
+          ...(message.sessionId ? { sessionId: message.sessionId } : {}),
+        }),
+      )
+      return
+    }
     if (!message.id || !pending.has(message.id)) return
     const { resolve, reject } = pending.get(message.id)
     pending.delete(message.id)
@@ -91,6 +106,7 @@ async function runFullCDPAudit() {
 
   await call('Page.enable', {}, sessionId)
   await call('Runtime.enable', {}, sessionId)
+  await call('Page.enable', {}, sessionId).catch(() => {})
   await call('Page.navigate', { url: editorUrl }, sessionId)
   await sleep(2500)
 

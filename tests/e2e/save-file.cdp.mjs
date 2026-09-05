@@ -451,6 +451,12 @@ try {
     }),
   )
 } finally {
+  // Close the tab, not just the connection. `browser.close()` alone drops the WebSocket and leaves
+  // the page running, so every run leaves one more editor behind - and a dozen of those is enough
+  // load that a newly opened editor stops mounting at all.
+  if (targetId) {
+    await call('Target.closeTarget', { targetId }).catch(() => {})
+  }
   browser.close()
   await rm(downloadPath, { recursive: true, force: true }).catch(() => {})
 }

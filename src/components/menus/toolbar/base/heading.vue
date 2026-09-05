@@ -200,7 +200,7 @@
       </t-form-item>
       <t-form-item :label="t('references.numbering.template')">
         <div class="umo-profile-template-field">
-          <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. Gambar {h1}.{number}&#10;or BAB {number}" />
+          <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. Figure {h1}.{number}&#10;or BAB {number}" />
           <span class="umo-profile-template-help">{{ t('references.numbering.templateHelp') }}</span>
         </div>
       </t-form-item>

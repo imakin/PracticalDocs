@@ -106,6 +106,25 @@ try {
     flatten: true,
   })
 
+  // This test's own tab, in front.
+  //
+  // Not a nicety: a background tab is throttled hard enough that this editor **never mounts at
+  // all**. Measured - without these two calls the wait for `.ProseMirror` timed out after sixty
+  // seconds with no error of any kind, and with them the editor was up in twelve. This test passed
+  // for a long time only because Chrome happened to be showing the tab it had just opened.
+  await call('Runtime.enable', {}, sessionId).catch(() => {})
+  await call('Page.enable', {}, sessionId).catch(() => {})
+  await call(
+    'Emulation.setDeviceMetricsOverride',
+    { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false },
+    sessionId,
+  ).catch(() => {})
+  await call('Page.bringToFront', {}, sessionId).catch(() => {})
+  // Bringing the tab to the front is not enough when the window itself is not the focused one: the
+  // renderer stays frozen and this editor never mounts. `setWebLifecycleState` says "active"
+  // directly, which is the only thing measured to be reliable here.
+  await call('Page.setWebLifecycleState', { state: 'active' }, sessionId).catch(() => {})
+
   const evaluate = async (expression) => {
     const { result, exceptionDetails } = await call(
       'Runtime.evaluate',
@@ -296,10 +315,12 @@ try {
   })()`)
   assert.equal(fixtureLoaded, true, 'The editor API was not available.')
 
-  // Three, not four: the two headings and the table are numbered by node type, and **an image is
-  // not**. This test asserted four for a long time and was red the whole time, which is why nobody
-  // read it. A figure is numbered only when the writer says so, by giving its caption the figure
-  // profile - the case below.
+  // Two, and only two: the headings. This test waited for four for a long time and was red the whole
+  // time, which is why nobody read it.
+  //
+  // A heading numbers itself because a heading *is* the numbered thing. An image and a table are
+  // containers: what carries their number is the caption the writer wrote and gave a profile to. So
+  // nothing here is numbered on the writer's behalf, which is the rule the whole feature follows.
   await waitFor(
     () =>
       evaluate(`(() => {
@@ -307,11 +328,9 @@ try {
         const editor = api?.useEditor()
         const attrs = []
         editor?.state.doc.descendants((node) => {
-          if (['heading', 'table'].includes(node.type.name)) {
-            attrs.push(node.attrs.referenceLabel)
-          }
+          if (node.type.name === 'heading') attrs.push(node.attrs.referenceLabel)
         })
-        return attrs.filter(Boolean).length === 3
+        return attrs.filter(Boolean).length === 2
       })()`),
     'Automatic reference labels were not synchronized.',
   )
@@ -321,14 +340,38 @@ try {
       evaluate(`(() => {
         const api = ${getEditorExpression}
         const editor = api?.useEditor()
-        let label = null
+        const labels = []
         editor?.state.doc.descendants((node) => {
-          if (node.type.name === 'image') label = node.attrs.referenceLabel ?? null
+          if (['image', 'table'].includes(node.type.name)) {
+            labels.push(node.attrs.referenceLabel ?? null)
+          }
         })
-        return label === null
+        return labels.length === 2 && labels.every((label) => label === null)
       })()`),
-    'An image was numbered without anyone asking for it.',
+    'A container numbered itself without anyone asking for it.',
   )
+
+  // Pin the two container profiles to their built-in shape. A profile list saved in this browser
+  // wins over the built-in one - which is right, and the reason this assertion cannot read whatever
+  // happens to be stored here. The test says what it depends on.
+  const profilesPinned = await evaluate(`(() => {
+    const api = ${getEditorExpression}
+    const editor = api.useEditor()
+    const storage = editor.extensionStorage.documentReferences || editor.storage.documentReferences
+    const profiles = (storage.profiles || []).map((profile) => {
+      if (profile.id === 'profile-figure') {
+        return { ...profile, name: 'Figure', enabled: true, style: 'numeric', template: 'Figure {h1}.{number}' }
+      }
+      if (profile.id === 'profile-table') {
+        return { ...profile, name: 'Table', enabled: true, style: 'numeric', template: 'Table {h1}.{number}' }
+      }
+      return profile
+    })
+    editor.commands.setNumberingConfig({ profiles })
+    return profiles.length
+  })()`)
+  assert.ok(profilesPinned > 0, 'The profile list was not readable.')
+  await sleep(600)
 
   // The writer numbers a figure by choosing the figure profile for its caption, with the cursor in
   // it. Nothing is numbered on their behalf.
@@ -383,19 +426,22 @@ try {
   assert.deepEqual(automaticLabels, {
     h1: 'BAB I',
     h2: '1.1',
-    figure: 'Gambar 1.1',
+    figure: 'Figure 1.1',
     tableOnScreen: null,
   })
 
+  // A table is a container, like an image: it does not number itself. It used to, invisibly - the
+  // caption element that once drew that number was removed by adr/0009 - and the number was still
+  // consumed, so a caption given the table profile came out one too high.
   const tableLabel = await evaluate(`(() => {
     const api = ${getEditorExpression}
     let label = null
     api.useEditor().state.doc.descendants((node) => {
-      if (node.type.name === 'table') label = node.attrs.referenceLabel
+      if (node.type.name === 'table') label = node.attrs.referenceLabel ?? null
     })
     return label
   })()`)
-  assert.equal(tableLabel, 'Tabel 1', 'The table did not receive its number.')
+  assert.equal(tableLabel, null, 'A table numbered itself without anyone asking.')
 
   await evaluate(`(() => {
     const api = ${getEditorExpression}
@@ -765,5 +811,14 @@ try {
     }),
   )
 } finally {
+  // Close the tab, not just the connection.
+  //
+  // `browser.close()` alone drops the WebSocket and leaves the page running. Every run of this file
+  // left one more editor behind, each with its own timers, and after a dozen of them Chrome was
+  // loaded heavily enough that a newly opened editor would not mount at all - which then looked
+  // like a broken test rather than a full browser.
+  if (targetId) {
+    await call('Target.closeTarget', { targetId }).catch(() => {})
+  }
   browser.close()
 }

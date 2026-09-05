@@ -921,10 +921,10 @@
       "headingTemplatePlaceholder": "e.g. BAB {number} or {number}",
       "figureStyle": "Figure numbering style",
       "figureTemplate": "Figure label template",
-      "figureTemplatePlaceholder": "e.g. Gambar {h1}.{number} or Gambar {number}",
+      "figureTemplatePlaceholder": "e.g. Figure {h1}.{number} or Figure {number}",
       "tableStyle": "Table numbering style",
       "tableTemplate": "Table label template",
-      "tableTemplatePlaceholder": "e.g. Tabel {h1}.{number} or Tabel {number}",
+      "tableTemplatePlaceholder": "e.g. Table {h1}.{number} or Table {number}",
       "apply": "Apply Settings",
       "styles": {
         "numeric": "Numeric (1, 2, 3)",

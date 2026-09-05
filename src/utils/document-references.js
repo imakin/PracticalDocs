@@ -24,6 +24,19 @@ export const DEFAULT_TEMPLATES = {
   citation: '[{number}]',
 }
 
+/**
+ * Types that hold something rather than being numbered.
+ *
+ * An image is a container and so is a table: what carries the number is **the caption the writer
+ * gives a profile to**, exactly as a heading carries its own. Nothing here is numbered on the
+ * writer's behalf, which is the whole rule - a document shows no number the writer did not ask for.
+ *
+ * A table used to number itself by type. The number was invisible, because `adr/0009` removed the
+ * caption element that once drew it, but it was still consumed: a caption paragraph given the table
+ * profile came out `Table 2` while the table above it silently held `Table 1`.
+ */
+const CONTAINER_TARGET_TYPES = new Set(['figure', 'table'])
+
 const normalizeText = (value) =>
   String(value || '')
     .replace(/\s+/g, ' ')
@@ -112,7 +125,7 @@ export const getNextHeadingNumber = (
 }
 
 // {h1} .. {h6} expand to the number of the enclosing heading at that level, so any profile can be
-// numbered relative to its chapter: "Gambar {h1}.{number}" gives "Gambar 1.1". Always plain digits,
+// numbered relative to its chapter: "Figure {h1}.{number}" gives "Figure 1.1". Always plain digits,
 // independent of the style that heading is displayed with, since a chapter shown as "BAB I" is still
 // chapter 1 when a figure refers to it.
 export const HEADING_PLACEHOLDER = /\{h([1-6])\}/g
@@ -234,7 +247,7 @@ export const buildReferencePlan = (
         })()
   const headingCounters = [0, 0, 0, 0, 0, 0]
   // One sequence per profile, not per node type. A paragraph carrying the figure profile has to
-  // count as a figure; keying by node type is what numbered such a caption "Gambar 6" - the sixth
+  // count as a figure; keying by node type is what numbered such a caption "Figure 6" - the sixth
   // paragraph - instead of the first figure.
   const counters = new Map()
   const scopeKeys = new Map()
@@ -284,9 +297,7 @@ export const buildReferencePlan = (
           style: headingStyle,
         })
       }
-    } else if (targetType === 'figure') {
-      // The image is only the container. What carries the number is the caption block the user
-      // applies a profile to, exactly like a heading carries its own number.
+    } else if (CONTAINER_TARGET_TYPES.has(targetType)) {
       number = ''
     } else {
       const counterKey = profile ? profile.id : targetType
@@ -326,7 +337,7 @@ export const buildReferencePlan = (
           '{label} {number}'
 
     const label =
-      profileEnabled && targetType !== 'figure'
+      profileEnabled && !CONTAINER_TARGET_TYPES.has(targetType)
         ? applyTemplate(template, number, defaultLabel, title, headingCounters)
         : ''
 
@@ -338,14 +349,13 @@ export const buildReferencePlan = (
       label,
       title,
       enabled: profileEnabled,
-      numberingProfileId:
-        targetType === 'figure'
-          ? null
-          : profile
-            ? profile.id
-            : descriptor.numberingProfileId,
-      clearProfile: targetType === 'figure',
-      profile: targetType === 'figure' ? null : profile,
+      numberingProfileId: CONTAINER_TARGET_TYPES.has(targetType)
+        ? null
+        : profile
+          ? profile.id
+          : descriptor.numberingProfileId,
+      clearProfile: CONTAINER_TARGET_TYPES.has(targetType),
+      profile: CONTAINER_TARGET_TYPES.has(targetType) ? null : profile,
     }
     targets.push(target)
     updates.push({

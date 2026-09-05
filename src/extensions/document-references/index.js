@@ -158,19 +158,23 @@ const defaultProfiles = () => [
           indent: 0,
         },
         {
+          // Built-in, and offered rather than applied. Neither a table nor an image numbers itself:
+          // the writer gives this profile to the caption they wrote, and that caption carries the
+          // number. Both are English here because every built-in is; a document that already stores
+          // its own version of this profile keeps it, name, template and all.
           id: 'profile-table',
-          name: 'Tabel',
+          name: 'Table',
           enabled: true,
           style: 'numeric',
-          template: 'Tabel {h1}.{number}',
+          template: 'Table {h1}.{number}',
           targetType: 'table',
         },
         {
           id: 'profile-figure',
-          name: 'Gambar',
+          name: 'Figure',
           enabled: true,
           style: 'numeric',
-          template: 'Gambar {h1}.{number}',
+          template: 'Figure {h1}.{number}',
           targetType: 'figure',
         },
         {
@@ -1187,15 +1191,12 @@ export const DocumentReferences = Extension.create({
           const { $from } = selection
           const profile = this.storage.profiles.find((p) => p.id === profileId)
 
-          // Which node types this profile can sit on. Without this, dragging across a table and
-          // choosing a paragraph profile would also stamp it on the table node, which is styled by a
-          // profile of its own.
-          const wanted =
-            profile?.targetType === 'table'
-              ? ['table']
-              : profile?.targetType === 'figure'
-                ? ['image']
-                : ['paragraph', 'heading']
+          // Which node types a profile can sit on: the blocks a writer types into, and nothing
+          // else. A figure and a table profile belong to the **caption** the writer wrote, not to
+          // the image or the table itself - those are containers and are never numbered. Without
+          // this list, dragging across a table and choosing a profile would also stamp it on the
+          // table node, which is not a block anyone typed.
+          const wanted = ['paragraph', 'heading']
 
           const found = []
           const seen = new Set()

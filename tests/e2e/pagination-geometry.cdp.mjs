@@ -53,6 +53,11 @@ const call = (method, params = {}, sessionId) =>
     ws.send(JSON.stringify({ id: nextId, method, params, ...(sessionId ? { sessionId } : {}) }))
   })
 
+const tabsBefore = new Set(
+  ((await call('Target.getTargets').catch(() => ({}))).targetInfos || [])
+    .filter((info) => info.type === 'page')
+    .map((info) => info.targetId),
+)
 const { targetId } = await call('Target.createTarget', { url: EDITOR_URL })
 const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true })
 let persistedBefore = null
@@ -76,6 +81,17 @@ const finish = async (code) => {
     })()`).catch(() => {})
   }
   await call('Target.closeTarget', { targetId }).catch(() => {})
+  // Close whatever else this run opened, and nothing else.
+  //
+  // Exporting to PDF opens a tab of its own, so closing only the tab this file created still left
+  // one behind on every run. Tabs that existed before the run are the writer's and are never
+  // touched - the set is captured at startup for exactly that reason.
+  const { targetInfos = [] } = await call('Target.getTargets').catch(() => ({}))
+  for (const info of targetInfos) {
+    if (info.type === 'page' && !tabsBefore.has(info.targetId)) {
+      await call('Target.closeTarget', { targetId: info.targetId }).catch(() => {})
+    }
+  }
   ws.close()
   process.exit(code)
 }

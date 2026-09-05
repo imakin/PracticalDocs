@@ -1,3 +1,16 @@
+### Nothing Is Numbered Unless The Writer Asks
+
+- `A Table No Longer Numbers Itself`: an image never did, and a table did - invisibly, because `adr/0009` removed the caption element that once drew that number. The number was still consumed, so a caption paragraph given the table profile came out `Table 2` while the table above it silently held `Table 1`. A table is a container like an image now: what carries the number is the caption the writer wrote and gave a profile to. One rule for both, in one set.
+- `The Built-In Profiles Are English`: `Tabel` and `Gambar` were the only two built-ins not in English, hardcoded beside `Page Number` and `Table of Contents`. They are `Table` and `Figure`, with templates `Table {h1}.{number}` and `Figure {h1}.{number}`, and the dialog placeholders follow. **A document that already stores its own version of either keeps it** - a saved profile list wins over the built-in one, which is what makes this safe for work in progress.
+- `A Container Profile Applies To A Caption`: choosing the figure profile used to look for an image node and the table profile for a table node - neither of which is ever numbered. Both now apply to the blocks a writer types into, which is where the number goes.
+- `Test script`: `document-references.cdp.mjs` pins the two container profiles to their built-in shape before asserting, because a profile list saved in the browser wins over the built-in one and a test must say what it depends on. The unit plan tests assert the same rule.
+
+### A Test Closes The Tab It Opened
+
+- `Three Tests Left Their Tab Running`: `browser.close()` drops the WebSocket and leaves the page open. Every run left one more editor behind, each with its own timers, and after a dozen of them Chrome was loaded heavily enough that a newly opened editor **would not mount at all** - which reads as a broken test rather than a full browser. Measured the hard way: fourteen editor tabs, and two suites failing for no reason of their own.
+- `And One Left A PDF Preview`: exporting opens a tab of its own, so closing only the tab a test created still leaked one per run. `pagination-geometry` now records the pages that existed before it started and closes only what appeared since - tabs that were already there belong to the writer and are never touched.
+- `The Unsaved-Changes Dialog Is Answered`: the editor blocks unload while a document has unsaved changes, so a test that navigates raises a real Chrome dialog that blocks the run and the browser with it. The two tests that navigate now accept it. The other route is better and is what the rest do: create a tab, and close it with `Target.closeTarget`, which asks nothing.
+
 ### A Cross-Reference Is Text In A Sentence, Not A Heading
 
 - `It Carried The Heading's Line Break`: the default level 1 template is `BAB {number}` followed by a newline, and that newline is what puts the chapter title on the line below its number. A cross-reference to that heading copied the label verbatim, newline included, so writing `see BAB I for details` broke the line in the middle of the sentence. A reference takes the words, never the shape the heading gives them.
