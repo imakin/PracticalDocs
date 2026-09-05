@@ -88,7 +88,9 @@
     "test:e2e:page-number-section": "node tests/e2e/page-number-section.cdp.mjs",
     "test:e2e:list-word-break": "node tests/e2e/list-word-break.cdp.mjs",
     "test:e2e:list-numbering": "node tests/e2e/list-numbering.cdp.mjs",
-    "test:e2e:block-pagination": "node tests/e2e/block-pagination.cdp.mjs"
+    "test:e2e:block-pagination": "node tests/e2e/block-pagination.cdp.mjs",
+    "test:e2e:pdf-bookmarks": "node tests/e2e/pdf-bookmarks.cdp.mjs",
+    "test:unit:pdf-outline": "node --test tests/unit/pdf-outline.test.mjs"
   },
   "dependencies": {
     "@eslint/object-schema": "3.0.2",
@@ -138,6 +140,7 @@
     "lowlight": "3.3.0",
     "markdown-it": "14.3.0",
     "nzh": "1.0.14",
+    "pdf-lib": "^1.17.1",
     "pretty-bytes": "7.1.0",
     "pure-svg-code": "1.0.6",
     "smooth-signature": "1.0.15",

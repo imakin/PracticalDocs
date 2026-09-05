@@ -147,6 +147,10 @@ export const computePageNumbers = (sheetCount, settings = {}, sections = []) => 
       // The number the reader sees in the footer. Purely presentational: it restarts, changes
       // numeral system and can be hidden without any of that affecting `index`.
       value: counter,
+      // Which numerals this page counts in. On the record because a second reader needs it: a PDF
+      // `/PageLabels` entry is a numeral style plus a start value, and it cannot be recovered from
+      // `text`, which has already been through the template.
+      format: active.format,
       text: applyPageTemplate(
         active.template,
         formatSingleNumber(counter, active.format),

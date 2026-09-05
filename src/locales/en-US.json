@@ -603,7 +603,21 @@
       "message": "Before exporting the PDF document, please ensure that all images on the pages have finished loading. Then, in the pop-up print dialog, select 'Printer - Save as PDF', and click the 'Save' button. To ensure that all content is displayed correctly, please check the 'Background graphics' option in the print dialog box and set the 'Margins' to 'None.'",
       "confirm": "I Understand"
     },
-    "text": "Text"
+    "text": "Text",
+    "bookmarks": {
+      "text": "PDF Bookmarks",
+      "done": {
+        "title": "Bookmarks added",
+        "inPlace": "Wrote {count} bookmarks and {pages} page labels into the file you chose.",
+        "downloaded": "Wrote {count} bookmarks and {pages} page labels. The new PDF has been downloaded."
+      },
+      "error": {
+        "title": "Could not add bookmarks",
+        "notPaginated": "This document has no pages yet. Switch to page view and let it settle, then try again.",
+        "pageCount": "Page counts do not match: the PDF has {pdf}, this document has {document}. Export it again without changing the scale, paper size or margins in the print dialog."
+      },
+      "confirm": "OK"
+    }
   },
   "list": {
     "bullet": {

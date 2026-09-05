@@ -1,3 +1,20 @@
+### PDF Bookmarks, Written In The Browser
+
+- `A Second Door, Not A Replacement`: Export to PDF is untouched. Beside it is **PDF Bookmarks**: export as you always have, hand the saved file back, and the editor writes the outline, the page labels and the title into it. The file never leaves the machine, no server is involved, and nothing was added to `storage-server`.
+- `Why This Was Thought Impossible`: `print.vue` gives the document to Chrome's print dialog and Chrome writes the file, so the editor never holds the bytes of its own export. That was read for a long time as "post-processing is impossible". It is a fact about the workflow, not a law - **if the writer hands the file back, the bytes are here**. See [experiment 0002](../AGENT/experiments/0002-pdf-outline-written-in-the-browser.md).
+- `The Bookmarks Are The Document's Own`: level, title and number come from the same list the contents is built from, and the page from the pagination engine, so a bookmark cannot disagree with the contents or with the folio printed on the page. A bookmark reads `BAB I Pendahuluan` - the number included, because the writer set that template themselves and a bookmark reading `Pendahuluan` names a different thing. This is what Chrome's own `generateDocumentOutline` could not do: it takes titles from heading text alone, so every chapter would have read `PENDAHULUAN`.
+- `Page Labels Too`: a PDF reader's page box shows `iv` for front matter and `1` where the body restarts, instead of counting sheets. The pagination engine already knew every sheet's numeral style and value; it now carries the style on the record so a second reader can use it.
+- `It Refuses Rather Than Guess`: the writer chooses scale, paper and margins in Chrome's print dialog, and any of them moves where a heading lands. If the returned PDF has a different page count from the document, nothing is written and the writer is told why. Bookmarks pointing at the wrong pages would be wrong quietly, which is the worst way to be wrong.
+- `In Place Where The Browser Allows It`: with the File System Access API the file the writer picked is rewritten in place - one file, no second copy to tell apart. Without it, the new PDF is downloaded.
+- `Test script`: `pdf-outline.test.mjs`, 13 unit checks against a PDF the test builds itself - the tree, the label ranges, and the outline read back out of the bytes rather than trusted. `pdf-bookmarks.cdp.mjs`, 18 checks over the whole flow: the real export document, printed by Chrome, handed to the editor, and the result read for a real `/Outlines`. Only the file picker is stubbed, because it is browser UI.
+
+  ```bash
+  npm run test:unit:pdf-outline
+  npm run test:e2e:pdf-bookmarks
+  ```
+
+- `Found On The Way`: every PDF this editor exports declares `<html lang="zh-CN">` ([print.vue:256](src/components/container/print.vue#L256), hardcoded), so screen readers and accessibility checkers are told the document is in Chinese. Not fixed here; it is a bug of its own.
+
 ### Nothing Is Numbered Unless The Writer Asks
 
 - `A Table No Longer Numbers Itself`: an image never did, and a table did - invisibly, because `adr/0009` removed the caption element that once drew that number. The number was still consumed, so a caption paragraph given the table profile came out `Table 2` while the table above it silently held `Table 1`. A table is a container like an image now: what carries the number is the caption the writer wrote and gave a profile to. One rule for both, in one set.
