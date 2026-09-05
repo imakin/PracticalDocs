@@ -1,5 +1,5 @@
 /**
- * A list longer than a page is paginated all the way down, and a page break inside one works.
+ * A break belongs before the block it moves, whatever kind of block that is.
  *
  * The user reported the second half: a numbered list running past the end of a page, a page break
  * added on the second page to make a third, and nothing happening. The break was the symptom. The
@@ -13,8 +13,16 @@
  * a line. That line could never move, so the same line overflowed every round, the anchor was never
  * beyond the previous one, and the loop stopped.
  *
- * What is measured is the invariant rather than the spacers: no line of text may sit below the
- * bottom of the column it is on.
+ * The same fault in a second shape, and the one that had been open longest. `collectLines` adds a
+ * line for every `img, video, iframe, canvas, svg`, whose source is the element rather than a text
+ * node, and that branch of `positionAtLineStart` returned `posAtDOM(element, 0)` - a position
+ * *inside* the image node. A spacer anchored there renders inside the node view's own content, has
+ * no height, and moves nothing. Measured on a real document: a 230px figure was chosen to be pushed
+ * to the next column, the spacer landed in the image's alt element at height 0, the figure did not
+ * move, and the solve gave up with 101 lines left sitting in the margin band.
+ *
+ * What is measured is the invariant rather than the spacers: nothing the reader sees - a line of
+ * text or a figure - may sit outside the column it is on.
  *
  * Endpoints come from EDITOR_URL and CDP_URL. Per adr/0006 there is no built-in fallback.
  */
@@ -110,7 +118,7 @@ const wired = await evaluate(`(() => {
   let inst = el.__vueParentComponent
   while (inst) {
     const p = inst.provides || {}
-    if (p.editor?.value?.state) { window.__ed = p.editor.value; break }
+    if (p.editor?.value?.state) { window.__p = p; window.__ed = p.editor.value; break }
     inst = inst.parent
   }
   return window.__ed ? 'OK' : 'NO_EDITOR'
@@ -161,6 +169,15 @@ const overflowing = async () => evaluate(`(() => {
   const marginBottom = read('--umo-page-margin-bottom', '0cm')
   ruler.remove()
   const out = []
+  const past = (rect, what) => {
+    if (rect.height <= 0 || rect.width <= 0) return
+    const top = rect.top - originTop
+    const sheet = Math.floor(top / stride)
+    const columnBottom = sheet * stride + pageHeight - marginBottom
+    if (rect.bottom - originTop > columnBottom + 2) {
+      out.push({ what, bottom: Math.round(rect.bottom - originTop), columnBottom: Math.round(columnBottom) })
+    }
+  }
   const walker = document.createTreeWalker(window.__ed.view.dom, NodeFilter.SHOW_TEXT, null)
   let node
   while ((node = walker.nextNode())) {
@@ -168,15 +185,12 @@ const overflowing = async () => evaluate(`(() => {
     if (node.parentElement && node.parentElement.closest('.umo-page-spacer')) continue
     const range = document.createRange()
     range.selectNodeContents(node)
-    for (const rect of range.getClientRects()) {
-      if (rect.height <= 0 || rect.width <= 0) continue
-      const top = rect.top - originTop
-      const sheet = Math.floor(top / stride)
-      const columnBottom = sheet * stride + pageHeight - marginBottom
-      if (rect.bottom - originTop > columnBottom + 2) {
-        out.push({ text: node.textContent.slice(0, 26), bottom: Math.round(rect.bottom - originTop), columnBottom: Math.round(columnBottom) })
-      }
-    }
+    for (const rect of range.getClientRects()) past(rect, node.textContent.slice(0, 26))
+  }
+  // Media is measured too: an image is a line to the engine, and it is the one this used to give up
+  // on.
+  for (const el of window.__ed.view.dom.querySelectorAll('img, video, canvas, svg')) {
+    past(el.getBoundingClientRect(), 'media ' + Math.round(el.getBoundingClientRect().height) + 'px')
   }
   return { count: out.length, first: out.slice(0, 3), sheets: (storage.pages || []).length, stride: Math.round(stride) }
 })()`)
@@ -219,6 +233,45 @@ check('the document gains a sheet',
   withBreak.sheets > sheetsBefore, `${sheetsBefore} -> ${withBreak.sheets}`)
 check('and still no line runs past its column',
   withBreak.count === 0, JSON.stringify(withBreak.first))
+
+
+console.log('\nCase C: a figure is pushed to the next column, not anchored inside itself')
+// A 300px figure in the middle of ordinary prose, and the geometry changed underneath it. The margin
+// is what moves the figure across a column boundary without touching the document, which is the
+// case the engine could not see its way out of.
+const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+const PROSE = Array.from({ length: 14 }, (_, i) =>
+  `<p>Paragraf ${i + 1} berisi kalimat yang cukup panjang supaya mengisi lebih dari satu baris pada lebar halaman yang normal.</p>`).join('')
+await evaluate(`(async () => {
+  window.__ed.commands.setContent('${PROSE}<img src="${PNG}" width="420" height="300" alt="">${PROSE}')
+  return true
+})()`)
+await settle(3200)
+const withFigure = await overflowing()
+check('the fixture has a figure and several sheets',
+  withFigure.sheets >= 2 && !withFigure.error, JSON.stringify({ sheets: withFigure.sheets }))
+check('nothing sits outside its column to begin with',
+  withFigure.count === 0, JSON.stringify(withFigure.first))
+
+// Several margins, because which one puts the figure across a boundary depends on the fixture, and
+// a test that only tries one is testing the fixture rather than the engine.
+for (const bottom of [4, 5, 6]) {
+  const applied = await evaluate(`(() => {
+    if (!window.__p?.page?.value?.margin) return false
+    window.__p.page.value.margin.bottom = ${bottom}
+    return true
+  })()`)
+  if (!applied) {
+    check('the page margin is reachable', false, 'window.__p.page.value.margin is not available')
+    break
+  }
+  await settle(3200)
+  const after = await overflowing()
+  check(`with a bottom margin of ${bottom}cm nothing sits outside its column`,
+    after.count === 0, `${after.count} past the column, ${after.sheets} sheets ${JSON.stringify(after.first)}`)
+}
+await evaluate(`(() => { if (window.__p?.page?.value?.margin) window.__p.page.value.margin.bottom = 3; return true })()`)
+await settle(2000)
 
 console.log(`\nRESULT: ${failures.length === 0 ? 'PASSED' : 'FAILED'} -- ${total} checks, ${failures.length} failed`)
 if (failures.length) failures.forEach((f) => console.log(`  - ${f}`))

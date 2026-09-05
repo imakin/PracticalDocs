@@ -283,8 +283,17 @@ const charTop = (node, index) => {
 const positionAtLineStart = (view, line) => {
   const node = line.source
   if (!node || node.nodeType !== Node.TEXT_NODE) {
+    // An element line is a whole block of its own - an image, a video, a canvas. `posAtDOM` on it
+    // returns a position **inside** the node, and a spacer anchored there is rendered inside the
+    // node view's own content, where it has no height and moves nothing at all.
+    //
+    // Measured on the user's document with a larger bottom margin: the engine chose to push a 230px
+    // figure to the next column, the spacer landed in the image's alt element with a height of 0,
+    // the figure did not move, the same line overflowed the next round, the anchor was no further
+    // on than the last one, and the solve gave up - leaving 101 lines of the document sitting in
+    // the margin band. This is real bug 1.
     try {
-      return view.posAtDOM(node, 0)
+      return outsideTheBlockItBegins(view, view.posAtDOM(node, 0))
     } catch {
       return null
     }
@@ -340,6 +349,30 @@ const LIST_STRUCTURE = new Set([
   'taskList',
 ])
 
+/**
+ * The position before the node holding this one, and before every list it also begins.
+ *
+ * A list item's marker is drawn beside its content rather than in it, so a spacer anchored inside
+ * the item moves the text and leaves the marker behind - and the marker is a text node the engine
+ * counts as a line, so that line can never move however many breaks are placed. The solve then
+ * cannot get past it and gives up, which is what stopped a long list being paginated at all.
+ */
+const outsideTheBlockItBegins = (view, pos) => {
+  const $pos = view.state.doc.resolve(pos)
+  if ($pos.depth <= 0) {
+    return pos
+  }
+  let depth = $pos.depth
+  while (
+    depth > 1 &&
+    $pos.index(depth - 1) === 0 &&
+    LIST_STRUCTURE.has($pos.node(depth - 1).type.name)
+  ) {
+    depth -= 1
+  }
+  return $pos.before(depth)
+}
+
 const beforeBlockIfAtItsStart = (view, pos) => {
   if (typeof pos !== 'number' || pos <= 0) {
     return pos
@@ -354,30 +387,13 @@ const beforeBlockIfAtItsStart = (view, pos) => {
     // list item - `posAtDOM` on a text node inside a list item's node view returns the position
     // before the paragraph rather than inside it, which is the same hazard the markdown block
     // records. Both mean the same thing: the line about to be pushed is the first thing here.
-    const insideListItem = LIST_ITEM_NODES.has($pos.parent?.type?.name)
-    if (!$pos.parent?.isTextblock && !insideListItem) {
+    if (
+      !$pos.parent?.isTextblock &&
+      !LIST_ITEM_NODES.has($pos.parent?.type?.name)
+    ) {
       return pos
     }
-    let depth = $pos.depth
-    // Walk out of every list structure this line also begins.
-    //
-    // A list item's marker is drawn beside its content, not inside it, so a spacer anchored inside
-    // the item moves the text and leaves the marker on the page before - and the marker is a text
-    // node the engine counts as a line, so that line never moves however many breaks are placed.
-    // The solve then cannot get past it: the same line overflows every round, the anchor is never
-    // beyond the previous one, and the loop gives up. Everything after that point stops being
-    // paginated, a manual page break included.
-    //
-    // Measured on a forty item list: one spacer and then nothing, the list running off the sheet,
-    // and a page break added below it doing nothing at all.
-    while (
-      depth > 1 &&
-      $pos.index(depth - 1) === 0 &&
-      LIST_STRUCTURE.has($pos.node(depth - 1).type.name)
-    ) {
-      depth -= 1
-    }
-    return $pos.before(depth)
+    return outsideTheBlockItBegins(view, pos)
   } catch {
     return pos
   }

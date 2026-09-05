@@ -88,7 +88,7 @@
     "test:e2e:page-number-section": "node tests/e2e/page-number-section.cdp.mjs",
     "test:e2e:list-word-break": "node tests/e2e/list-word-break.cdp.mjs",
     "test:e2e:list-numbering": "node tests/e2e/list-numbering.cdp.mjs",
-    "test:e2e:list-pagination": "node tests/e2e/list-pagination.cdp.mjs"
+    "test:e2e:block-pagination": "node tests/e2e/block-pagination.cdp.mjs"
   },
   "dependencies": {
     "@eslint/object-schema": "3.0.2",

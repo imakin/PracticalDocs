@@ -1,12 +1,23 @@
+### A Break Belongs Before The Block It Moves
+
+- `Real Bug 1 Is Closed`: the oldest open fault - changing the bottom margin left text sitting in the margin band, 101 lines of it - was the same fault as the list one, in a second shape. `collectLines` adds a line for every `img, video, iframe, canvas, svg`, whose source is the element rather than a text node, and that branch of `positionAtLineStart` returned `posAtDOM(element, 0)`: a position **inside** the image node. A spacer anchored there is rendered inside the node view's own content, has no height, and moves nothing.
+- `What The Engine Saw`: it chose to push a 230px figure to the next column, applied a 598px spacer, re-measured, and found the figure exactly where it had been - same line, same top, to the pixel. The next anchor was no further on than the last, so the solve stopped rather than spin. Everything below that point was never paginated. The page break that a writer would then add, further down, was never reached; that is why this looked like three unrelated bugs.
+- `The Rule`: a break anchors before the block it moves, never inside it. Both element lines and text lines go through it now, and it walks out of every list structure the line also begins. See [adr/0016](../AGENT/adr/0016-a-break-anchors-before-the-block-it-moves.md).
+- `Test script`: `block-pagination.cdp.mjs`, 11 checks - own fixture, no stored document. Case C is prose with a 300px figure in it, measured at four different bottom margins because which margin puts a figure across a boundary is a fact about the fixture rather than about the engine. Seen red first: the figure sat 97px past its column and stayed there at every margin.
+
+  ```bash
+  npm run test:e2e:block-pagination
+  ```
+
 ### A List Longer Than A Page Is Paginated All The Way Down
 
 - `The Break Was The Symptom`: the report was that a page break added on the second page of a long numbered list did nothing. It did nothing because **the solve had already given up**, several breaks earlier - everything below the first break inside a list had stopped being paginated, and the list simply ran off the sheet.
 - `Why It Gave Up`: `posAtDOM` on a text node inside a list item's node view returns the position *before* the paragraph rather than inside it. That is not a text block start, so the anchor was left as it was and the spacer landed inside the item. A list item's marker is drawn beside its content rather than in it, so the text moved down and the marker did not - and the marker is a text node the engine counts as a line. That line could never move, so the same line overflowed every round, the next anchor was never past the previous one, and the loop stopped rather than spin.
 - `A Break Belongs Before Everything It Begins`: the anchor now walks out of every list structure whose start it shares - out of the paragraph, out of the item, and out of the list when it is the first item. The marker travels with its text, and the solve gets past it.
-- `Test script`: `list-pagination.cdp.mjs`, 6 checks - own fixture of forty items, and what is asserted is that no line of text sits below the bottom of its column, read from the engine's own geometry so the test cannot drift from it. Seen red first: three checks failed on the unpatched build, the document staying at three sheets when a break was added and item 30's text running 26px past its column.
+- `Test script`: `block-pagination.cdp.mjs` (cases A and B), own fixture of forty items, and what is asserted is that no line of text sits below the bottom of its column, read from the engine's own geometry so the test cannot drift from it. Seen red first: three checks failed on the unpatched build, the document staying at three sheets when a break was added and item 30's text running 26px past its column.
 
   ```bash
-  npm run test:e2e:list-pagination
+  npm run test:e2e:block-pagination
   ```
 
 ### Numbering Continues, Whatever Is In Between
