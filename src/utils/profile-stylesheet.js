@@ -30,13 +30,13 @@ const slug = (value) =>
 
 export const profileClassName = (profileId) => {
   const name = slug(profileId)
-  return name ? `umo-${name}` : ''
+  return name ? `pdoc-${name}` : ''
 }
 
 // A profile id is authoritative in the class only when it survives the round trip. Every built-in and
 // generated id looks like "profile-h1" or "profile-<shortId>", which does; an id supplied from outside
 // might not, and then the data attribute stays as the source of truth.
-export const PROFILE_CLASS_PREFIX = 'umo-profile-'
+export const PROFILE_CLASS_PREFIX = 'pdoc-profile-'
 
 export const profileIdFromClass = (classAttr) => {
   for (const token of String(classAttr || '').split(/\s+/)) {
@@ -52,7 +52,7 @@ export const classCarriesProfileId = (profileId) =>
 
 export const counterName = (profileId) => {
   const name = slug(profileId)
-  return name ? `umo-count-${name}` : ''
+  return name ? `pdoc-count-${name}` : ''
 }
 
 export const cssNumberStyle = (style) => CSS_NUMBER_STYLES[style] || 'decimal'
@@ -170,13 +170,13 @@ const declarationsFor = (profile) => {
   return out
 }
 
-export const DOCUMENT_SCOPE = '.umo-document'
+export const DOCUMENT_SCOPE = '.pdoc-document'
 
 /**
  * Build the stylesheet for a set of profiles.
  *
  * `scope` is the selector for the element that contains the blocks. It carries the root counters and
- * prefixes every rule, so the same generator serves both the stored file (`.umo-document`) and the
+ * prefixes every rule, so the same generator serves both the stored file (`.pdoc-document`) and the
  * live editor (its ProseMirror element) without two sets of rules drifting apart.
  */
 export const buildProfileStylesheet = (
@@ -267,7 +267,7 @@ export const buildProfileStylesheet = (
         ? headingNumberContent(profile, byLevel)
         : `counter(${counterName(profile.id)}, ${cssNumberStyle(profile.style)})`
     const content = expandTemplate(profile, byLevel, ownNumber)
-    // Mirrors .umo-heading-number in editor.less, so the stored file and the editor put the number
+    // Mirrors .pdoc-heading-number in editor.less, so the stored file and the editor put the number
     // in the same place. A template with a newline becomes a block, exactly as the widget does.
     const multiline = String(profile.template || '').includes('\n')
     const before = [
@@ -289,8 +289,8 @@ export const buildProfileStylesheet = (
   return blocks.join('\n\n')
 }
 
-const STYLE_MARKER = 'data-umo-profiles'
-const DOCUMENT_CLASS = 'umo-document'
+const STYLE_MARKER = 'data-pdoc-profiles'
+const DOCUMENT_CLASS = 'pdoc-document'
 
 /**
  * Wrap a document's blocks for storage: the generated stylesheet, then the blocks inside the element

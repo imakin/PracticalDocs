@@ -56,7 +56,7 @@ const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: t
 await call('Runtime.enable', {}, sessionId)
 
 // The dialog edits profiles, so restoring them is not optional.
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -140,7 +140,7 @@ await evaluate(`(async () => {
 })()`)
 
 const openDialog = `(async () => {
-  const arrow = document.querySelector('.umo-toolbar-headding .arrow')
+  const arrow = document.querySelector('.pdoc-toolbar-headding .arrow')
   if (!arrow) return 'NO_GALLERY_ARROW'
   arrow.click()
   await new Promise((r) => setTimeout(r, 800))
@@ -148,12 +148,12 @@ const openDialog = `(async () => {
   if (!bar) return 'NO_MANAGE_BUTTON'
   bar.click()
   await new Promise((r) => setTimeout(r, 1200))
-  const manager = document.querySelector('.umo-profiles-manager')
+  const manager = document.querySelector('.pdoc-profiles-manager')
   if (!manager) return 'DIALOG_DID_NOT_OPEN'
   const rows = [...manager.querySelectorAll('.profile-card')]
   return {
     rows: rows.length,
-    switches: manager.querySelectorAll('.t-switch, .umo-switch').length,
+    switches: manager.querySelectorAll('.t-switch, .pdoc-switch').length,
     names: rows.map((r) => r.querySelector('.profile-name')?.textContent?.trim() ?? ''),
     details: rows.map((r) => (r.querySelector('.profile-details')?.textContent || '').replace(/\\s+/g, ' ').trim()),
     editButtons: rows.filter((r) => r.querySelector('.profile-actions button')).length,
@@ -185,7 +185,7 @@ check('a profile with numbering on does not',
 
 console.log('\nThe switch is in the edit dialog, where the profile is')
 const edit = await evaluate(`(async () => {
-  const manager = document.querySelector('.umo-profiles-manager')
+  const manager = document.querySelector('.pdoc-profiles-manager')
   const rows = [...manager.querySelectorAll('.profile-card')]
   const row = rows.find((r) => r.querySelector('.profile-name')?.textContent?.trim() === 'Title 2 (H2)')
   if (!row) return 'NO_H2_ROW'
@@ -196,7 +196,7 @@ const edit = await evaluate(`(async () => {
   const dialogs = [...document.querySelectorAll('.t-dialog')].filter((d) => d.offsetParent !== null)
   const form = dialogs.map((d) => d.querySelector('form, .t-form')).find(Boolean)
   if (!form) return 'NO_EDIT_FORM'
-  const switches = [...form.querySelectorAll('.t-switch, .umo-switch')]
+  const switches = [...form.querySelectorAll('.t-switch, .pdoc-switch')]
   // Tied to the data rather than to a label string: the profile was set to numbering off before the
   // dialog was opened, so the switch has to be showing off. A switch that reflects nothing would
   // pass a label check and fail a reader.

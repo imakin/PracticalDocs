@@ -1,7 +1,7 @@
 /**
  * A manual page break must start a new sheet on screen, not only in the export.
  *
- * `.umo-page-break` carries `break-before: page`, which print honours. The pagination engine used to
+ * `.pdoc-page-break` carries `break-before: page`, which print honours. The pagination engine used to
  * ignore it entirely, so the screen kept flowing where the export started a new page and every sheet
  * after the break inherited the difference - the drift ADR 0002 was written to prevent.
  *
@@ -61,7 +61,7 @@ const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: t
 await call('Runtime.enable', {}, sessionId)
 await call('Page.enable', {}, sessionId)
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -130,15 +130,15 @@ const build = (withBreak) => `(async () => {
   ]
   window.__ed.commands.setContent({ type: 'doc', content })
   await new Promise((r) => setTimeout(r, 2500))
-  const root = document.querySelector('.umo-page-content')
+  const root = document.querySelector('.pdoc-page-content')
   const origin = root.getBoundingClientRect().top
   const ruler = document.createElement('div')
   ruler.style.cssText = 'position:absolute;visibility:hidden;width:1px;top:0;left:0'
   root.appendChild(ruler)
   const measure = (name, fallback) => { ruler.style.height = 'var(' + name + ', ' + fallback + ')'; return ruler.getBoundingClientRect().height }
-  const pageHeight = measure('--umo-page-height', '29.7cm')
-  const marginTop = measure('--umo-page-margin-top', '0cm')
-  const gap = measure('--umo-page-sheet-gap', '16px')
+  const pageHeight = measure('--pdoc-page-height', '29.7cm')
+  const marginTop = measure('--pdoc-page-margin-top', '0cm')
+  const gap = measure('--pdoc-page-sheet-gap', '16px')
   ruler.remove()
   const stride = pageHeight + gap
   const sheetOf = (text) => {
@@ -151,7 +151,7 @@ const build = (withBreak) => `(async () => {
     return null
   }
   return { a: sheetOf(${JSON.stringify(MARKER_A)}), b: sheetOf(${JSON.stringify(MARKER_B)}),
-           spacers: document.querySelectorAll('.umo-page-spacer').length }
+           spacers: document.querySelectorAll('.pdoc-page-spacer').length }
 })()`
 
 console.log('\nCase A: without a break, two short paragraphs share one sheet')
@@ -180,7 +180,7 @@ console.log('\nCase C: a break already at a column top does not insert a blank s
 const twice = await evaluate(`(async () => {
   window.__ed.commands.syncDocumentReferences?.()
   await new Promise((r) => setTimeout(r, 800))
-  return document.querySelectorAll('.umo-page-spacer').length
+  return document.querySelectorAll('.pdoc-page-spacer').length
 })()`)
 check('re-solving does not add spacers', twice === 1, `${twice} spacer(s) after a second solve`)
 
@@ -199,18 +199,18 @@ const restart = await evaluate(`(async () => {
   ] })
   window.__p.page.value.pageNumber = { enabled: true, position: 'bottom-center', format: 'numeric', template: '{number}', startAt: 1 }
   await new Promise((r) => setTimeout(r, 4000))
-  const root = document.querySelector('.umo-page-content')
+  const root = document.querySelector('.pdoc-page-content')
   const ruler = document.createElement('div')
   ruler.style.cssText = 'position:absolute;visibility:hidden;width:1px'
   root.appendChild(ruler)
   const m = (k, f) => { ruler.style.height = 'var(' + k + ', ' + f + ')'; return ruler.getBoundingClientRect().height }
-  const stride = m('--umo-page-height', '29.7cm') + m('--umo-page-sheet-gap', '16px')
+  const stride = m('--pdoc-page-height', '29.7cm') + m('--pdoc-page-sheet-gap', '16px')
   ruler.remove()
   const origin = root.getBoundingClientRect().top
-  const brk = document.querySelector('.umo-page-break')
+  const brk = document.querySelector('.pdoc-page-break')
   return {
     breakSheet: brk ? Math.floor((brk.getBoundingClientRect().top - origin) / stride) : null,
-    numbers: [...root.querySelectorAll(':scope > .umo-page-number')]
+    numbers: [...root.querySelectorAll(':scope > .pdoc-page-number')]
       .sort((a, b) => Number(a.dataset.sheet) - Number(b.dataset.sheet))
       .map((e) => e.textContent),
   }

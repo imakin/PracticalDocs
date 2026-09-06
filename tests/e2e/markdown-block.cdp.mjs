@@ -72,7 +72,7 @@ await call('Emulation.setDeviceMetricsOverride', {
   width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false,
 }, sessionId).catch(() => {})
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -175,9 +175,9 @@ const caseA = await evaluate(`(async () => {
     childTypes: (block.content || []).map((n) => n.type),
     headingText: (block.content || []).find((n) => n.type === 'heading')?.content?.[0]?.text ?? null,
     // Real nodes, not markup drawn by a view: the heading has to exist in the document tree.
-    headingInDom: !!document.querySelector('.umo-node-markdown-block .umo-markdown-rendered h1'),
+    headingInDom: !!document.querySelector('.pdoc-node-markdown-block .pdoc-markdown-rendered h1'),
     renderedEditable: document
-      .querySelector('.umo-node-markdown-block .umo-markdown-rendered')
+      .querySelector('.pdoc-node-markdown-block .pdoc-markdown-rendered')
       ?.getAttribute('contenteditable'),
   }
 })()`)
@@ -206,7 +206,7 @@ const caseB = await evaluate(`(async () => {
   await new Promise((r) => setTimeout(r, 1500))
   const types = []
   window.__ed.state.doc.descendants((node) => { types.push(node.type.name); return true })
-  const inline = document.querySelector('.umo-node-markdown-block [data-type="inline-math"]')
+  const inline = document.querySelector('.pdoc-node-markdown-block [data-type="inline-math"]')
   return {
     types: [...new Set(types)],
     latex: window.__ed.getJSON().content.find((n) => n.type === 'markdownBlock')
@@ -214,7 +214,7 @@ const caseB = await evaluate(`(async () => {
       .filter((n) => n.type === 'inlineMath')
       .map((n) => n.attrs.latex) ?? [],
     // KaTeX leaves its own markup behind; if the formula were still plain text there would be none.
-    katexRendered: !!document.querySelector('.umo-node-markdown-block .katex'),
+    katexRendered: !!document.querySelector('.pdoc-node-markdown-block .katex'),
     inlineWidth: inline ? Math.round(inline.getBoundingClientRect().width) : 0,
   }
 })()`)
@@ -281,28 +281,28 @@ const caseD = await evaluate(`(async () => {
   )
   await new Promise((r) => setTimeout(r, 4000))
 
-  const root = document.querySelector('.umo-page-content')
+  const root = document.querySelector('.pdoc-page-content')
   const origin = root.getBoundingClientRect().top
   const ruler = document.createElement('div')
   ruler.style.cssText = 'position:absolute;visibility:hidden;width:1px;top:0;left:0'
   root.appendChild(ruler)
   const measure = (name, fallback) => { ruler.style.height = 'var(' + name + ', ' + fallback + ')'; return ruler.getBoundingClientRect().height }
-  const pageHeight = measure('--umo-page-height', '29.7cm')
-  const marginTop = measure('--umo-page-margin-top', '0cm')
-  const marginBottom = measure('--umo-page-margin-bottom', '0cm')
-  const gap = measure('--umo-page-sheet-gap', '16px')
+  const pageHeight = measure('--pdoc-page-height', '29.7cm')
+  const marginTop = measure('--pdoc-page-margin-top', '0cm')
+  const marginBottom = measure('--pdoc-page-margin-bottom', '0cm')
+  const gap = measure('--pdoc-page-sheet-gap', '16px')
   ruler.remove()
   const stride = pageHeight + gap
 
-  const blockEl = document.querySelector('.umo-node-markdown-block')
-  const spacers = [...document.querySelectorAll('.umo-page-spacer')]
+  const blockEl = document.querySelector('.pdoc-node-markdown-block')
+  const spacers = [...document.querySelectorAll('.pdoc-page-spacer')]
   const spacersInsideBlock = spacers.filter((s) => blockEl && blockEl.contains(s)).length
 
   // Text-node rects, not element boxes. A break spacer is a widget that can be anchored inside the
   // block that follows it (real bug 3), so a paragraph's box can span the page boundary while every
   // line of its text sits properly inside a column. Measuring boxes reports those as offenders. The
   // engine walks text nodes for exactly this reason, and so does the contents.
-  const rendered = blockEl.querySelector('.umo-markdown-rendered')
+  const rendered = blockEl.querySelector('.pdoc-markdown-rendered')
   const lines = []
   const walker = document.createTreeWalker(rendered, NodeFilter.SHOW_TEXT, null)
   let textNode
@@ -392,7 +392,7 @@ console.log('\nCase E: a hand-edited file has its rendering rebuilt from the sou
 const caseE = await evaluate(`(async () => {
   // What a person would leave behind after editing the markdown in the folder and not the HTML.
   const handEdited =
-    '<div data-markdown-block class="umo-markdown-block">' +
+    '<div data-markdown-block class="pdoc-markdown-block">' +
     '<pre data-markdown-source hidden># Judul Baru</pre>' +
     '<div data-markdown-rendered><h1>Judul Lama</h1></div>' +
     '</div>'
@@ -434,22 +434,22 @@ const caseF = await evaluate(`(async () => {
   ] })
   window.__ed.commands.insertMarkdownBlock('# Sebelum')
   await new Promise((r) => setTimeout(r, 1200))
-  const block = document.querySelector('.umo-node-markdown-block')
+  const block = document.querySelector('.pdoc-node-markdown-block')
   const atRest = {
     // The product's first principle: nothing in the page that the writer did not write.
-    panels: document.querySelectorAll('.umo-markdown-panel, .umo-markdown-panel-button').length,
-    sourceVisible: (() => { const t = block.querySelector('.umo-markdown-source'); return !!t && t.offsetParent !== null })(),
-    renderedVisible: !!block.querySelector('.umo-markdown-rendered h1')?.offsetParent,
+    panels: document.querySelectorAll('.pdoc-markdown-panel, .pdoc-markdown-panel-button').length,
+    sourceVisible: (() => { const t = block.querySelector('.pdoc-markdown-source'); return !!t && t.offsetParent !== null })(),
+    renderedVisible: !!block.querySelector('.pdoc-markdown-rendered h1')?.offsetParent,
   }
   let pos = null
   window.__ed.state.doc.descendants((node, at) => { if (node.type.name === 'markdownBlock' && pos === null) pos = at; return false })
   window.__ed.commands.setNodeSelection(pos)
   await new Promise((r) => setTimeout(r, 500))
-  const textarea = block.querySelector('.umo-markdown-source')
+  const textarea = block.querySelector('.pdoc-markdown-source')
   const whenSelected = {
     sourceVisible: !!textarea && textarea.offsetParent !== null,
     sourceText: textarea?.value ?? null,
-    renderedHidden: block.querySelector('.umo-markdown-rendered')?.offsetParent === null,
+    renderedHidden: block.querySelector('.pdoc-markdown-rendered')?.offsetParent === null,
     focused: document.activeElement === textarea,
   }
   // Type as a person would, then leave the block the way leaving it happens: focus goes elsewhere.
@@ -459,14 +459,14 @@ const caseF = await evaluate(`(async () => {
   await new Promise((r) => setTimeout(r, 200))
   textarea.blur()
   await new Promise((r) => setTimeout(r, 900))
-  const block2 = document.querySelector('.umo-node-markdown-block')
+  const block2 = document.querySelector('.pdoc-node-markdown-block')
   const after = window.__ed.getJSON().content.find((n) => n.type === 'markdownBlock')
   return {
     atRest,
     whenSelected,
     afterLeaving: {
-      sourceVisible: (() => { const t = block2.querySelector('.umo-markdown-source'); return !!t && t.offsetParent !== null })(),
-      renderedVisible: !!block2.querySelector('.umo-markdown-rendered h1')?.offsetParent,
+      sourceVisible: (() => { const t = block2.querySelector('.pdoc-markdown-source'); return !!t && t.offsetParent !== null })(),
+      renderedVisible: !!block2.querySelector('.pdoc-markdown-rendered h1')?.offsetParent,
     },
     headingAfter: after?.content?.find((n) => n.type === 'heading')?.content?.[0]?.text ?? null,
     sourceAfter: after?.attrs?.source ?? null,
@@ -502,7 +502,7 @@ await evaluate(`(async () => {
 })()`)
 
 const target = await evaluate(`(() => {
-  const rendered = document.querySelector('.umo-node-markdown-block .umo-markdown-rendered')
+  const rendered = document.querySelector('.pdoc-node-markdown-block .pdoc-markdown-rendered')
   if (!rendered) return null
   const r = rendered.getBoundingClientRect()
   return { x: Math.round(r.left + 40), y: Math.round(r.top + r.height / 2), width: Math.round(r.width) }
@@ -512,8 +512,8 @@ check('the rendered block is on screen to be clicked', !!target, JSON.stringify(
 await clickAt(target.x, target.y)
 await sleep(700)
 const sourceOpened = await evaluate(`(() => {
-  const block = document.querySelector('.umo-node-markdown-block')
-  const textarea = block?.querySelector('.umo-markdown-source')
+  const block = document.querySelector('.pdoc-node-markdown-block')
+  const textarea = block?.querySelector('.pdoc-markdown-source')
   return {
     visible: !!textarea && textarea.offsetParent !== null,
     width: textarea ? Math.round(textarea.getBoundingClientRect().width) : 0,
@@ -536,7 +536,7 @@ check('the source is as wide as the block was before it was clicked, not one nar
 // after long enough for a second cycle to have happened.
 await sleep(1500)
 const stillOpen = await evaluate(`(() => {
-  const textarea = document.querySelector('.umo-node-markdown-block .umo-markdown-source')
+  const textarea = document.querySelector('.pdoc-node-markdown-block .pdoc-markdown-source')
   return {
     visible: !!textarea && textarea.offsetParent !== null,
     focused: document.activeElement === textarea,
@@ -559,7 +559,7 @@ await evaluate(`(async () => {
 })()`)
 
 const blockSpot = await evaluate(`(() => {
-  const rendered = document.querySelector('.umo-node-markdown-block .umo-markdown-rendered')
+  const rendered = document.querySelector('.pdoc-node-markdown-block .pdoc-markdown-rendered')
   if (!rendered) return null
   const r = rendered.getBoundingClientRect()
   return { x: Math.round(r.left + r.width - 30), y: Math.round(r.top + r.height / 2) }
@@ -569,7 +569,7 @@ const blockSpot = await evaluate(`(() => {
 await mouse('mouseMoved', blockSpot.x, blockSpot.y)
 await sleep(700)
 const modeButton = await evaluate(`(() => {
-  const button = document.querySelector('.umo-block-menu-hander .umo-block-menu-mode')
+  const button = document.querySelector('.pdoc-block-menu-hander .pdoc-block-menu-mode')
   if (!button) return null
   const r = button.getBoundingClientRect()
   if (r.width === 0) return null
@@ -583,7 +583,7 @@ if (modeButton) {
   await sleep(600)
 }
 const byButton = await evaluate(`(() => {
-  const textarea = document.querySelector('.umo-node-markdown-block .umo-markdown-source')
+  const textarea = document.querySelector('.pdoc-node-markdown-block .pdoc-markdown-source')
   return {
     visible: !!textarea && textarea.offsetParent !== null,
     focused: document.activeElement === textarea,
@@ -597,7 +597,7 @@ check('and puts the cursor in the source', byButton.focused === true)
 // is working in it, not because a timer says so.
 await sleep(6000)
 const afterTimeout = await evaluate(`(() => {
-  const textarea = document.querySelector('.umo-node-markdown-block .umo-markdown-source')
+  const textarea = document.querySelector('.pdoc-node-markdown-block .pdoc-markdown-source')
   return {
     visible: !!textarea && textarea.offsetParent !== null,
     focused: document.activeElement === textarea,
@@ -608,14 +608,14 @@ check('it is still open after the hold would have lapsed, because the cursor is 
   `visible ${afterTimeout.visible}, focused ${afterTimeout.focused}`)
 
 // And leaving still closes it, whichever way it was opened.
-await evaluate(`(() => { document.querySelector('.umo-node-markdown-block .umo-markdown-source')?.blur(); return true })()`)
+await evaluate(`(() => { document.querySelector('.pdoc-node-markdown-block .pdoc-markdown-source')?.blur(); return true })()`)
 await sleep(900)
 const afterLeaving = await evaluate(`(() => {
-  const block = document.querySelector('.umo-node-markdown-block')
-  const textarea = block?.querySelector('.umo-markdown-source')
+  const block = document.querySelector('.pdoc-node-markdown-block')
+  const textarea = block?.querySelector('.pdoc-markdown-source')
   return {
     sourceVisible: !!textarea && textarea.offsetParent !== null,
-    renderedVisible: !!block?.querySelector('.umo-markdown-rendered')?.offsetParent,
+    renderedVisible: !!block?.querySelector('.pdoc-markdown-rendered')?.offsetParent,
   }
 })()`)
 check('leaving still returns it to the render, however it was opened',
@@ -647,7 +647,7 @@ check('the paragraph is on screen to be pointed at', !!spot, JSON.stringify(spot
 await mouse('mouseMoved', spot.x, spot.y)
 await sleep(600)
 const handle = await evaluate(`(() => {
-  const buttons = [...document.querySelectorAll('.umo-block-menu-hander .umo-block-menu-button')]
+  const buttons = [...document.querySelectorAll('.pdoc-block-menu-hander .pdoc-block-menu-button')]
   const visible = buttons.filter((b) => b.getBoundingClientRect().width > 0)
   return visible.map((b) => { const r = b.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) } })
 })()`)
@@ -657,9 +657,9 @@ let opened = null
 for (const point of handle) {
   await clickAt(point.x, point.y)
   opened = await evaluate(`(() => {
-    const items = [...document.querySelectorAll('.umo-block-menu-dropdown .umo-button-text, .umo-block-menu-dropdown .umo-menu-button')]
+    const items = [...document.querySelectorAll('.pdoc-block-menu-dropdown .pdoc-button-text, .pdoc-block-menu-dropdown .pdoc-menu-button')]
       .map((el) => el.textContent.trim()).filter(Boolean)
-    const target = [...document.querySelectorAll('.umo-block-menu-dropdown *')]
+    const target = [...document.querySelectorAll('.pdoc-block-menu-dropdown *')]
       .find((el) => el.children.length === 0 && el.textContent.trim() === 'Change to Markdown')
     if (!target) return { items, found: false }
     const r = target.getBoundingClientRect()
@@ -745,7 +745,7 @@ const caseH = await evaluate(`(async () => {
 
   const px = (el, prop) => (el ? Math.round(Number.parseFloat(getComputedStyle(el)[prop])) : 0)
   const measure = () => {
-    const md = document.querySelector('.umo-markdown-rendered')
+    const md = document.querySelector('.pdoc-markdown-rendered')
     const outer = document.querySelector('.ProseMirror > h1')
     return {
       h1: px(md?.querySelector('h1'), 'fontSize'),
@@ -827,7 +827,7 @@ await evaluate(`(async () => {
 })()`)
 
 const openButton = await evaluate(`(() => {
-  const button = [...document.querySelectorAll('.umo-toolbar button, .umo-toolbar .umo-button')]
+  const button = [...document.querySelectorAll('.pdoc-toolbar button, .pdoc-toolbar .pdoc-button')]
     .find((el) => el.textContent.trim() === 'Markdown Styles')
   if (!button) return null
   const r = button.getBoundingClientRect()
@@ -841,11 +841,11 @@ if (openButton) {
   await sleep(800)
 }
 const dialog = await evaluate(`(() => {
-  const sections = [...document.querySelectorAll('.umo-markdown-styles-section')].map((el) => el.textContent.trim())
+  const sections = [...document.querySelectorAll('.pdoc-markdown-styles-section')].map((el) => el.textContent.trim())
   // By placeholder, not by framework class. TDesign is configured here with its own class prefix, so
   // a test hardcoding the library's internal class names breaks on a theme change rather than on a
   // real fault. (No backticks in this comment: it sits inside a template literal.)
-  const labels = [...document.querySelectorAll('.umo-markdown-styles-form input')].map((el) => el.placeholder)
+  const labels = [...document.querySelectorAll('.pdoc-markdown-styles-form input')].map((el) => el.placeholder)
   return { open: sections.length > 0, sections, labels }
 })()`)
 check('the dialog lists a section for each kind of thing', dialog.sections.length >= 12,
@@ -855,7 +855,7 @@ check('and a field for each setting', dialog.labels.length >= 8,
 
 // Click into the Font Size field and type, the way a person would.
 const fontSizeBox = await evaluate(`(() => {
-  const input = [...document.querySelectorAll('.umo-markdown-styles-form input')]
+  const input = [...document.querySelectorAll('.pdoc-markdown-styles-form input')]
     .find((el) => el.placeholder === 'e.g. 12pt')
   if (!input) return null
   const r = input.getBoundingClientRect()
@@ -870,7 +870,7 @@ if (fontSizeBox) {
   await sleep(400)
 }
 const typed = await evaluate(`(() => {
-  const input = [...document.querySelectorAll('.umo-markdown-styles-form input')]
+  const input = [...document.querySelectorAll('.pdoc-markdown-styles-form input')]
     .find((el) => el.placeholder === 'e.g. 12pt')
   return { value: input?.value ?? null, focused: document.activeElement === input }
 })()`)
@@ -884,7 +884,7 @@ await evaluate(`(() => { document.activeElement?.blur?.(); return true })()`)
 await sleep(900)
 const applied = await evaluate(`(() => {
   const stored = window.__ed.extensionStorage.documentReferences.markdownStyles
-  const para = document.querySelector('.umo-markdown-rendered p')
+  const para = document.querySelector('.pdoc-markdown-rendered p')
   const outside = document.querySelector('.ProseMirror > p, .ProseMirror > h1')
   return {
     storedFontSize: stored?.paragraph?.fontSize ?? null,

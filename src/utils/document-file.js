@@ -4,7 +4,15 @@ import {
   PAGE_NUMBER_POSITIONS,
 } from './page-numbering.js'
 
-export const DOCUMENT_FILE_FORMAT = 'umodoc'
+export const DOCUMENT_FILE_FORMAT = 'practicaldocs'
+/**
+ * What this format used to be called.
+ *
+ * Files written before the rename carry it, and refusing them would be refusing the writer's own
+ * work over a label. Read both, write the current one - the same rule `validatePage` follows for a
+ * field that did not exist yet.
+ */
+export const DOCUMENT_FILE_FORMAT_LEGACY = 'umodoc'
 export const DOCUMENT_FILE_VERSION = 1
 
 export class DocumentFileError extends Error {
@@ -204,8 +212,11 @@ const validatePage = (value) => {
 
 export const validateDocumentSnapshot = (value) => {
   const snapshot = requireRecord(value, 'root')
-  if (snapshot.format !== DOCUMENT_FILE_FORMAT) {
-    fail('unknownFormat', 'This is not a UmoPractical document.')
+  if (
+    snapshot.format !== DOCUMENT_FILE_FORMAT &&
+    snapshot.format !== DOCUMENT_FILE_FORMAT_LEGACY
+  ) {
+    fail('unknownFormat', 'This is not a PracticalDocs document.')
   }
   if (
     !Number.isInteger(snapshot.formatVersion) ||
@@ -317,12 +328,13 @@ export const getDocumentFileName = (title, fallback = 'Untitled Document') => {
     .replace(/[. ]+$/g, '')
     .slice(0, 120)
 
-  name = name.replace(/\.umodoc\.json$/i, '')
+  // Both suffixes, so a file named by an older version is not given a second one.
+  name = name.replace(/\.(practicaldocs|umodoc)\.json$/i, '')
   if (!name) {
     name = fallback
   }
   if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(name)) {
     name = `_${name}`
   }
-  return `${name}.umodoc.json`
+  return `${name}.practicaldocs.json`
 }

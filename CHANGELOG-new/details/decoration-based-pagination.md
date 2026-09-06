@@ -12,7 +12,7 @@ owns a `DecorationSet`; a driver attached through the plugin's `view()` recomput
 One solve pass:
 
 1. Read the sheet geometry from the CSS custom properties already set by `page.vue`
-   (`--umo-page-height`, `--umo-page-margin-top`, `--umo-page-margin-bottom`, `--umo-page-sheet-gap`),
+   (`--pdoc-page-height`, `--pdoc-page-margin-top`, `--pdoc-page-margin-bottom`, `--pdoc-page-sheet-gap`),
    measured through a hidden ruler element so `cm` values arrive as real pixels.
 2. Clear the existing decorations. Dispatching is synchronous, so what is measured next is the
    unpaginated layout.
@@ -44,7 +44,7 @@ explicit `refreshPagination()` command, which `page.vue` issues when page size, 
 zoom change. It never watches the DOM it writes to. The previous engine did, and the two fed each other
 at animation-frame rate forever.
 
-**The canvas is padded to a whole number of sheets** through `--umo-page-total-height`, measured from
+**The canvas is padded to a whole number of sheets** through `--pdoc-page-total-height`, measured from
 the last laid-out box rather than from the element height, which would feed back into the property
 being set. Without it the last sheet is drawn as a fragment ending wherever the text stops.
 
@@ -129,7 +129,7 @@ needs `poppler-utils` for `pdfinfo` and `pdftotext`.
 
 ## Manual page breaks (2026-08-30)
 
-`.umo-page-break` carries `break-before: page`. Print honoured it and the engine never read it, so a
+`.pdoc-page-break` carries `break-before: page`. Print honoured it and the engine never read it, so a
 document with a manual break showed one layout on screen and a different one in the export, and every
 sheet after the break inherited the difference. Caught by the parity test the moment the reference
 thesis gained a second chapter with a break before it: pages 1 to 5 matched, 6 to 9 did not.
@@ -223,7 +223,7 @@ opening band (the next page's top margin).
 
 Five things had to be got right, each found by measuring rather than reasoning:
 
-1. **The canvas already had real margin blocks.** `.umo-page-node-header` and `.umo-page-node-footer`
+1. **The canvas already had real margin blocks.** `.pdoc-page-node-header` and `.pdoc-page-node-footer`
    are each one margin tall. The export was applying the top margin twice, as that element and as
    `@page` padding.
 2. **A minimum height defeated the whole mechanism.** Clamping a band to the bottom margin pushed it

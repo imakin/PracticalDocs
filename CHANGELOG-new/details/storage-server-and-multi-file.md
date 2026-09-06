@@ -2,7 +2,7 @@
 
 ## Goal
 
-Provide a secure, local Node.js storage server (`practical-umodoc-server`) with AES-256-GCM encryption and multi-file disk persistence (`.enc` encrypted document payload and `.json` metadata snapshot), seamless UI save target selection, title reactivity, and lossless document restoration.
+Provide a secure, local Node.js storage server (`practicaldocs-server`) with AES-256-GCM encryption and multi-file disk persistence (`.enc` encrypted document payload and `.json` metadata snapshot), seamless UI save target selection, title reactivity, and lossless document restoration.
 
 ## Key Features
 

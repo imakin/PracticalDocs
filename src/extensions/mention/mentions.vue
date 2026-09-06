@@ -1,25 +1,25 @@
 <template>
-  <div ref="popupRef" class="umo-popup umo-mention-popup">
-    <div class="umo-popup__content umo-dropdown">
-      <div class="umo-dropdown__menu" style="padding: 5px; max-height: 320px">
-        <div v-if="isLoading" class="umo-mention-popup-empty">
-          <icon name="loading" class="umo-mention-popup-loading-icon" />
+  <div ref="popupRef" class="pdoc-popup pdoc-mention-popup">
+    <div class="pdoc-popup__content pdoc-dropdown">
+      <div class="pdoc-dropdown__menu" style="padding: 5px; max-height: 320px">
+        <div v-if="isLoading" class="pdoc-mention-popup-empty">
+          <icon name="loading" class="pdoc-mention-popup-loading-icon" />
           <span>{{ t('mention.loading') }}</span>
         </div>
-        <div v-else-if="items.length === 0" class="umo-mention-popup-empty">
+        <div v-else-if="items.length === 0" class="pdoc-mention-popup-empty">
           <span>{{ t('mention.noResult') }}</span>
         </div>
         <div v-else>
           <li
             v-for="(item, index) in items"
             :key="`${item.id || item.label || 'mention'}-${index}`"
-            class="umo-dropdown__item umo-dropdown__item--theme-default umo-dropdown__item umo-mention-popup-item"
-            :class="{ 'umo-dropdown__item--active': index === selectedIndex }"
+            class="pdoc-dropdown__item pdoc-dropdown__item--theme-default pdoc-dropdown__item pdoc-mention-popup-item"
+            :class="{ 'pdoc-dropdown__item--active': index === selectedIndex }"
             @click="selectItem(index)"
           >
-            <div class="umo-mention-popup-item-content">
+            <div class="pdoc-mention-popup-item-content">
               <t-avatar
-                class="umo-mention-popup-item-avatar"
+                class="pdoc-mention-popup-item-avatar"
                 shape="circle"
                 size="20px"
                 :style="{ borderColor: item.color || 'transparent' }"
@@ -27,9 +27,9 @@
               >
                 {{ item.label?.slice(0, 1) }}
               </t-avatar>
-              <span class="umo-mention-popup-item-name">{{ item.label }}</span>
+              <span class="pdoc-mention-popup-item-name">{{ item.label }}</span>
             </div>
-            <span v-if="item.bio" class="umo-mention-popup-item-bio">
+            <span v-if="item.bio" class="pdoc-mention-popup-item-bio">
               ({{ item.bio }})
             </span>
           </li>
@@ -118,9 +118,9 @@ defineExpose({
 </script>
 
 <style lang="less">
-.umo-node-mention {
+.pdoc-node-mention {
   box-decoration-break: clone;
-  color: var(--umo-primary-color);
+  color: var(--pdoc-primary-color);
   padding: 0.1em 0.3em;
   margin: 0;
   border-radius: 0.2em;
@@ -128,22 +128,22 @@ defineExpose({
   cursor: default;
   display: inline-block;
 }
-.umo-mention-popup {
+.pdoc-mention-popup {
   width: max-content;
   max-width: 720px;
 
-  .umo-popup__content {
+  .pdoc-popup__content {
     width: 100%;
     max-width: inherit;
   }
 
-  .umo-dropdown {
+  .pdoc-dropdown {
     &__menu {
       width: 100%;
       max-width: inherit;
       box-sizing: border-box;
       padding: 8px !important;
-      border-radius: var(--umo-radius);
+      border-radius: var(--pdoc-radius);
     }
     &__item {
       max-width: unset !important;
@@ -170,7 +170,7 @@ defineExpose({
       border-style: solid;
       border-radius: 50%;
       flex-shrink: 0;
-      color: var(--umo-text-color);
+      color: var(--pdoc-text-color);
       font-size: 14px;
       font-weight: 600;
       line-height: 1;
@@ -189,7 +189,7 @@ defineExpose({
       min-width: 0;
       max-width: 220px;
       font-size: 12px;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -198,7 +198,7 @@ defineExpose({
   &-empty {
     padding: 3px 5px;
     min-width: 100px;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     display: flex;
     align-items: center;
     gap: 6px;

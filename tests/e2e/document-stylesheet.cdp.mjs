@@ -64,7 +64,7 @@ const call = (method, params = {}, sessionId) =>
 const { targetId } = await call('Target.createTarget', { url: EDITOR_URL })
 const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true })
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -179,10 +179,10 @@ await shoot('case-a-saved')
 const saved = savePosts.find(Boolean)
 check('a save POST was issued', Boolean(saved), `${savePosts.length} POST(s)`)
 const storedHtml = String(saved?.html || '')
-check('the stored document opens with the generated stylesheet', /^<style data-umo-profiles>/.test(storedHtml), storedHtml.slice(0, 40))
+check('the stored document opens with the generated stylesheet', /^<style data-pdoc-profiles>/.test(storedHtml), storedHtml.slice(0, 40))
 check('the stylesheet defines the counters', storedHtml.includes('counter-reset'), 'counter-reset present')
-check('the blocks are wrapped in the scope element', storedHtml.includes('<div class="umo-document">'))
-check('blocks carry their profile class', /<h1[^>]*class="[^"]*umo-profile-h1/.test(storedHtml))
+check('the blocks are wrapped in the scope element', storedHtml.includes('<div class="pdoc-document">'))
+check('blocks carry their profile class', /<h1[^>]*class="[^"]*pdoc-profile-h1/.test(storedHtml))
 check('no block carries an inline profile style', !/<(h1|h2|p)[^>]*\sstyle="/.test(storedHtml), 'no style= on blocks')
 check('the derived numbering attributes are gone', !/data-reference-number|data-number-style|data-number-template|data-numbering-profile-id/.test(storedHtml))
 check('the stable reference id survives', /data-reference-id="/.test(storedHtml))
@@ -214,13 +214,13 @@ const reloaded = await evaluate(`(async () => {
   return {
     text: window.__ed.state.doc.textContent,
     nodes: out,
-    numbers: [...document.querySelectorAll('.umo-heading-number')].map((n) => n.innerText),
+    numbers: [...document.querySelectorAll('.pdoc-heading-number')].map((n) => n.innerText),
   }
 })()`)
 await shoot('case-b-reloaded')
 
 check('the document text survives the round trip', reloaded.text.includes('Kalimat isi dokumen.'), JSON.stringify(reloaded.text.slice(0, 60)))
-check('no CSS was imported as document text', !/counter-reset|umo-count-|font-variant-numeric/.test(reloaded.text), JSON.stringify(reloaded.text.slice(0, 60)))
+check('no CSS was imported as document text', !/counter-reset|pdoc-count-|font-variant-numeric/.test(reloaded.text), JSON.stringify(reloaded.text.slice(0, 60)))
 check('the profile is recovered from the class alone', reloaded.nodes.find((n) => n.type === 'heading')?.profile === 'profile-h1', JSON.stringify(reloaded.nodes.map((n) => n.profile)))
 check('the numbering is recomputed after the load', JSON.stringify(reloaded.numbers) === JSON.stringify(['BAB I\n', '1.1']), JSON.stringify(reloaded.numbers))
 
@@ -273,7 +273,7 @@ const migrated = await evaluate(`(async () => {
     html,
     text: window.__ed.state.doc.textContent,
     rendered: cs ? { fontSize: cs.fontSize, fontFamily: cs.fontFamily, textIndent: cs.textIndent, textAlign: cs.textAlign } : null,
-    numbers: [...document.querySelectorAll('.umo-heading-number')].map((n) => n.innerText),
+    numbers: [...document.querySelectorAll('.pdoc-heading-number')].map((n) => n.innerText),
   }
 })()`)
 await shoot('case-c-migrated')
@@ -281,7 +281,7 @@ await shoot('case-c-migrated')
 check('the block inline styles are gone', !/<(h1|p)[^>]*\sstyle="/.test(migrated.html), migrated.html.slice(0, 80))
 check('the font is no longer repeated on an inner span', !/<span[^>]*style="[^"]*font/.test(migrated.html))
 check('the derived numbering attributes are gone', !/data-reference-number|data-reference-label|data-number-style|data-number-template|data-numbering-profile-id/.test(migrated.html))
-check('the profile class replaced them', /class="umo-profile-h1"/.test(migrated.html) && /class="umo-profile-paragraph"/.test(migrated.html))
+check('the profile class replaced them', /class="pdoc-profile-h1"/.test(migrated.html) && /class="pdoc-profile-paragraph"/.test(migrated.html))
 check('the stable reference ids survive', (migrated.html.match(/data-reference-id="/g) || []).length === 2)
 check('the text is untouched', migrated.text.includes('Kalimat lama.'), JSON.stringify(migrated.text))
 check('the paragraph still renders with its profile font and indent',
@@ -306,7 +306,7 @@ const CUSTOM = {
   lineHeight: '1.5', textAlign: 'center', indent: 0,
 }
 const loaded = await evaluate(`(async () => {
-  localStorage.removeItem('umo-editor:profiles')
+  localStorage.removeItem('practicaldocs:profiles')
   const snapshot = {
     format: 'umodoc', formatVersion: 1, editorVersion: '11.0.4',
     savedAt: new Date().toISOString(),
@@ -321,26 +321,26 @@ const loaded = await evaluate(`(async () => {
   }
   await window.__p.openDocumentFile(snapshot, { skipConfirmation: true })
   await new Promise((r) => setTimeout(r, 3000))
-  const sheet = document.querySelector('style[data-umo-profile-styles]')
-  const rules = ((sheet ? sheet.textContent : '').match(/umo-profile-[a-z0-9-]+(?= \{)/g) || [])
+  const sheet = document.querySelector('style[data-pdoc-profile-styles]')
+  const rules = ((sheet ? sheet.textContent : '').match(/pdoc-profile-[a-z0-9-]+(?= \{)/g) || [])
   const used = new Set()
-  document.querySelectorAll('.ProseMirror [class*=umo-profile-]').forEach((n) => {
-    const c = [...n.classList].find((x) => x.startsWith('umo-profile-'))
+  document.querySelectorAll('.ProseMirror [class*=pdoc-profile-]').forEach((n) => {
+    const c = [...n.classList].find((x) => x.startsWith('pdoc-profile-'))
     if (c) used.add(c)
   })
   const heading = document.querySelector('.ProseMirror h1')
   return {
     rules,
     withoutRule: [...used].filter((c) => !rules.includes(c)),
-    headingClass: heading ? [...heading.classList].find((c) => c.startsWith('umo-profile-')) : null,
+    headingClass: heading ? [...heading.classList].find((c) => c.startsWith('pdoc-profile-')) : null,
     headingSize: heading ? getComputedStyle(heading).fontSize : null,
   }
 })()`)
 await shoot('case-d-document-profiles')
 
-check("the document's own profile has a rule", loaded.rules.includes('umo-profile-custom-heading'), JSON.stringify(loaded.rules))
+check("the document's own profile has a rule", loaded.rules.includes('pdoc-profile-custom-heading'), JSON.stringify(loaded.rules))
 check('no block is left without a rule for its class', loaded.withoutRule.length === 0, JSON.stringify(loaded.withoutRule))
-check('the heading carries that profile class', loaded.headingClass === 'umo-profile-custom-heading', String(loaded.headingClass))
+check('the heading carries that profile class', loaded.headingClass === 'pdoc-profile-custom-heading', String(loaded.headingClass))
 // 14pt is 18.667px. The browser's own h1 is 2em, which is where the 35px came from.
 check('the heading renders at the size the profile asks for', loaded.headingSize === '18.6667px', String(loaded.headingSize))
 
@@ -348,11 +348,11 @@ check('the heading renders at the size the profile asks for', loaded.headingSize
 // replaces that list, and nothing told the gallery, so it went on offering the built-in profiles: the
 // document's own profile was missing from the picker until the Profiles dialog was opened and closed.
 const gallery = await evaluate(`(() => {
-  const container = document.querySelector('.umo-toolbar-headding')
+  const container = document.querySelector('.pdoc-toolbar-headding')
   if (!container) return { found: false }
   return {
     found: true,
-    names: [...container.querySelectorAll('.umo-heading-container .card .title')]
+    names: [...container.querySelectorAll('.pdoc-heading-container .card .title')]
       .map((n) => (n.textContent || '').trim()),
   }
 })()`)

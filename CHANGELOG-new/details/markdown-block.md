@@ -77,7 +77,7 @@ while its markdown is being edited and settles again when the cursor leaves.
 
 Reported from the real editor, and worth recording because the cause is not where the symptom is.
 
-`.umo-node-view` is a flex container, so a child with no width shrinks to fit its content - and a
+`.pdoc-node-view` is a flex container, so a child with no width shrinks to fit its content - and a
 `textarea`'s content width is its `cols` attribute, which defaults to 20 characters. The source
 opened as a single narrow column about 160px wide while the rendered half was 553px. That produced a
 loop the writer could not escape: a click landed inside the block and opened the source, then landed
@@ -212,7 +212,7 @@ counters.
 ## What the file holds
 
 ```html
-<div data-markdown-block class="umo-markdown-block">
+<div data-markdown-block class="pdoc-markdown-block">
   <pre data-markdown-source hidden>
 # Metodologi
 The equation is $E = mc^2$

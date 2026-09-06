@@ -8,7 +8,7 @@ export const columnNodes = () => {
       },
       parseDOM: [
         {
-          tag: 'div.umo-node-column',
+          tag: 'div.pdoc-node-column',
           getAttrs(dom) {
             if (!(dom instanceof HTMLElement)) return false
             const width = dom.style.width.replace('px', '') || 200
@@ -24,7 +24,7 @@ export const columnNodes = () => {
         return [
           'div',
           {
-            class: 'umo-node-column',
+            class: 'pdoc-node-column',
             style,
           },
           0,
@@ -36,11 +36,11 @@ export const columnNodes = () => {
       content: 'column+',
       parseDOM: [
         {
-          tag: 'div.umo-node-column-container',
+          tag: 'div.pdoc-node-column-container',
         },
       ],
       toDOM() {
-        return ['div', { class: 'umo-node-column-container' }, 0]
+        return ['div', { class: 'pdoc-node-column-container' }, 0]
       },
     },
   }

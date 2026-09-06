@@ -1,9 +1,9 @@
 <template>
-  <div v-if="!page.preview?.enabled" class="umo-status-bar">
-    <div class="umo-status-bar-left">
+  <div v-if="!page.preview?.enabled" class="pdoc-status-bar">
+    <div class="pdoc-status-bar-left">
       <tooltip :content="page.showToc ? t('toc.hide') : t('toc.show')">
         <t-button
-          class="umo-status-bar-button"
+          class="pdoc-status-bar-button"
           :class="{ active: page.showToc }"
           variant="text"
           size="small"
@@ -21,7 +21,7 @@
         "
       >
         <t-button
-          class="umo-status-bar-button"
+          class="pdoc-status-bar-button"
           :class="{ active: $document.enableSpellcheck }"
           variant="text"
           size="small"
@@ -32,7 +32,7 @@
       </tooltip>
       <tooltip :content="t('shortcut.title')">
         <t-button
-          class="umo-status-bar-button"
+          class="pdoc-status-bar-button"
           variant="text"
           size="small"
           @click="showShortcut = true"
@@ -42,7 +42,7 @@
       </tooltip>
       <tooltip :content="t('resetAll.title')">
         <t-button
-          class="umo-status-bar-button"
+          class="pdoc-status-bar-button"
           variant="text"
           size="small"
           @click="reset(false)"
@@ -50,7 +50,7 @@
           <icon name="clear-cache" />
         </t-button>
       </tooltip>
-      <div class="umo-status-bar-split"></div>
+      <div class="pdoc-status-bar-split"></div>
       <t-dropdown
         :attach="container"
         :popup-props="{
@@ -62,7 +62,7 @@
         trigger="click"
       >
         <t-button
-          class="umo-status-bar-button auto-width"
+          class="pdoc-status-bar-button auto-width"
           variant="text"
           size="small"
         >
@@ -83,14 +83,14 @@
             :active="item.value === page.layout"
             @click="page.layout = item.value"
           >
-            <div class="umo-layout-dropdown-item">
+            <div class="pdoc-layout-dropdown-item">
               <icon :name="`layout-${item.value}`" size="16" />
               {{ item.content }}
             </div>
           </t-dropdown-item>
         </t-dropdown-menu>
       </t-dropdown>
-      <div class="umo-status-bar-split"></div>
+      <div class="pdoc-status-bar-split"></div>
       <t-popup
         v-if="editor"
         v-model="showWordCount"
@@ -98,14 +98,14 @@
         placement="top-left"
       >
         <t-button
-          class="umo-status-bar-button auto-width word-count"
+          class="pdoc-status-bar-button auto-width word-count"
           variant="text"
           size="small"
         >
           <span v-if="selectionCharacters > 0">
             {{ selectionCharacters }}/
           </span>
-          <span class="umo-word-count">{{ totalCharacters }}</span>
+          <span class="pdoc-word-count">{{ totalCharacters }}</span>
           {{ t('wordCount.characters') }}
           <icon
             name="arrow-down"
@@ -113,8 +113,8 @@
           />
         </t-button>
         <template #content>
-          <div v-if="showWordCount" class="umo-word-count-detail">
-            <div class="umo-word-count-title">{{ t('wordCount.title') }}</div>
+          <div v-if="showWordCount" class="pdoc-word-count-detail">
+            <div class="pdoc-word-count-title">{{ t('wordCount.title') }}</div>
             <ul>
               <li>
                 {{ t('wordCount.input') }}
@@ -136,23 +136,23 @@
           </div>
         </template>
       </t-popup>
-      <div class="umo-status-bar-split"></div>
+      <div class="pdoc-status-bar-split"></div>
       <!-- 请遵循开源协议，勿删除或隐藏版权信息！ -->
       <t-button
-        class="umo-status-bar-button auto-width"
+        class="pdoc-status-bar-button auto-width"
         variant="text"
         size="small"
         @click="about = !about"
       >
-        <icon name="copyright" /> Umodoc
+        <icon name="copyright" /> PracticalDocs
       </t-button>
     </div>
-    <div class="umo-status-bar-right">
+    <div class="pdoc-status-bar-right">
       <tooltip
         :content="`${fullscreen?.isFullscreen ? t('fullscreen.disable') : t('fullscreen.title')} (${getShortcut('Ctrl+F11')})`"
       >
         <t-button
-          class="umo-status-bar-button"
+          class="pdoc-status-bar-button"
           variant="text"
           size="small"
           @click="toggleFullscreen"
@@ -166,7 +166,7 @@
         "
       >
         <t-button
-          class="umo-status-bar-button"
+          class="pdoc-status-bar-button"
           :class="{ active: page.preview?.enabled }"
           variant="text"
           size="small"
@@ -175,11 +175,11 @@
           <icon name="preview" />
         </t-button>
       </tooltip>
-      <div class="umo-status-bar-split"></div>
-      <div v-if="page.layout === 'page'" class="umo-zoom-level-bar">
+      <div class="pdoc-status-bar-split"></div>
+      <div v-if="page.layout === 'page'" class="pdoc-zoom-level-bar">
         <tooltip :content="`${t('zoom.zoomOut')} (${getShortcut('Ctrl-')})`">
           <t-button
-            class="umo-status-bar-button"
+            class="pdoc-status-bar-button"
             variant="text"
             size="small"
             :disabled="page.zoomLevel <= 20"
@@ -190,7 +190,7 @@
         </tooltip>
         <t-slider
           v-model="page.zoomLevel"
-          class="umo-zoom-level-slider"
+          class="pdoc-zoom-level-slider"
           :min="20"
           :max="500"
           :step="10"
@@ -205,7 +205,7 @@
         />
         <tooltip :content="`${t('zoom.zoomIn')} (${getShortcut('Ctrl+')})`">
           <t-button
-            class="umo-status-bar-button"
+            class="pdoc-status-bar-button"
             variant="text"
             size="small"
             :disabled="!!(page.zoomLevel && page.zoomLevel >= 500)"
@@ -216,7 +216,7 @@
         </tooltip>
         <tooltip :content="`${t('zoom.autoWidth')} (${getShortcut('Ctrl0')})`">
           <t-button
-            class="umo-status-bar-button umo-auto-width-button"
+            class="pdoc-status-bar-button pdoc-auto-width-button"
             :class="{ active: page.autoWidth }"
             variant="text"
             size="small"
@@ -227,7 +227,7 @@
         </tooltip>
         <tooltip :content="`${t('zoom.reset')} (${getShortcut('Ctrl1')})`">
           <t-button
-            class="umo-status-bar-button auto-width"
+            class="pdoc-status-bar-button auto-width"
             variant="text"
             style="width: 80px"
             size="small"
@@ -245,7 +245,7 @@
         @click="changeLang"
       >
         <t-button
-          class="umo-status-bar-button auto-width umo-lang-button"
+          class="pdoc-status-bar-button auto-width pdoc-lang-button"
           variant="text"
           size="small"
         >
@@ -254,8 +254,8 @@
       </t-dropdown>
     </div>
   </div>
-  <div v-else class="umo-preview-bar">
-    <div v-if="countdownValue !== ''" class="umo-preview-countdown">
+  <div v-else class="pdoc-preview-bar">
+    <div v-if="countdownValue !== ''" class="pdoc-preview-countdown">
       {{ countdownValue }}
     </div>
     <statusbar-countdown
@@ -328,7 +328,7 @@
     show-in-attached-element
   >
     <template #header>
-      <div class="umo-shortcuts-drawer-header">
+      <div class="pdoc-shortcuts-drawer-header">
         <icon name="shortcut" />
         {{ t('shortcut.title') }}
       </div>
@@ -405,7 +405,7 @@ watch(
   { immediate: true },
 )
 
-// About UmoPractical
+// About PracticalDocs
 const about = $ref(false)
 
 // 页面布局
@@ -443,7 +443,7 @@ const togglePreview = () => {
   page.value.preview.enabled = !page.value.preview.enabled
 
   const zoomableContainer = document.querySelector(
-    `${container} .umo-zoomable-container`,
+    `${container} .pdoc-zoomable-container`,
   )
   if (zoomableContainer && page.value.preview.enabled) {
     zoomableContainer.scrollTop = 0
@@ -528,9 +528,9 @@ const autoWidth = (auto = true, padding = 50) => {
   }
   try {
     const editorEl = document.querySelector(
-      `${container} .umo-zoomable-container`,
+      `${container} .pdoc-zoomable-container`,
     )
-    const pageEl = editorEl?.querySelector('.umo-zoomable-content')
+    const pageEl = editorEl?.querySelector('.pdoc-zoomable-content')
     const editorWidth = editorEl?.clientWidth || 0
     const pageWidth = pageEl?.clientWidth || 0
     page.value.zoomLevel = Math.floor(
@@ -598,12 +598,12 @@ watch(
 </script>
 
 <style lang="less" scoped>
-.umo-status-bar {
+.pdoc-status-bar {
   padding: 6px;
   display: flex;
   justify-content: space-between;
-  font-size: var(--umo-font-size-small);
-  border-top: solid 1px var(--umo-border-color);
+  font-size: var(--pdoc-font-size-small);
+  border-top: solid 1px var(--pdoc-border-color);
 
   @media screen and (max-width: 640px) {
     overflow-x: auto;
@@ -611,31 +611,31 @@ watch(
       display: none;
     }
   }
-  .umo-status-bar-split {
+  .pdoc-status-bar-split {
     height: 16px;
     width: 1px;
-    background-color: var(--umo-border-color);
+    background-color: var(--pdoc-border-color);
     margin: 0 10px;
   }
-  .umo-status-bar-button {
+  .pdoc-status-bar-button {
     --td-comp-size-xs: 18px;
     --td-comp-paddingLR-l: 8px;
     --td-radius-default: 2px;
     font-size: 14px;
     margin: 0 4px;
-    color: var(--umo-text-color);
+    color: var(--pdoc-text-color);
     &:not(.auto-width) {
       width: var(--td-comp-size-xs);
     }
     &.auto-width {
       --td-comp-paddingLR-s: 0;
       width: auto;
-      :deep(.umo-button__text) {
+      :deep(.pdoc-button__text) {
         display: flex;
         align-items: center;
         gap: 3px;
         font-size: 12px;
-        .umo-icon {
+        .pdoc-icon {
           font-size: 14px;
         }
       }
@@ -643,22 +643,22 @@ watch(
     &.word-count {
       padding-left: 2px;
       padding-right: 0;
-      :deep(.umo-button__text) {
+      :deep(.pdoc-button__text) {
         display: flex;
         align-items: center;
-        .umo-icon {
+        .pdoc-icon {
           margin-left: 3px;
           transform: rotate(180deg);
         }
       }
     }
-    :deep(.umo-button__text) {
+    :deep(.pdoc-button__text) {
       padding: 0 5px;
     }
     &.active {
-      background-color: var(--umo-button-hover-background);
-      border-color: var(--umo-button-hover-background);
-      color: var(--umo-primary-color);
+      background-color: var(--pdoc-button-hover-background);
+      border-color: var(--pdoc-button-hover-background);
+      color: var(--pdoc-primary-color);
     }
   }
   &-left {
@@ -669,50 +669,50 @@ watch(
   &-right {
     display: flex;
     align-items: center;
-    .umo-zoom-level-bar {
+    .pdoc-zoom-level-bar {
       width: 240px;
       display: flex;
     }
     @media screen and (max-width: 720px) {
-      .umo-zoom-level-bar {
+      .pdoc-zoom-level-bar {
         width: auto;
       }
-      .umo-zoom-level-slider,
-      .umo-lang-button {
+      .pdoc-zoom-level-slider,
+      .pdoc-lang-button {
         display: none !important;
       }
     }
   }
 }
-.umo-layout-dropdown-item {
+.pdoc-layout-dropdown-item {
   display: flex;
   align-items: center;
   gap: 5px;
 }
-.umo-preview-bar {
+.pdoc-preview-bar {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   bottom: 30px;
-  border-radius: var(--umo-radius-medium);
+  border-radius: var(--pdoc-radius-medium);
   padding: 8px;
   overflow: hidden;
   user-select: none;
   display: flex;
-  background: var(--umo-color-white);
+  background: var(--pdoc-color-white);
   box-shadow:
     var(--td-shadow-2), var(--td-shadow-inset-top),
     var(--td-shadow-inset-right), var(--td-shadow-inset-bottom),
     var(--td-shadow-inset-left);
   gap: 5px;
-  .umo-preview-countdown {
+  .pdoc-preview-countdown {
     display: flex;
     align-items: center;
     padding: 0 12px;
-    background-color: var(--umo-button-hover-background);
-    border-radius: var(--umo-radius-medium);
+    background-color: var(--pdoc-button-hover-background);
+    border-radius: var(--pdoc-radius-medium);
     font-size: 14px;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
   }
   .item {
     padding: 6px;
@@ -729,18 +729,18 @@ watch(
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--umo-text-color-light);
-    border-radius: var(--umo-radius-medium);
+    color: var(--pdoc-text-color-light);
+    border-radius: var(--pdoc-radius-medium);
     cursor: pointer;
     &:hover {
-      background-color: var(--umo-button-hover-background);
-      color: var(--umo-text-color);
+      background-color: var(--pdoc-button-hover-background);
+      color: var(--pdoc-text-color);
     }
     &.active {
-      background-color: var(--umo-button-hover-background);
-      color: var(--umo-primary-color);
+      background-color: var(--pdoc-button-hover-background);
+      color: var(--pdoc-primary-color);
     }
-    :deep(.umo-icon) {
+    :deep(.pdoc-icon) {
       font-size: 20px;
     }
   }
@@ -748,27 +748,27 @@ watch(
 </style>
 
 <style lang="less">
-.umo-shortcuts-drawer-header {
+.pdoc-shortcuts-drawer-header {
   display: flex;
   align-items: center;
   font-weight: 400;
-  color: var(--umo-text-color);
-  .umo-icon {
+  color: var(--pdoc-text-color);
+  .pdoc-icon {
     font-size: 20px;
     margin-right: 6px;
   }
 }
-.umo-drawer__close-btn {
+.pdoc-drawer__close-btn {
   margin-right: 3px;
 }
 
-.umo-word-count {
+.pdoc-word-count {
   margin-right: 0.25em;
   &-detail {
     padding: 10px 0 8px;
     width: 160px;
     font-size: 12px;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     ul {
       padding: 0;
       margin: 0;
@@ -780,7 +780,7 @@ watch(
       display: flex;
       justify-content: space-between;
       line-height: 28px;
-      color: var(--umo-text-color);
+      color: var(--pdoc-text-color);
       &:hover {
         background-color: var(--td-bg-color-container-hover);
       }

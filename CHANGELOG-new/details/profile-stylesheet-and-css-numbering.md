@@ -31,7 +31,7 @@ node rendering, saving, and migration follow separately.
 - A template naming a heading level restarts that profile at that heading, so the template still
   declares its own reset scope. `Gambar {h1}.{number}` restarts at every h1; `Tabel {number}` does not.
 - A multiline template such as `BAB {number}\n` becomes a block `::before`; a single-line one stays
-  inline with `margin-right: 0.4em`, mirroring `.umo-heading-number` in `editor.less` so the stored
+  inline with `margin-right: 0.4em`, mirroring `.pdoc-heading-number` in `editor.less` so the stored
   file and the editor place the number identically.
 
 ### Counter scope: measured, not assumed
@@ -61,12 +61,12 @@ and only shows up when rendered.
 The generator gained two options, and the editor became its first consumer.
 
 - `scope` is the selector for the element holding the blocks. It carries the root counters and
-  prefixes every rule, so one generator serves both the stored file (`.umo-document`) and the live
+  prefixes every rule, so one generator serves both the stored file (`.pdoc-document`) and the live
   editor without two sets of rules drifting apart.
 - `numbering` selects whether the `::before` counter rules are emitted at all.
 
 `document-references` now keeps one `<style>` element per editor in `document.head`, scoped by a
-`data-umo-profile-styles` marker on that editor's own ProseMirror element, so two editors on one page
+`data-pdoc-profile-styles` marker on that editor's own ProseMirror element, so two editors on one page
 cannot restyle each other. It is refreshed on create and after every profile mutation, and removed on
 destroy.
 
@@ -84,7 +84,7 @@ Measured before deciding:
 | path | source | number present |
 |---|---|---|
 | editor screen | live DOM plus decoration | yes |
-| Export to PDF | `.umo-page-content` outerHTML, so the decoration travels | yes |
+| Export to PDF | `.pdoc-page-content` outerHTML, so the decoration travels | yes |
 | stored `document.html` | `editor.getHTML()`, which has no decorations | **no** |
 
 Only the stored file was wrong, so only the stored file gets counters. Two further reasons not to move
@@ -111,13 +111,13 @@ A saved `document.html` is now the generated stylesheet followed by the blocks i
 stylesheet is scoped to:
 
 ```html
-<style data-umo-profiles>
-.umo-document { counter-reset: umo-count-profile-h1 umo-count-profile-table; }
-.umo-document .umo-profile-h1 { margin-bottom: 4em; font-size: 14pt; ... }
-.umo-document .umo-profile-h1::before { content: "BAB " counter(umo-count-profile-h1, upper-roman) "\A "; ... }
+<style data-pdoc-profiles>
+.pdoc-document { counter-reset: pdoc-count-profile-h1 pdoc-count-profile-table; }
+.pdoc-document .pdoc-profile-h1 { margin-bottom: 4em; font-size: 14pt; ... }
+.pdoc-document .pdoc-profile-h1::before { content: "BAB " counter(pdoc-count-profile-h1, upper-roman) "\A "; ... }
 </style>
-<div class="umo-document">
-<h1 id="gr4oiwoyvw" data-toc-id="gr4oiwoyvw" data-reference-id="heading-mi3sxax885" class="umo-profile-h1">PENDAHULUAN</h1>
+<div class="pdoc-document">
+<h1 id="gr4oiwoyvw" data-toc-id="gr4oiwoyvw" data-reference-id="heading-mi3sxax885" class="pdoc-profile-h1">PENDAHULUAN</h1>
 ...
 </div>
 ```

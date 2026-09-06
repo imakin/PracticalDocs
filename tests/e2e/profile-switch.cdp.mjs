@@ -79,7 +79,7 @@ await call('Emulation.setDeviceMetricsOverride', {
 // check passed. It activates the tab this test made, never the one the writer is in.
 await call('Page.bringToFront', {}, sessionId).catch(() => {})
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -170,7 +170,7 @@ check('a profile storing its indent as a length actually indents',
   setup.indent >= 24, `${setup.indent}px`)
 check('the paragraph starts under Normal', setup.profile === 'profile-paragraph')
 
-const cards = await evaluate(`(() => [...document.querySelectorAll('.umo-heading-container .card')].map((el) => {
+const cards = await evaluate(`(() => [...document.querySelectorAll('.pdoc-heading-container .card')].map((el) => {
   const r = el.getBoundingClientRect()
   return {
     name: (el.querySelector('.title') || {}).textContent.trim(),
@@ -210,7 +210,7 @@ check('clicking the no-indent profile assigns it', after.profile === 'profile-no
 check('and the paragraph actually loses its indent', after.indent === 0, `${after.indent}px`)
 
 const normalCard = await evaluate(`(() => {
-  const el = [...document.querySelectorAll('.umo-heading-container .card')].find((c) => (c.querySelector('.title') || {}).textContent.trim() === 'Normal (Text)')
+  const el = [...document.querySelectorAll('.pdoc-heading-container .card')].find((c) => (c.querySelector('.title') || {}).textContent.trim() === 'Normal (Text)')
   if (!el) return null
   const r = el.getBoundingClientRect()
   return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), w: Math.round(r.width) }
@@ -264,7 +264,7 @@ await typeText('Blok pertama.')
 await sleep(400)
 
 const cardAt = async () => evaluate(`(() => {
-  const el = [...document.querySelectorAll('.umo-heading-container .card')]
+  const el = [...document.querySelectorAll('.pdoc-heading-container .card')]
     .find((c) => (c.querySelector('.title') || {}).textContent.trim() === 'Normal-noindent')
   if (!el) return null
   const r = el.getBoundingClientRect()
@@ -333,7 +333,7 @@ await evaluate(`(async () => {
 })()`)
 
 const strip = await evaluate(`(() => {
-  const el = document.querySelector('.umo-toolbar-headding .umo-heading-container')
+  const el = document.querySelector('.pdoc-toolbar-headding .pdoc-heading-container')
   if (!el) return null
   const names = [...el.querySelectorAll('.card')].map((c) => (c.querySelector('.title') || {}).textContent.trim())
   // Compared against the list the editor actually holds, not a number written here. The built-ins
@@ -364,7 +364,7 @@ check('it scrolls sideways rather than wrapping',
   `overflow-x ${strip?.overflowX}, flex-wrap ${strip?.wrap}`)
 
 const arrow = await evaluate(`(() => {
-  const el = document.querySelector('.umo-toolbar-headding .arrow')
+  const el = document.querySelector('.pdoc-toolbar-headding .arrow')
   if (!el) return null
   const r = el.getBoundingClientRect()
   return { width: Math.round(r.width), height: Math.round(r.height) }
@@ -376,12 +376,12 @@ check('the dropdown button is wide enough to aim at', arrow?.width >= 28,
 // to be mapped onto a container that only overflows horizontally; **it is not**, and finding that out
 // by measuring is the difference between a strip the writer can reach and one they cannot.
 const wheelTarget = await evaluate(`(() => {
-  const el = document.querySelector('.umo-toolbar-headding .umo-heading-container')
+  const el = document.querySelector('.pdoc-toolbar-headding .pdoc-heading-container')
   const r = el.getBoundingClientRect()
   return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }
 })()`)
 const wheelBy = async (params) => {
-  await evaluate(`(() => { document.querySelector('.umo-toolbar-headding .umo-heading-container').scrollLeft = 0; return true })()`)
+  await evaluate(`(() => { document.querySelector('.pdoc-toolbar-headding .pdoc-heading-container').scrollLeft = 0; return true })()`)
   await mouse('mouseMoved', wheelTarget.x, wheelTarget.y)
   // Let the reset settle before the wheel and the wheel settle before reading. Measured: back to
   // back wheel events with a scroll reset between them are coalesced, and one of them reads as
@@ -389,7 +389,7 @@ const wheelBy = async (params) => {
   await sleep(250)
   await call('Input.dispatchMouseEvent', { type: 'mouseWheel', x: wheelTarget.x, y: wheelTarget.y, deltaX: 0, deltaY: 0, ...params }, sessionId)
   await sleep(700)
-  return evaluate(`Math.round(document.querySelector('.umo-toolbar-headding .umo-heading-container').scrollLeft)`)
+  return evaluate(`Math.round(document.querySelector('.pdoc-toolbar-headding .pdoc-heading-container').scrollLeft)`)
 }
 // **Only one wheel gesture can be asserted here.** Measured twice, both orders: whichever wheel
 // event is dispatched second reads as having done nothing, because Chrome coalesces synthesized
@@ -408,12 +408,12 @@ check('a sideways wheel or trackpad gesture scrolls the strip', sideWheel > 0,
 console.log('  NOTE  shift with the wheel also scrolls it, and a plain vertical wheel does not; both')
 console.log('  NOTE  measured in isolated probes, because consecutive synthesized wheels coalesce')
 
-const bar = await evaluate(`(() => { const el = document.querySelector('.umo-toolbar-headding .umo-heading-container'); return el.offsetHeight - el.clientHeight })()`)
+const bar = await evaluate(`(() => { const el = document.querySelector('.pdoc-toolbar-headding .pdoc-heading-container'); return el.offsetHeight - el.clientHeight })()`)
 check('there is a real scrollbar to drag', bar >= 8, `${bar}px of chrome below the cards`)
 
 // Scrolled by hand, and left there. Nothing in the component may put it back.
 const scrolled = await evaluate(`(async () => {
-  const el = document.querySelector('.umo-toolbar-headding .umo-heading-container')
+  const el = document.querySelector('.pdoc-toolbar-headding .pdoc-heading-container')
   el.scrollLeft = el.scrollWidth
   await new Promise((r) => setTimeout(r, 400))
   const atEnd = Math.round(el.scrollLeft)
@@ -440,14 +440,14 @@ await evaluate(`(async () => {
   return true
 })()`)
 const held = await evaluate(`(() => {
-  const el = document.querySelector('.umo-toolbar-headding .umo-heading-container')
+  const el = document.querySelector('.pdoc-toolbar-headding .pdoc-heading-container')
   return Math.round(el.scrollLeft)
 })()`)
 check('and the strip stays where it was left, after the document changes',
   held === scrolled.atEnd, `${held} against ${scrolled.atEnd}`)
 
 const lastCard = await evaluate(`(() => {
-  const el = [...document.querySelectorAll('.umo-toolbar-headding .umo-heading-container .card')]
+  const el = [...document.querySelectorAll('.pdoc-toolbar-headding .pdoc-heading-container .card')]
     .find((c) => (c.querySelector('.title') || {}).textContent.trim() === 'Paling Akhir')
   if (!el) return null
   const r = el.getBoundingClientRect()

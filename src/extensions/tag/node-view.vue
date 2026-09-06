@@ -1,11 +1,11 @@
 <template>
   <node-view-wrapper
     as="span"
-    class="umo-node-tag"
+    class="pdoc-node-tag"
     @click.capture="editor?.commands.setNodeSelection(getPos())"
   >
     <span
-      class="umo-node-tag-text"
+      class="pdoc-node-tag-text"
       :style="{
         color: attrs.color,
         backgroundColor: attrs.backgroundColor,
@@ -30,7 +30,7 @@ const editor = inject('editor')
 </script>
 
 <style lang="less">
-.umo-node-tag {
+.pdoc-node-tag {
   margin: 0;
   padding: 0 0.2em;
   box-sizing: border-box;

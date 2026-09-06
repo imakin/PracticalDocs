@@ -16,10 +16,10 @@
       <icon name="share" />
       {{ t('export.share.text') }}
     </template>
-    <div class="umo-share-container">
-      <div class="umo-share-tip" v-text="t('export.share.tip')"></div>
+    <div class="pdoc-share-container">
+      <div class="pdoc-share-tip" v-text="t('export.share.tip')"></div>
       <t-textarea
-        class="umo-share-textarea"
+        class="pdoc-share-textarea"
         :value="options.shareUrl"
         readonly
         autosize
@@ -40,15 +40,15 @@ const copyLink = () => {
 </script>
 
 <style lang="less" scoped>
-.umo-share-container {
+.pdoc-share-container {
   padding: 2px;
-  .umo-share-tip {
+  .pdoc-share-tip {
     font-size: 12px;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     margin-bottom: 6px;
     line-height: 1.4;
   }
-  .umo-share-textarea {
+  .pdoc-share-textarea {
     :deep(textarea) {
       word-break: break-all;
       word-wrap: break-word;

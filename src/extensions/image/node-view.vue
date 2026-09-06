@@ -2,7 +2,7 @@
   <node-view-wrapper
     ref="containerRef"
     as="figure"
-    class="umo-node-view"
+    class="pdoc-node-view"
     :class="wrapperClass"
     :style="nodeStyle"
     data-type="image"
@@ -15,13 +15,13 @@
   >
     <div
       ref="imageContainerRef"
-      class="umo-node-container umo-node-image"
+      class="pdoc-node-container pdoc-node-image"
       :class="imageClass"
       :style="imageContainerStyle"
     >
       <div
         v-if="attrs.src && error"
-        class="umo-node-image-error"
+        class="pdoc-node-image-error"
         :style="{ width: `${attrs.width}px`, height: `${attrs.height}px` }"
       >
         <icon name="image-failed" class="error-icon" />
@@ -29,12 +29,12 @@
       </div>
       <div
         v-else
-        class="umo-node-image-frame"
+        class="pdoc-node-image-frame"
         :style="imageFrameStyle"
         @mousedown.capture="onDragPointerDown"
       >
         <drager
-          class="umo-select-outline"
+          class="pdoc-select-outline"
           :class="dragerClass"
           :style="dragerStyle"
           :selected="selected"
@@ -58,21 +58,21 @@
           @resize="onResize"
           @focus="selected = true"
         >
-          <div v-if="isImageLoading" class="umo-node-image-loading">
+          <div v-if="isImageLoading" class="pdoc-node-image-loading">
             <icon name="loading" class="loading-icon" />
             {{ t('node.image.loading') }}
           </div>
           <template v-if="isCropping">
             <div
               ref="cropperHostRef"
-              class="umo-node-image-cropper umo-cropper-surface"
+              class="pdoc-node-image-cropper pdoc-cropper-surface"
               :style="cropperStyle"
               @mousedown.capture="handleCropperMousedown"
               @dblclick.stop="handleCropperDblclick"
             >
               <img
                 ref="cropperImageRef"
-                class="umo-node-image-cropper-source"
+                class="pdoc-node-image-cropper-source"
                 :src="attrs.src"
                 :alt="attrs.alt || attrs.title || attrs.name || 'image'"
                 draggable="false"
@@ -101,7 +101,7 @@
           />
           <div
             v-if="!attrs.uploaded && attrs.file !== null"
-            class="umo-node-image-uploading"
+            class="pdoc-node-image-uploading"
           >
             <span></span>
           </div>
@@ -110,7 +110,7 @@
       <node-view-content
         v-show="showAlt"
         as="figcaption"
-        class="umo-node-image-alt umo-node-image-alt-content"
+        class="pdoc-node-image-alt pdoc-node-image-alt-content"
         :class="[
           altContainerClass,
           {
@@ -253,7 +253,7 @@ const shouldListenCropTransactions = $computed(
 )
 
 const wrapperClass = $computed(() => ({
-  'umo-floating-node': attrs.draggable,
+  'pdoc-floating-node': attrs.draggable,
   'is-inline-image': attrs.inline,
 }))
 const imageClass = $computed(() => ({
@@ -265,8 +265,8 @@ const imageClass = $computed(() => ({
 const dragerClass = $computed(() => ({
   'is-draggable': attrs.draggable,
   'is-cropping': isCropping,
-  'umo-hover-shadow': !isReadonlyNode,
-  'umo-select-outline': !attrs.draggable && attrs.src && !error,
+  'pdoc-hover-shadow': !isReadonlyNode,
+  'pdoc-select-outline': !attrs.draggable && attrs.src && !error,
   'is-alt-selected': selected && !attrs.draggable && attrs.src && !error,
 }))
 const dragerStyle = $computed(() => ({
@@ -316,7 +316,7 @@ const getHostElement = () => containerRef.value?.$el
 const getImageContainerElement = () => imageContainerRef.value
 const getNodePos = () => getPos?.()
 const getAltContentElement = () =>
-  getHostElement()?.querySelector('.umo-node-image-alt-content')
+  getHostElement()?.querySelector('.pdoc-node-image-alt-content')
 const isAltContentFocused = () => {
   const altContentElement = getAltContentElement()
   const { activeElement } = document
@@ -372,7 +372,7 @@ const ensureOutsideHandler = () => {
     return
   }
   stopClickOutside = onClickOutside(containerRef, async (event) => {
-    if (event.target?.closest?.('.umo-editor-bubble-menu')) {
+    if (event.target?.closest?.('.pdoc-editor-bubble-menu')) {
       return
     }
     if (isCropping) {
@@ -710,7 +710,7 @@ const renderMermaidToImageSrc = async (seq) => {
     securityLevel: 'loose',
     ...getDiagramConfig(),
   })
-  const renderId = `umo-mermaid-${shortId(10)}`
+  const renderId = `pdoc-mermaid-${shortId(10)}`
   const result = await mermaid.render(renderId, String(attrs.content))
   applyRenderedDiagram(typeof result === 'string' ? result : result?.svg, seq)
 }
@@ -906,7 +906,7 @@ const syncLoadedImageLayout = async () => {
 }
 
 const isAltTarget = (target) =>
-  target instanceof HTMLElement && !!target.closest('.umo-node-image-alt')
+  target instanceof HTMLElement && !!target.closest('.pdoc-node-image-alt')
 
 const setImageNodeSelection = () => {
   const pos = getNodePos()
@@ -1212,7 +1212,7 @@ onMounted(async () => {
 </script>
 
 <style lang="less">
-.umo-node-view {
+.pdoc-node-view {
   margin: 0;
 
   &.is-inline-image {
@@ -1223,20 +1223,20 @@ onMounted(async () => {
       max-height: 100% !important;
     }
   }
-  &.umo-node-focused,
+  &.pdoc-node-focused,
   &.ProseMirror-selectednoderange {
-    .umo-node-image-error:after {
+    .pdoc-node-image-error:after {
       content: '';
       display: block !important;
       position: absolute;
       inset: 0;
-      border-radius: var(--umo-radius);
-      background: var(--umo-content-node-selected-background);
+      border-radius: var(--pdoc-radius);
+      background: var(--pdoc-content-node-selected-background);
       pointer-events: none;
       z-index: -1;
     }
   }
-  .umo-node-image {
+  .pdoc-node-image {
     max-width: 100%;
     width: auto;
     position: relative;
@@ -1256,10 +1256,10 @@ onMounted(async () => {
       display: block;
       line-height: 0;
       &.is-cropping {
-        outline: solid 1px var(--umo-primary-color);
+        outline: solid 1px var(--pdoc-primary-color);
       }
       &.is-alt-selected {
-        outline: solid 1px var(--umo-primary-color);
+        outline: solid 1px var(--pdoc-primary-color);
       }
       position: relative;
       max-width: 100%;
@@ -1275,7 +1275,7 @@ onMounted(async () => {
       }
     }
 
-    .umo-node-image-cropper {
+    .pdoc-node-image-cropper {
       display: block;
       position: relative;
       max-width: 100%;
@@ -1293,7 +1293,7 @@ onMounted(async () => {
       }
     }
 
-    .umo-node-image-loading {
+    .pdoc-node-image-loading {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1307,13 +1307,13 @@ onMounted(async () => {
       pointer-events: none;
 
       .loading-icon {
-        color: var(--umo-primary-color);
+        color: var(--pdoc-primary-color);
         font-size: 22px;
         animation: turn 1s linear infinite;
       }
     }
 
-    .umo-node-image-error {
+    .pdoc-node-image-error {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1329,7 +1329,7 @@ onMounted(async () => {
       }
     }
 
-    .umo-node-image-uploading {
+    .pdoc-node-image-uploading {
       position: absolute;
       left: 0;
       right: 0;
@@ -1353,14 +1353,14 @@ onMounted(async () => {
           content: '';
           display: block;
           height: 100%;
-          background-color: var(--umo-primary-color);
+          background-color: var(--pdoc-primary-color);
           animation: progress 1s linear infinite;
         }
       }
     }
   }
 
-  .umo-node-image-alt {
+  .pdoc-node-image-alt {
     @alt-font-size: 13px;
     @alt-line-height: 1.6;
     @alt-min-height: 22px;
@@ -1379,10 +1379,10 @@ onMounted(async () => {
       font-size: @alt-font-size;
       line-height: @alt-line-height;
       text-align: center;
-      color: var(--umo-text-color);
+      color: var(--pdoc-text-color);
       white-space: pre-wrap;
       word-break: break-word;
-      caret-color: var(--umo-text-color);
+      caret-color: var(--pdoc-text-color);
       outline: none;
       cursor: text;
 
@@ -1396,7 +1396,7 @@ onMounted(async () => {
 
         &::after {
           content: attr(data-placeholder);
-          color: var(--umo-text-color-light);
+          color: var(--pdoc-text-color-light);
           pointer-events: none;
         }
       }

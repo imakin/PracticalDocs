@@ -1,5 +1,5 @@
 {
-  "name": "practical-umodoc-server",
+  "name": "practicaldocs-server",
   "version": "1.0.0",
   "description": "Encrypted storage server for practical-umodoc",
   "type": "module",

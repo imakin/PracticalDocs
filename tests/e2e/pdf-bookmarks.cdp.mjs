@@ -68,7 +68,7 @@ await call('Emulation.setDeviceMetricsOverride', {
 }, sessionId).catch(() => {})
 await call('Page.bringToFront', {}, sessionId).catch(() => {})
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -151,7 +151,7 @@ await evaluate(`(async () => {
 
 console.log('\nCase A: the editor knows its own structure')
 const structure = await evaluate(`(async () => {
-  const mod = await import('/umo-editor/src/utils/document-outline.js')
+  const mod = await import('/practicaldocs/src/utils/document-outline.js')
   const entries = mod.collectOutlineEntries(window.__ed)
   return { entries, pages: mod.documentPageCount(window.__ed) }
 })()`)
@@ -168,7 +168,7 @@ console.log('\nCase B: the exported PDF, handed back, comes out with bookmarks i
 const srcdoc = await evaluate(`(async () => {
   window.__p.exportFile.value.pdf = true
   await new Promise((r) => setTimeout(r, 3000))
-  const iframe = document.querySelector('.umo-print-iframe')
+  const iframe = document.querySelector('.pdoc-print-iframe')
   const code = iframe ? iframe.getAttribute('srcdoc') || '' : ''
   const dialog = [...document.querySelectorAll('.t-dialog')].find((d) => d.offsetParent !== null)
   if (dialog) {
@@ -199,7 +199,7 @@ const changedLanguage = await evaluate(`(async () => {
   const cancel = dialog && [...dialog.querySelectorAll('button')].find((b) => /cancel|batal|取消/i.test(b.textContent))
   if (cancel) cancel.click()
   await new Promise((r) => setTimeout(r, 700))
-  const iframe = document.querySelector('.umo-print-iframe')
+  const iframe = document.querySelector('.pdoc-print-iframe')
   return { prefilled, html: iframe ? iframe.getAttribute('srcdoc') || '' : '' }
 })()`)
 check('the writer\'s language reaches the exported document',
@@ -260,7 +260,7 @@ const installPicker = async (base64) => evaluate(`(() => {
 })()`)
 
 const clickBookmarks = async () => evaluate(`(async () => {
-  const tab = [...document.querySelectorAll('.umo-ribbon-tabs-item,[role=tab]')].find((e) => /export/i.test(e.textContent))
+  const tab = [...document.querySelectorAll('.pdoc-ribbon-tabs-item,[role=tab]')].find((e) => /export/i.test(e.textContent))
   if (tab) { tab.click(); await new Promise((r) => setTimeout(r, 800)) }
   const label = [...document.querySelectorAll('*')].find((e) => e.children.length === 0 && /PDF Bookmarks/.test(e.textContent))
   if (!label) return 'NO_BUTTON'

@@ -224,15 +224,15 @@ if ($document.value.enableMarkdown) {
     justify-content: space-between;
     padding: 8px 10px;
     font-size: 12px;
-    color: var(--umo-text-color);
+    color: var(--pdoc-text-color);
     &:not(:last-child) {
-      border-bottom: solid 1px var(--umo-border-color);
+      border-bottom: solid 1px var(--pdoc-border-color);
     }
     line-height: 1.4;
     span {
       display: flex;
       align-items: center;
-      .umo-icon,
+      .pdoc-icon,
       .shortcut-icon {
         margin: 0 10px 0 -2px;
       }
@@ -242,13 +242,13 @@ if ($document.value.enableMarkdown) {
       sup {
         transform: translateY(-3px);
       }
-      span.umo-icon {
+      span.pdoc-icon {
         font-weight: 700;
         margin-right: 8px;
         :deep(sub) {
           font-size: 6px;
           margin-top: 4px;
-          color: var(--umo-primary-color);
+          color: var(--pdoc-primary-color);
         }
       }
     }
@@ -256,11 +256,11 @@ if ($document.value.enableMarkdown) {
       display: flex;
       align-items: center;
       kbd {
-        border: solid 1px var(--umo-border-color);
+        border: solid 1px var(--pdoc-border-color);
         padding: 0 5px;
         border-radius: 3px;
-        color: var(--umo-text-color);
-        background-color: var(--umo-button-hover-background);
+        color: var(--pdoc-text-color);
+        background-color: var(--pdoc-button-hover-background);
         margin: 0 3px;
         border-bottom-width: 2px;
       }
@@ -286,19 +286,19 @@ if ($document.value.enableMarkdown) {
     &:hover {
       background-color: rgba(0, 0, 0, 0.01);
       .keyboard-shortcut kbd {
-        border-color: var(--umo-text-color);
+        border-color: var(--pdoc-text-color);
       }
     }
   }
   blockquote {
     padding-left: 10px;
-    border-left: solid 3px var(--umo-border-color);
+    border-left: solid 3px var(--pdoc-border-color);
     margin: 0;
   }
   code {
-    border: solid 1px var(--umo-border-color);
+    border: solid 1px var(--pdoc-border-color);
     border-radius: 3px;
-    background-color: var(--umo-button-hover-background);
+    background-color: var(--pdoc-button-hover-background);
     padding: 0 5px;
     display: inline;
   }

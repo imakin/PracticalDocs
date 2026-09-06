@@ -3,7 +3,7 @@
  *
  * The hazard this guards: `contentUpdated` is armed by page-setting changes alone, so an editor that
  * holds nothing but an empty paragraph can still schedule an autosave, and that autosave writes to
- * practical-umodoc-server under whatever document title is currently loaded. A blank editor carrying a
+ * practicaldocs-server under whatever document title is currently loaded. A blank editor carrying a
  * previously loaded title therefore erases that file on the server.
  *
  * This test measures the real behaviour: it records whether a POST to /api/documents/save is actually
@@ -23,7 +23,7 @@ import WebSocket from 'ws'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SHOTS = path.join(__dirname, '..', 'screenshots')
 const CDP = (process.env.CDP_URL || 'http://127.0.0.1:9222').replace(/\/$/, '')
-const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:9000/umo-editor'
+const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:9000/practicaldocs'
 const AUTOSAVE_MS = 1200
 const SAMPLE = 'Autosave guard sample paragraph with real text content.'
 
@@ -69,7 +69,7 @@ const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: t
 // The editor persists document title, content and profiles into localStorage, which is shared with
 // any other tab on this origin. Snapshot those keys up front and put them back before leaving, so a
 // test run never disturbs the document the user has open.
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 
 const finish = async (code) => {
@@ -119,7 +119,7 @@ await call('Page.enable', {}, sessionId)
 await call('Runtime.enable', {}, sessionId)
 
 // Intercept every save request. OPTIONS and POST are both answered here, so no request reaches
-// practical-umodoc-server and no stored document can be touched by this test.
+// practicaldocs-server and no stored document can be touched by this test.
 const savePosts = []
 await call('Fetch.enable', { patterns: [{ urlPattern: '*api/documents/save*', requestStage: 'Request' }] }, sessionId)
 const corsHeaders = [

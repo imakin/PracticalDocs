@@ -1,34 +1,34 @@
 <template>
-  <div class="umo-main-container">
+  <div class="pdoc-main-container">
     <container-toc
       v-if="pageOptions.showToc"
       @close="pageOptions.showToc = false"
     />
     <div
-      :class="`umo-zoomable-container umo-${pageOptions.layout}-container umo-scrollbar`"
+      :class="`pdoc-zoomable-container pdoc-${pageOptions.layout}-container pdoc-scrollbar`"
     >
       <div
-        class="umo-zoomable-content"
+        class="pdoc-zoomable-content"
         :style="{
           width: pageZoomWidth,
           height: pageZoomHeight,
         }"
       >
         <t-watermark
-          class="umo-page-content"
+          class="pdoc-page-content"
           :style="{
-            '--umo-page-orientation': pageOptions.orientation,
-            '--umo-page-background': pageOptions.background,
-            '--umo-page-margin-top': pageOptions.margin?.top + 'cm',
-            '--umo-page-margin-bottom': pageOptions.margin?.bottom + 'cm',
-            '--umo-page-margin-left': pageOptions.margin?.left + 'cm',
-            '--umo-page-margin-right': pageOptions.margin?.right + 'cm',
-            '--umo-page-sheet-gap': sheetGap + 'px',
-            '--umo-page-width':
+            '--pdoc-page-orientation': pageOptions.orientation,
+            '--pdoc-page-background': pageOptions.background,
+            '--pdoc-page-margin-top': pageOptions.margin?.top + 'cm',
+            '--pdoc-page-margin-bottom': pageOptions.margin?.bottom + 'cm',
+            '--pdoc-page-margin-left': pageOptions.margin?.left + 'cm',
+            '--pdoc-page-margin-right': pageOptions.margin?.right + 'cm',
+            '--pdoc-page-sheet-gap': sheetGap + 'px',
+            '--pdoc-page-width':
               pageOptions.layout === 'page' ? pageSize.width + 'cm' : 'auto',
-            '--umo-page-height':
+            '--pdoc-page-height':
               pageOptions.layout === 'page' ? pageSize.height + 'cm' : '100%',
-            '--umo-page-content-height':
+            '--pdoc-page-content-height':
               pageOptions.layout === 'page'
                 ? `calc(${pageSize.height}cm - ${pageOptions.margin?.top || 0}cm - ${pageOptions.margin?.bottom || 0}cm)`
                 : 'auto',
@@ -40,43 +40,43 @@
           v-bind="watermarkOptions"
           :watermark-content="pageOptions.watermark"
         >
-          <div class="umo-page-node-header" contenteditable="false">
+          <div class="pdoc-page-node-header" contenteditable="false">
             <div
-              class="umo-page-corner corner-tl"
-              style="width: var(--umo-page-margin-left)"
+              class="pdoc-page-corner corner-tl"
+              style="width: var(--pdoc-page-margin-left)"
             ></div>
 
-            <div class="umo-page-node-header-content"></div>
+            <div class="pdoc-page-node-header-content"></div>
             <div
-              class="umo-page-corner corner-tr"
-              style="width: var(--umo-page-margin-right)"
+              class="pdoc-page-corner corner-tr"
+              style="width: var(--pdoc-page-margin-right)"
             ></div>
           </div>
-          <div class="umo-page-node-content">
+          <div class="pdoc-page-node-content">
             <editor>
               <template #bubble_menu="props">
                 <slot name="bubble_menu" v-bind="props" />
               </template>
             </editor>
           </div>
-          <div class="umo-page-node-footer" contenteditable="false">
+          <div class="pdoc-page-node-footer" contenteditable="false">
             <div
-              class="umo-page-corner corner-bl"
-              style="width: var(--umo-page-margin-left)"
+              class="pdoc-page-corner corner-bl"
+              style="width: var(--pdoc-page-margin-left)"
             ></div>
-            <div class="umo-page-node-footer-content"></div>
+            <div class="pdoc-page-node-footer-content"></div>
             <div
-              class="umo-page-corner corner-br"
-              style="width: var(--umo-page-margin-right)"
+              class="pdoc-page-corner corner-br"
+              style="width: var(--pdoc-page-margin-right)"
             ></div>
           </div>
         </t-watermark>
       </div>
     </div>
-    <div class="umo-main-floating-actions">
+    <div class="pdoc-main-floating-actions">
       <t-back-top
         style="position: relative"
-        :container="`${container} .umo-zoomable-container`"
+        :container="`${container} .pdoc-zoomable-container`"
         :visible-height="800"
         size="small"
       />
@@ -101,7 +101,7 @@ const pageOptions = inject('page')
 const editorRef = inject('editor')
 
 // Grey band drawn between two sheets. Shared with the pagination engine through
-// --umo-page-sheet-gap so the painted gap and the enforced gap can never drift apart.
+// --pdoc-page-sheet-gap so the painted gap and the enforced gap can never drift apart.
 const sheetGap = 16
 
 // 页面大小
@@ -131,7 +131,7 @@ const updatePageZoomHeight = () => {
     return
   }
   if (!pageContentEl) {
-    console.warn('The element <.umo-page-content> does not exist.')
+    console.warn('The element <.pdoc-page-content> does not exist.')
     return
   }
   const height = `${(pageContentEl.clientHeight * (pageOptions.value.zoomLevel || 1)) / 100}px`
@@ -152,7 +152,7 @@ const schedulePageZoomHeight = () => {
 }
 onMounted(async () => {
   await nextTick()
-  pageContentEl = document.querySelector(`${container} .umo-page-content`)
+  pageContentEl = document.querySelector(`${container} .pdoc-page-content`)
   if (pageContentEl) {
     pageHeightObserver = new ResizeObserver(() => {
       schedulePageZoomHeight()
@@ -171,7 +171,7 @@ onMounted(async () => {
       })
     }
   } else {
-    console.warn('The element <.umo-page-content> does not exist.')
+    console.warn('The element <.pdoc-page-content> does not exist.')
   }
   schedulePageZoomHeight()
 })
@@ -257,7 +257,7 @@ watch(
     }
     await nextTick()
     const images = document.querySelectorAll(
-      `${container} .umo-page-node-content img[src][data-preview]`,
+      `${container} .pdoc-page-node-content img[src][data-preview]`,
     )
     Array.from(images).forEach((image, index) => {
       const src = image.getAttribute('src')
@@ -272,25 +272,25 @@ watch(
 </script>
 
 <style lang="less">
-.umo-main-container {
+.pdoc-main-container {
   height: 100%;
   display: flex;
   position: relative;
 }
 
-.umo-zoomable-container {
+.pdoc-zoomable-container {
   flex: 1;
   scroll-behavior: smooth;
-  &.umo-page-container {
+  &.pdoc-page-container {
     padding: 20px 50px;
     box-sizing: border-box;
-    .umo-zoomable-content {
+    .pdoc-zoomable-content {
       margin: 0 auto;
       box-shadow:
         rgba(0, 0, 0, 0.06) 0px 0px 10px 0px,
         rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
     }
-    .umo-page-content {
+    .pdoc-page-content {
       /* Visual Page Sheets: Header boundary, Footer & Page Numbering zone, and Sheet Separation Gap */
       /* One period is a sheet plus the gap the pagination engine keeps empty. */
       background-image:
@@ -298,59 +298,59 @@ watch(
         repeating-linear-gradient(
           to bottom,
           transparent 0,
-          transparent calc(var(--umo-page-height) - var(--umo-page-margin-bottom) - 1px),
-          rgba(0, 0, 0, 0.15) calc(var(--umo-page-height) - var(--umo-page-margin-bottom) - 1px),
-          rgba(0, 0, 0, 0.15) calc(var(--umo-page-height) - var(--umo-page-margin-bottom)),
-          transparent calc(var(--umo-page-height) - var(--umo-page-margin-bottom)),
-          transparent calc(var(--umo-page-height) + var(--umo-page-sheet-gap, 16px))
+          transparent calc(var(--pdoc-page-height) - var(--pdoc-page-margin-bottom) - 1px),
+          rgba(0, 0, 0, 0.15) calc(var(--pdoc-page-height) - var(--pdoc-page-margin-bottom) - 1px),
+          rgba(0, 0, 0, 0.15) calc(var(--pdoc-page-height) - var(--pdoc-page-margin-bottom)),
+          transparent calc(var(--pdoc-page-height) - var(--pdoc-page-margin-bottom)),
+          transparent calc(var(--pdoc-page-height) + var(--pdoc-page-sheet-gap, 16px))
         ),
         /* Sheet Separation Gap (16px grey band + sheet edge shadow at bottom of each page sheet) */
         repeating-linear-gradient(
           to bottom,
           transparent 0,
-          transparent var(--umo-page-height),
-          #cbd5e1 var(--umo-page-height),
-          #e2e8f0 calc(var(--umo-page-height) + var(--umo-page-sheet-gap, 16px) / 2),
-          #cbd5e1 calc(var(--umo-page-height) + var(--umo-page-sheet-gap, 16px))
+          transparent var(--pdoc-page-height),
+          #cbd5e1 var(--pdoc-page-height),
+          #e2e8f0 calc(var(--pdoc-page-height) + var(--pdoc-page-sheet-gap, 16px) / 2),
+          #cbd5e1 calc(var(--pdoc-page-height) + var(--pdoc-page-sheet-gap, 16px))
         ),
         /* Header margin boundary line (subtle line at bottom of top margin) */
         repeating-linear-gradient(
           to bottom,
           transparent 0,
-          transparent calc(var(--umo-page-margin-top) - 1px),
-          rgba(0, 0, 0, 0.15) calc(var(--umo-page-margin-top) - 1px),
-          rgba(0, 0, 0, 0.15) var(--umo-page-margin-top),
-          transparent var(--umo-page-margin-top),
-          transparent calc(var(--umo-page-height) + var(--umo-page-sheet-gap, 16px))
+          transparent calc(var(--pdoc-page-margin-top) - 1px),
+          rgba(0, 0, 0, 0.15) calc(var(--pdoc-page-margin-top) - 1px),
+          rgba(0, 0, 0, 0.15) var(--pdoc-page-margin-top),
+          transparent var(--pdoc-page-margin-top),
+          transparent calc(var(--pdoc-page-height) + var(--pdoc-page-sheet-gap, 16px))
         );
     }
   }
-  &.umo-web-container {
+  &.pdoc-web-container {
     display: flex;
-    .umo-zoomable-content {
+    .pdoc-zoomable-content {
       flex: 1;
-      .umo-page-corner {
+      .pdoc-page-corner {
         display: none;
       }
-      .umo-page-content {
+      .pdoc-page-content {
         min-height: 100%;
-        .umo-page-node-content {
+        .pdoc-page-node-content {
           min-height: 100px;
         }
       }
     }
   }
-  .umo-page-content {
+  .pdoc-page-content {
     transform-origin: 0 0;
     box-sizing: border-box;
     display: flex;
     position: relative;
     box-sizing: border-box;
-    background-color: var(--umo-page-background);
-    width: var(--umo-page-width);
-    /* The engine sets --umo-page-total-height to a whole number of sheets, so the last sheet is drawn
+    background-color: var(--pdoc-page-background);
+    width: var(--pdoc-page-width);
+    /* The engine sets --pdoc-page-total-height to a whole number of sheets, so the last sheet is drawn
        complete instead of being cut off wherever the text happens to end. */
-    min-height: var(--umo-page-total-height, var(--umo-page-height));
+    min-height: var(--pdoc-page-total-height, var(--pdoc-page-height));
     overflow: visible !important;
     display: flex;
     flex-direction: column;
@@ -360,29 +360,29 @@ watch(
   }
 }
 
-.umo-page-node-header {
-  height: var(--umo-page-margin-top);
+.pdoc-page-node-header {
+  height: var(--pdoc-page-margin-top);
   overflow: hidden;
 }
 
-.umo-page-node-footer {
-  height: var(--umo-page-margin-bottom);
+.pdoc-page-node-footer {
+  height: var(--pdoc-page-margin-bottom);
   overflow: hidden;
 }
 
-.umo-page-node-header,
-.umo-page-node-footer {
+.pdoc-page-node-header,
+.pdoc-page-node-footer {
   display: flex;
   justify-content: space-between;
 }
 
-.umo-page-corner {
+.pdoc-page-corner {
   box-sizing: border-box;
   position: relative;
   z-index: 10;
 }
 
-.umo-page-corner {
+.pdoc-page-corner {
   @media print {
     opacity: 0;
   }
@@ -425,18 +425,18 @@ watch(
   }
 }
 
-.umo-page-node-header-content,
-.umo-page-node-footer-content {
+.pdoc-page-node-header-content,
+.pdoc-page-node-footer-content {
   flex: 1;
 }
 
-.umo-page-node-content {
+.pdoc-page-node-content {
   position: relative;
   box-sizing: border-box;
   flex-shrink: 1;
 }
 
-.umo-main-floating-actions {
+.pdoc-main-floating-actions {
   position: absolute;
   bottom: 25px;
   right: 25px;
@@ -451,13 +451,13 @@ watch(
     opacity: 0.9;
     &:hover {
       opacity: 1;
-      background-color: var(--umo-color-white) !important;
-      border: solid 1px var(--umo-primary-color);
+      background-color: var(--pdoc-color-white) !important;
+      border: solid 1px var(--pdoc-primary-color);
     }
   }
 }
 
-.umo-viewer-container {
+.pdoc-viewer-container {
   position: absolute;
   inset: 0;
   z-index: 1000;

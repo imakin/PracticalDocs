@@ -1,5 +1,5 @@
 {
-  "welcome": "%cGrazie per aver scelto UmoPractical%cVersione attuale: v{version}, Maggiori info: {homepage}",
+  "welcome": "%cGrazie per aver scelto PracticalDocs%cVersione attuale: v{version}, Maggiori info: {homepage}",
   "toolbar": {
     "ribbon": "Professionale",
     "classic": "Classica",
@@ -648,7 +648,7 @@
     "reset": "Reimposta"
   },
   "feedback": "Problemi / Feedback",
-  "poweredBy": "Realizzato con UmoPractical",
+  "poweredBy": "Realizzato con PracticalDocs",
   "wordCount": {
     "characters": "Caratteri",
     "title": "Statistiche documento",

@@ -53,7 +53,7 @@ const { targetId } = await call('Target.createTarget', { url: EDITOR_URL })
 const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true })
 await call('Runtime.enable', {}, sessionId)
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -119,8 +119,8 @@ const press = async (label) =>
     window.__ed.commands.selectAll()
     window.__ed.commands.focus()
     await new Promise((r) => setTimeout(r, 1200))
-    const bar = document.querySelector('.umo-editor-bubble-menu')
-    const button = [...bar.querySelectorAll('button, .umo-menu-button')]
+    const bar = document.querySelector('.pdoc-editor-bubble-menu')
+    const button = [...bar.querySelectorAll('button, .pdoc-menu-button')]
       .find((b) => (b.textContent || '').replace(/\\s+/g, ' ').trim() === ${JSON.stringify(label)})
     if (!button) throw new Error('no button labelled ' + ${JSON.stringify(label)})
     button.click()
@@ -135,8 +135,8 @@ const labels = await evaluate(`(async () => {
   window.__ed.commands.selectAll()
   window.__ed.commands.focus()
   await new Promise((r) => setTimeout(r, 1200))
-  const bar = document.querySelector('.umo-editor-bubble-menu')
-  return bar ? [...bar.querySelectorAll('button, .umo-menu-button')].map((b) => (b.textContent || '').replace(/\\s+/g, ' ').trim()) : []
+  const bar = document.querySelector('.pdoc-editor-bubble-menu')
+  return bar ? [...bar.querySelectorAll('button, .pdoc-menu-button')].map((b) => (b.textContent || '').replace(/\\s+/g, ' ').trim()) : []
 })()`)
 for (const label of ['UPPERCASE', 'lowercase', 'Capitalize']) {
   check(`the bar offers ${label}`, labels.includes(label), JSON.stringify(labels))

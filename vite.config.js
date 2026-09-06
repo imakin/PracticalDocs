@@ -32,8 +32,8 @@ const vuePlugins = {
   }),
   SvgIcons: createSvgIconsPlugin({
     iconDirs: [`${process.cwd()}/src/assets/icons`],
-    symbolId: 'umo-icon-[name]',
-    customDomId: 'umo-icons',
+    symbolId: 'pdoc-icon-[name]',
+    customDomId: 'pdoc-icons',
   }),
 }
 
@@ -43,7 +43,7 @@ const buildConfig = {
   lib: {
     entry: `${process.cwd()}/src/components/index.js`,
     name: pkg.name,
-    fileName: 'umopractical',
+    fileName: 'practicaldocs',
   },
   outDir: 'dist',
   copyPublicDir: false,
@@ -53,7 +53,7 @@ const buildConfig = {
     output: [
       {
         banner: copyright,
-        intro: `import './umopractical.css'`,
+        intro: `import './practicaldocs.css'`,
         format: 'es',
       },
     ],
@@ -75,7 +75,7 @@ const buildConfig = {
 const cssConfig = {
   preprocessorOptions: {
     less: {
-      modifyVars: { '@prefix': 'umo' },
+      modifyVars: { '@prefix': 'pdoc' },
       javascriptEnabled: true,
       // 添加 Less 插件来排除特定类名
       plugins: [
@@ -94,7 +94,7 @@ const cssConfig = {
 }
 
 export default defineConfig({
-  base: '/umo-editor',
+  base: '/practicaldocs',
   plugins: [ReactivityTransform(), ...Object.values(vuePlugins)],
   css: cssConfig,
   build: buildConfig,

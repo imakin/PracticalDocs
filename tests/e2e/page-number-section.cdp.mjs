@@ -65,7 +65,7 @@ await call('Emulation.setDeviceMetricsOverride', {
   width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false,
 }, sessionId).catch(() => {})
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -147,7 +147,7 @@ console.log('\nCase A: the panel says nothing about a section until a page break
 // The control lives on the Page tab of the ribbon, which is not the one open at startup. Reaching
 // it the way a writer does means pressing that tab first.
 const pageTab = await evaluate(`(() => {
-  const el = [...document.querySelectorAll('.umo-ribbon-tabs-item')].find((t) => t.textContent.trim() === 'Page')
+  const el = [...document.querySelectorAll('.pdoc-ribbon-tabs-item')].find((t) => t.textContent.trim() === 'Page')
   if (!el) return null
   const r = el.getBoundingClientRect()
   return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }
@@ -156,7 +156,7 @@ check('the ribbon has a Page tab', !!pageTab, JSON.stringify(pageTab))
 if (pageTab) { await clickAt(pageTab.x, pageTab.y); await sleep(700) }
 
 const panelButton = await evaluate(`(() => {
-  const el = [...document.querySelectorAll('.umo-toolbar .umo-button, .umo-toolbar button')]
+  const el = [...document.querySelectorAll('.pdoc-toolbar .pdoc-button, .pdoc-toolbar button')]
     .find((b) => b.textContent.trim() === 'Page Numbers')
   if (!el) return null
   const r = el.getBoundingClientRect()
@@ -167,7 +167,7 @@ check('Page > Page Numbers is on that tab', !!panelButton, JSON.stringify(panelB
 
 if (panelButton) { await clickAt(panelButton.x, panelButton.y); await sleep(700) }
 const noSection = await evaluate(`(() => {
-  const panel = document.querySelector('.umo-page-number-panel')
+  const panel = document.querySelector('.pdoc-page-number-panel')
   return { open: !!panel, labels: panel ? [...panel.querySelectorAll('label')].map((l) => l.textContent.trim()) : [] }
 })()`)
 check('the panel opens on a real click', noSection.open === true)
@@ -183,9 +183,9 @@ const revealed = await evaluate(`(async () => {
   window.__ed.state.doc.descendants((node, at) => { if (node.type.name === 'pageBreak' && pos === null) pos = at; return true })
   window.__ed.commands.setNodeSelection(pos)
   await new Promise((r) => setTimeout(r, 700))
-  const panel = document.querySelector('.umo-page-number-panel')
+  const panel = document.querySelector('.pdoc-page-number-panel')
   const labels = panel ? [...panel.querySelectorAll('label')].map((l) => l.textContent.trim()) : []
-  const checkboxes = panel ? [...panel.querySelectorAll('.umo-checkbox__label, label')].map((l) => l.textContent.trim()) : []
+  const checkboxes = panel ? [...panel.querySelectorAll('.pdoc-checkbox__label, label')].map((l) => l.textContent.trim()) : []
   return { pos, labels, checkboxes }
 })()`)
 // Position, chapter first page and template were resolved by the engine all along and had no control.
@@ -199,7 +199,7 @@ check('the section offers a template of its own',
 console.log('\nCase C: a section setting reaches the page')
 
 const moved = await evaluate(`(async () => {
-  const read = () => [...document.querySelectorAll('.umo-page-content > .umo-page-number')]
+  const read = () => [...document.querySelectorAll('.pdoc-page-content > .pdoc-page-number')]
     .map((el) => ({ text: el.textContent.trim(), align: el.style.textAlign, top: Math.round(Number.parseFloat(el.style.top)) }))
   const before = read()
   window.__ed.commands.setPageBreakSection({ sectionPosition: 'top-right' })

@@ -1,10 +1,10 @@
 @import '@/assets/styles/_mixins.less';
 
-.umo-editor-content {
-  accent-color: var(--umo-primary-color);
+.pdoc-editor-content {
+  accent-color: var(--pdoc-primary-color);
 
   &.show-line-number {
-    .umo-editor {
+    .pdoc-editor {
       > *:not([data-line-number='false'], div) {
         position: relative;
 
@@ -14,8 +14,8 @@
           counter-increment: title;
           right: 100%;
           margin-right: 20px;
-          color: var(--umo-content-line-number-color);
-          font-family: var(--umo-font-family);
+          color: var(--pdoc-content-line-number-color);
+          font-family: var(--pdoc-font-family);
           font-size: 14px;
           font-weight: 400;
         }
@@ -28,17 +28,17 @@
   }
 
   &:not(.show-bookmark) {
-    .umo-editor-bookmark {
+    .pdoc-editor-bookmark {
       display: none;
     }
   }
 
-  .umo-editor {
+  .pdoc-editor {
     outline: none;
     counter-reset: title;
-    color: var(--umo-content-text-color);
+    color: var(--pdoc-content-text-color);
     width: 100%;
-    padding: 0 var(--umo-page-margin-right) 0 var(--umo-page-margin-left);
+    padding: 0 var(--pdoc-page-margin-right) 0 var(--pdoc-page-margin-left);
     box-sizing: border-box;
     overflow-wrap: anywhere;
     word-wrap: break-word;
@@ -47,12 +47,12 @@
     font-variant-ligatures: none;
     font-feature-settings: 'liga' 0;
     min-height: calc(
-      var(--umo-page-height) - var(--umo-page-margin-top) -
-        var(--umo-page-margin-bottom)
+      var(--pdoc-page-height) - var(--pdoc-page-margin-top) -
+        var(--pdoc-page-margin-bottom)
     );
     float: left;
-    font-family: var(--umo-font-family);
-    font-size: var(--umo-font-size);
+    font-family: var(--pdoc-font-family);
+    font-size: var(--pdoc-font-size);
     font-display: swap;
 
     *[data-placeholder],
@@ -84,27 +84,27 @@
       }
 
       &::after {
-        color: var(--umo-content-placeholder-color);
+        color: var(--pdoc-content-placeholder-color);
         content: attr(data-placeholder);
         pointer-events: none;
       }
     }
 
     // The gap between blocks is a default, so it is wrapped in :where() and scores nothing. Nested
-    // normally it compiled to `.umo-editor-content .umo-editor > * + *:not(.umo-floating-node)`,
+    // normally it compiled to `.pdoc-editor-content .pdoc-editor > * + *:not(.pdoc-floating-node)`,
     // three classes, which outranked a profile rule's two and silently zeroed every top margin a
     // profile declared - measured in Chrome, and the reason a profile's Top Margin did nothing at
     // any value while its Bottom Margin worked. Nothing else sets margin-top on a block, so a
     // profile now wins and a block without one still takes this.
-    :where(& > * + *:not(.umo-floating-node)) {
-      margin-top: var(--umo-content-node-bottom);
+    :where(& > * + *:not(.pdoc-floating-node)) {
+      margin-top: var(--pdoc-content-node-bottom);
     }
 
     > * {
       position: relative;
       z-index: 1;
 
-      &.umo-node-focused,
+      &.pdoc-node-focused,
       &.ProseMirror-selectednoderange {
         @media screen {
           &:not(
@@ -112,13 +112,13 @@
               hr,
               table,
               .tableWrapper,
-              .umo-page-break,
-              .umo-code-block,
-              .umo-node-footnotes,
-              .umo-node-details,
-              .umo-node-column-container,
-              .umo-node-column,
-              .umo-floating-node
+              .pdoc-page-break,
+              .pdoc-code-block,
+              .pdoc-node-footnotes,
+              .pdoc-node-details,
+              .pdoc-node-column-container,
+              .pdoc-node-column,
+              .pdoc-floating-node
             ):before {
             content: '';
             display: block;
@@ -127,56 +127,56 @@
             top: -5px;
             right: -8px;
             bottom: -5px;
-            border-radius: var(--umo-radius);
-            background: var(--umo-content-node-selected-background);
+            border-radius: var(--pdoc-radius);
+            background: var(--pdoc-content-node-selected-background);
             pointer-events: none;
             z-index: -1;
           }
 
-          &.umo-floating-node {
-            outline: solid 1px var(--umo-primary-color);
+          &.pdoc-floating-node {
+            outline: solid 1px var(--pdoc-primary-color);
             transform: translateY(
-              calc(var(--umo-content-node-bottom) / 2 - 1px)
+              calc(var(--pdoc-content-node-bottom) / 2 - 1px)
             );
 
             & > * {
               transform: translateY(
-                calc(-1 * (var(--umo-content-node-bottom) / 2 - 1px))
+                calc(-1 * (var(--pdoc-content-node-bottom) / 2 - 1px))
               );
             }
           }
         }
 
-        &.umo-page-divider {
-          border-radius: var(--umo-radius);
-          background: var(--umo-content-node-selected-background);
+        &.pdoc-page-divider {
+          border-radius: var(--pdoc-radius);
+          background: var(--pdoc-content-node-selected-background);
           margin-left: -8px;
           margin-right: -8px;
           padding-left: 8px;
           padding-right: 8px;
         }
 
-        &.umo-page-break {
-          background-color: var(--umo-primary-color);
-          color: var(--umo-primary-color);
+        &.pdoc-page-break {
+          background-color: var(--pdoc-primary-color);
+          color: var(--pdoc-primary-color);
 
           &::after {
-            border-color: var(--umo-primary-color);
+            border-color: var(--pdoc-primary-color);
           }
         }
 
-        .umo-select-outline {
-          outline: solid 1px var(--umo-primary-color);
+        .pdoc-select-outline {
+          outline: solid 1px var(--pdoc-primary-color);
         }
       }
     }
 
-    .umo-insert-newline-anchor {
+    .pdoc-insert-newline-anchor {
       display: block;
       height: 0;
       position: absolute;
       left: 0;
-      right: calc(var(--umo-page-margin-right) - 36px);
+      right: calc(var(--pdoc-page-margin-right) - 36px);
       isolation: isolate;
       z-index: 200;
       pointer-events: none;
@@ -186,15 +186,15 @@
       }
     }
 
-    .umo-insert-newline-widget {
+    .pdoc-insert-newline-widget {
       position: absolute;
       top: 0;
       right: 0;
       transform: translateY(-20px);
       width: 26px;
       height: 26px;
-      border: 1px solid var(--umo-border-color);
-      border-radius: var(--umo-radius);
+      border: 1px solid var(--pdoc-border-color);
+      border-radius: var(--pdoc-radius);
       background: #fff;
       pointer-events: auto;
       padding: 0;
@@ -203,7 +203,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
       font-size: 0;
       line-height: 1;
       white-space: nowrap;
@@ -222,27 +222,27 @@
       }
 
       &:hover {
-        color: var(--umo-primary-color);
-        border-color: var(--umo-border-color);
+        color: var(--pdoc-primary-color);
+        border-color: var(--pdoc-border-color);
         box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
       }
     }
 
-    &.umo-insert-newline-active {
-      > *.umo-node-focused,
+    &.pdoc-insert-newline-active {
+      > *.pdoc-node-focused,
       > *.ProseMirror-selectednoderange {
         &:not(
             .is-editor-empty,
             hr,
             table,
             .tableWrapper,
-            .umo-page-break,
-            .umo-code-block,
-            .umo-node-footnotes,
-            .umo-node-details,
-            .umo-node-column-container,
-            .umo-node-column,
-            .umo-floating-node
+            .pdoc-page-break,
+            .pdoc-code-block,
+            .pdoc-node-footnotes,
+            .pdoc-node-details,
+            .pdoc-node-column-container,
+            .pdoc-node-column,
+            .pdoc-floating-node
           )::before {
           display: none;
         }
@@ -252,9 +252,9 @@
 
   &.is-empty
     .is-editor-empty:not(
-      .umo-node-view,
+      .pdoc-node-view,
       .tableWrapper,
-      .umo-column-block,
+      .pdoc-column-block,
       ul,
       ol
     ) {
@@ -274,7 +274,7 @@
       }
 
       &::after {
-        color: var(--umo-content-placeholder-color);
+        color: var(--pdoc-content-placeholder-color);
         content: attr(data-placeholder);
         pointer-events: none;
       }
@@ -282,21 +282,21 @@
   }
 
   @media screen {
-    &:not(.is-readonly) .umo-selection {
-      background-color: var(--umo-text-selection-background);
+    &:not(.is-readonly) .pdoc-selection {
+      background-color: var(--pdoc-text-selection-background);
     }
 
-    &.show-model .umo-selection {
-      background-color: var(--umo-text-selection-background);
+    &.show-model .pdoc-selection {
+      background-color: var(--pdoc-text-selection-background);
     }
 
     ::selection {
-      background-color: var(--umo-text-selection-background);
+      background-color: var(--pdoc-text-selection-background);
     }
   }
 
   a {
-    color: var(--umo-primary-color);
+    color: var(--pdoc-primary-color);
     text-decoration: none;
     cursor: pointer;
 
@@ -307,9 +307,9 @@
   }
 
   code {
-    color: var(--umo-content-code-color);
-    background-color: var(--umo-content-code-background);
-    font-family: var(--umo-content-code-family);
+    color: var(--pdoc-content-code-color);
+    background-color: var(--pdoc-content-code-background);
+    font-family: var(--pdoc-content-code-family);
     border-radius: 3px;
     padding: 0.1em 0.4em;
     margin-left: 0.25em;
@@ -317,7 +317,7 @@
   }
 
   blockquote {
-    border-left: 3px solid var(--umo-primary-color);
+    border-left: 3px solid var(--pdoc-primary-color);
     padding: 0.5em 1em;
     color: #777;
     background-color: rgba(0, 0, 0, 0.03);
@@ -345,7 +345,7 @@
     td,
     th {
       min-width: 1em;
-      border: 1px solid var(--umo-content-table-border-color);
+      border: 1px solid var(--pdoc-content-table-border-color);
       padding: 3px 5px;
       vertical-align: middle;
       box-sizing: border-box;
@@ -419,7 +419,7 @@
     th {
       font-weight: bold;
       text-align: left;
-      background-color: var(--umo-content-table-thead-background);
+      background-color: var(--pdoc-content-table-thead-background);
     }
 
     .selectedCell:after {
@@ -430,7 +430,7 @@
       right: 0;
       top: 0;
       bottom: 0;
-      background: var(--umo-content-table-selected-background);
+      background: var(--pdoc-content-table-selected-background);
       pointer-events: none;
     }
 
@@ -440,7 +440,7 @@
       top: 0;
       bottom: -1px;
       width: 3px;
-      background-color: var(--umo-primary-color);
+      background-color: var(--pdoc-primary-color);
       pointer-events: none;
     }
 
@@ -452,30 +452,30 @@
   .tableWrapper {
     max-width: 100%;
     overflow-x: auto;
-    .umo-scrollbar();
+    .pdoc-scrollbar();
   }
 
   .resize-cursor {
     cursor: col-resize;
   }
 
-  .umo-search-result {
-    background-color: var(--umo-content-search-result-background);
+  .pdoc-search-result {
+    background-color: var(--pdoc-content-search-result-background);
 
     &-current {
-      background: var(--umo-content-search-result-current-background);
+      background: var(--pdoc-content-search-result-current-background);
     }
   }
 
-  .umo-page-divider {
-    .umo-page-divider();
+  .pdoc-page-divider {
+    .pdoc-page-divider();
   }
 
-  .umo-page-break {
+  .pdoc-page-break {
     display: block;
     width: 100%;
     height: 1px;
-    background: var(--umo-content-node-border);
+    background: var(--pdoc-content-node-border);
     break-before: page;
     margin-top: 30px !important;
     margin-bottom: 30px !important;
@@ -484,7 +484,7 @@
     &::after {
       content: attr(data-content);
       font-size: 10px;
-      border: solid 1px var(--umo-content-node-border);
+      border: solid 1px var(--pdoc-content-node-border);
       padding: 1px 8px;
       border-radius: 2px;
       background-color: #fff;
@@ -510,7 +510,7 @@
     }
   }
 
-  .umo-editor-bookmark {
+  .pdoc-editor-bookmark {
     color: hsl(0, 1%, 68%);
 
     &::before {
@@ -526,23 +526,23 @@
     }
   }
 
-  .umo-node-view {
+  .pdoc-node-view {
     display: flex;
     position: relative;
     max-height: 100%;
     scroll-margin-top: 20px;
     scroll-margin-bottom: 20px;
 
-    .umo-node-container {
+    .pdoc-node-container {
       max-height: 100%;
     }
 
-    .umo-hover-shadow:hover {
-      box-shadow: var(--umo-shadow);
+    .pdoc-hover-shadow:hover {
+      box-shadow: var(--pdoc-shadow);
     }
   }
 
-  .umo-heading-number {
+  .pdoc-heading-number {
     display: inline;
     margin-right: 0.4em;
     font-variant-numeric: tabular-nums;
@@ -554,7 +554,7 @@
     font-weight: inherit;
     color: inherit;
 
-    &.umo-heading-number-block {
+    &.pdoc-heading-number-block {
       display: block;
       margin-right: 0;
       margin-bottom: 0;
@@ -563,15 +563,15 @@
     }
   }
 
-  .umo-cross-reference {
-    color: var(--umo-primary-color);
+  .pdoc-cross-reference {
+    color: var(--pdoc-primary-color);
     cursor: pointer;
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
 
     &[data-missing='true'] {
-      color: var(--umo-error-color);
+      color: var(--pdoc-error-color);
       text-decoration-style: wavy;
     }
   }
@@ -585,20 +585,20 @@
       width: 16px;
       height: 2px;
       margin-top: 18px;
-      background-color: var(--umo-primary-color);
+      background-color: var(--pdoc-primary-color);
     }
   }
 
-  .umo-node-details {
+  .pdoc-node-details {
     display: flex;
     gap: 6px;
-    border: 1px solid var(--umo-content-node-border);
-    border-radius: var(--umo-radius);
+    border: 1px solid var(--pdoc-content-node-border);
+    border-radius: var(--pdoc-radius);
     padding: 10px;
     box-sizing: border-box;
 
-    &.umo-node-focused {
-      border-color: var(--umo-primary-color);
+    &.pdoc-node-focused {
+      border-color: var(--pdoc-primary-color);
     }
 
     &-summary {
@@ -626,7 +626,7 @@
       color: #999;
 
       &:hover {
-        color: var(--umo-primary-color);
+        color: var(--pdoc-primary-color);
       }
 
       &::before {
@@ -666,12 +666,12 @@
 
     &--break::before {
       content: '↓';
-      color: var(--umo-content-invisible-break-color);
+      color: var(--pdoc-content-invisible-break-color);
     }
 
     &--paragraph::before {
       content: '↵';
-      color: var(--umo-content-invisible-break-color);
+      color: var(--pdoc-content-invisible-break-color);
     }
 
     @media print {
@@ -703,30 +703,30 @@
       cursor: pointer;
 
       &:hover {
-        outline: solid 1px var(--umo-primary-color) !important;
+        outline: solid 1px var(--pdoc-primary-color) !important;
       }
     }
 
     &.inline-math-error,
     &.block-math-error {
-      color: var(--umo-error-color);
-      border: 1px solid var(--umo-error-color);
+      color: var(--pdoc-error-color);
+      border: 1px solid var(--pdoc-error-color);
       padding: 0.5em;
       border-radius: 0.25em;
     }
   }
 
-  .umo-node-column {
+  .pdoc-node-column {
     position: relative;
-    border-radius: var(--umo-radius);
+    border-radius: var(--pdoc-radius);
     min-width: 50px;
     padding: 5px 8px;
     background-color: transparent;
     transition: background-color 0.2s ease;
     flex-grow: 1;
 
-    &.umo-node-focused {
-      background-color: var(--umo-content-table-selected-background) !important;
+    &.pdoc-node-focused {
+      background-color: var(--pdoc-content-table-selected-background) !important;
     }
 
     &-resize-cursor {
@@ -746,8 +746,8 @@
       width: calc(100% + 16px) !important;
 
       &:hover {
-        .umo-node-column {
-          background-color: var(--umo-content-node-selected-background);
+        .pdoc-node-column {
+          background-color: var(--pdoc-content-node-selected-background);
         }
       }
     }
@@ -768,7 +768,7 @@
       bottom: 0;
       width: 2px;
       z-index: 1;
-      background-color: var(--umo-primary-color);
+      background-color: var(--pdoc-primary-color);
       cursor: col-resize;
 
       &-circle-btn {
@@ -777,8 +777,8 @@
         left: -8px;
         width: 14px;
         height: 14px;
-        background-color: var(--umo-primary-color);
-        border: 2px solid var(--umo-page-background);
+        background-color: var(--pdoc-primary-color);
+        border: 2px solid var(--pdoc-page-background);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -801,7 +801,7 @@
         &::after {
           content: '';
           position: absolute;
-          background-color: var(--umo-page-background);
+          background-color: var(--pdoc-page-background);
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -820,7 +820,7 @@
     }
   }
 
-  .umo-node-footnotes {
+  .pdoc-node-footnotes {
     margin-top: 100px !important;
     padding: 15px 0 15px 1.5em;
     position: relative;
@@ -881,7 +881,7 @@
 }
 
 :-webkit-any(article, aside, nav, section) {
-  .umo-editor {
+  .pdoc-editor {
     h1 {
       font-size: 2.5em;
     }
@@ -910,7 +910,7 @@
 
 // Page numbers are drawn by the pagination engine, one per sheet, inside the margin band. They are
 // plain elements rather than decorations because they belong to the sheet, not to the document.
-.umo-page-number {
+.pdoc-page-number {
   // No font size or line height here: the block carries the "Page Number" profile's class, and the
   // generated stylesheet is the single source for its typography, exactly like any other block.
   color: inherit;

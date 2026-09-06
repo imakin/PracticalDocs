@@ -1,5 +1,5 @@
 <template>
-  <node-view-wrapper class="umo-node-view">
+  <node-view-wrapper class="pdoc-node-view">
     <!--
       No panel, no label, no buttons. The product's first principle is that nothing occupies a line
       of the page that the user did not write, and the bar this block used to carry - Markdown,
@@ -8,12 +8,12 @@
 
       A markdown block therefore looks like an ordinary block, because that is what it is.
     -->
-    <div class="umo-node-markdown-block" :class="{ 'is-editing': active }">
+    <div class="pdoc-node-markdown-block" :class="{ 'is-editing': active }">
       <textarea
         v-show="active"
         ref="sourceRef"
         v-model="draft"
-        class="umo-markdown-source"
+        class="pdoc-markdown-source"
         spellcheck="false"
         @input="autoSize"
         @focus="enter"
@@ -30,7 +30,7 @@
       -->
       <node-view-content
         v-show="!active"
-        class="umo-markdown-rendered"
+        class="pdoc-markdown-rendered"
         contenteditable="false"
         @mousedown="select"
       />
@@ -189,11 +189,11 @@ watch(
 </script>
 
 <style lang="less">
-.umo-node-markdown-block {
+.pdoc-node-markdown-block {
   // Nothing in the resting state. A markdown block that is not being edited has to be
   // indistinguishable from the blocks around it, or it is chrome.
   position: relative;
-  // `.umo-node-view` is a flex container, so a child with no width shrinks to fit its content - and
+  // `.pdoc-node-view` is a flex container, so a child with no width shrinks to fit its content - and
   // a textarea's content width is its `cols` attribute, which defaults to 20 characters. The source
   // came out one narrow column, and because the rendered half was full width, a click landed inside
   // the block, opened the source, then landed outside the narrow textarea and closed it again, over
@@ -203,7 +203,7 @@ watch(
   width: 100%;
   min-width: 0;
 
-  .umo-markdown-source {
+  .pdoc-markdown-source {
     display: block;
     width: 100%;
     box-sizing: border-box;
@@ -215,13 +215,13 @@ watch(
     resize: none;
     // Monospace is the only signal that this is source rather than prose, and it is a property of
     // the text itself rather than a box drawn around it.
-    font-family: var(--umo-font-family-code, monospace);
+    font-family: var(--pdoc-font-family-code, monospace);
     font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
     background-color: transparent;
-    color: var(--umo-text-color, #1f1f1f);
+    color: var(--pdoc-text-color, #1f1f1f);
   }
 }
 </style>

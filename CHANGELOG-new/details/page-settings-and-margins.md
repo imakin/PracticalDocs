@@ -14,7 +14,7 @@ Provide a robust Page Settings modal (`page-options.vue`) that allows users to s
    - Guaranteed: No text block ever overlaps or sits on top of the footer zone, sheet gap, or header zone.
 
 2. **Visual Page Sheet Boundaries & Margin Zones**:
-   - Applied dynamic `--umo-page-content-height` and `repeating-linear-gradient` styling to `.umo-page-content` in `src/components/container/page.vue`.
+   - Applied dynamic `--pdoc-page-content-height` and `repeating-linear-gradient` styling to `.pdoc-page-content` in `src/components/container/page.vue`.
    - Renders a Header zone boundary line (`margin-top`), a Footer & Page Numbering zone boundary line (`page-height - margin-bottom`), and a 16px sheet-separation gap at every paper page height interval.
 
 3. **Paper Size Preservation on Margin Edit**:

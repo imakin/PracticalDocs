@@ -9,8 +9,8 @@
       <icon name="barcode" />
       {{ dialogTitle }}
     </template>
-    <div class="umo-barcode-container">
-      <div class="umo-barcode-toolbar">
+    <div class="pdoc-barcode-container">
+      <div class="pdoc-barcode-toolbar">
         <menus-button
           style="width: 126px"
           :text="t('tools.barcode.format')"
@@ -72,7 +72,7 @@
         >
           <icon name="setting" />
           <template #content>
-            <div class="umo-barcode-toolbar-more umo-scrollbar">
+            <div class="pdoc-barcode-toolbar-more pdoc-scrollbar">
               <t-form size="small" label-align="left">
                 <t-form-item :label="t('tools.barcode.width')">
                   <t-slider
@@ -144,7 +144,7 @@
           </template>
         </menus-button>
       </div>
-      <div class="umo-barcode-code">
+      <div class="pdoc-barcode-code">
         <t-input
           v-model="config.content"
           maxlength="44"
@@ -160,19 +160,19 @@
         </t-input>
         <div
           v-if="renderError && config.content"
-          class="umo-barcode-error"
+          class="pdoc-barcode-error"
           v-text="t('tools.barcode.error')"
         ></div>
       </div>
-      <div class="umo-barcode-render">
+      <div class="pdoc-barcode-render">
         <div
-          class="umo-barcode-title"
+          class="pdoc-barcode-title"
           v-text="t('tools.barcode.preview')"
         ></div>
-        <div class="umo-barcode-svg umo-scrollbar">
+        <div class="pdoc-barcode-svg pdoc-scrollbar">
           <div
             v-if="renderError"
-            class="umo-barcode-empty"
+            class="pdoc-barcode-empty"
             v-text="t('tools.barcode.renderError')"
           ></div>
           <svg
@@ -361,38 +361,38 @@ watch(
 </script>
 
 <style lang="less" scoped>
-.umo-barcode-container {
+.pdoc-barcode-container {
   padding: 2px;
-  .umo-barcode-toolbar {
+  .pdoc-barcode-toolbar {
     margin-bottom: 10px;
     display: flex;
     align-items: center;
   }
-  .umo-barcode-code {
+  .pdoc-barcode-code {
     margin-bottom: 10px;
-    :deep(.umo-textarea__inner) {
+    :deep(.pdoc-textarea__inner) {
       height: 100%;
       resize: none;
     }
-    .umo-barcode-error {
+    .pdoc-barcode-error {
       font-size: 12px;
-      color: var(--umo-error-color);
+      color: var(--pdoc-error-color);
     }
   }
-  .umo-barcode-render {
+  .pdoc-barcode-render {
     border: solid 1px var(--td-border-level-2-color);
-    border-radius: var(--umo-radius);
+    border-radius: var(--pdoc-radius);
     position: relative;
     overflow: hidden;
     box-sizing: border-box;
-    .umo-barcode-title {
-      background-color: var(--umo-button-hover-background);
+    .pdoc-barcode-title {
+      background-color: var(--pdoc-button-hover-background);
       padding: 0 10px;
       position: absolute;
       font-size: 12px;
-      border-bottom-right-radius: var(--umo-radius);
+      border-bottom-right-radius: var(--pdoc-radius);
     }
-    .umo-barcode-svg {
+    .pdoc-barcode-svg {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -400,32 +400,32 @@ watch(
       padding: 30px 10px;
       min-height: 100px;
       overflow: auto;
-      color: var(--umo-text-color);
+      color: var(--pdoc-text-color);
       svg {
-        border: solid 1px var(--umo-border-color-light);
+        border: solid 1px var(--pdoc-border-color-light);
       }
     }
-    .umo-barcode-empty {
-      color: var(--umo-text-color-light);
+    .pdoc-barcode-empty {
+      color: var(--pdoc-text-color-light);
       font-size: 12px;
       margin: 20px;
     }
   }
 }
 
-.umo-barcode-toolbar-more {
+.pdoc-barcode-toolbar-more {
   width: 260px;
   height: 200px;
-  padding: var(--umo-popup-content-padding);
+  padding: var(--pdoc-popup-content-padding);
   margin: -12px;
 
-  :deep(.umo-form__item) {
+  :deep(.pdoc-form__item) {
     --td-font-body-medium: 12px;
     margin-bottom: 5px;
     font-size: 12px;
   }
 
-  :deep(.umo-divider--horizontal) {
+  :deep(.pdoc-divider--horizontal) {
     margin: 5px 0;
   }
 }

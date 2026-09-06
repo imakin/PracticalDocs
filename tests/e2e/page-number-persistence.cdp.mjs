@@ -71,7 +71,7 @@ const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: t
 
 // Profiles live in localStorage, shared with every other tab on this origin. Snapshot the shared keys
 // and put them back before leaving, so a test run never disturbs the user's own editor tab.
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 
 const evaluate = async (expression) => {
@@ -212,7 +212,7 @@ const saveAndCapture = async () => {
 }
 
 const readSettings = () => evaluate(`JSON.parse(JSON.stringify(window.__p.page.value.pageNumber))`)
-const renderedNumbers = () => evaluate(`(() => [...document.querySelectorAll('.umo-page-number')].map((el) => el.textContent.trim()))()`)
+const renderedNumbers = () => evaluate(`(() => [...document.querySelectorAll('.pdoc-page-number')].map((el) => el.textContent.trim()))()`)
 
 console.log('\nCase A: a save carries the page number settings')
 await evaluate(`(async () => {

@@ -1,11 +1,11 @@
-# UmoPractical & Storage Server
+# PracticalDocs & Storage Server
 
 A document editor for long, page-accurate documents - theses and reports - built on Vue 3 and
-Tiptap, with an integrated AES-256-GCM encrypted storage backend (`practical-umodoc-server`).
+Tiptap, with an integrated AES-256-GCM encrypted storage backend (`practicaldocs-server`).
 
-Package: `@np_makin/umopractical`.
+Package: `@np_makin/practicaldocs`.
 
-UmoPractical is based on [Umo Editor](https://www.umodoc.com) by Umodoc, MIT licensed. The
+PracticalDocs is based on [Umo Editor](https://www.umodoc.com) by Umodoc, MIT licensed. The
 `LICENSE` file carries that copyright and stays as it is. Everything added here - the pagination
 engine, the numbering profiles, cross-references, the PDF bookmark tooling - follows the same
 licence.
@@ -13,9 +13,9 @@ licence.
 **Names that look like the old one and must stay that way.** They are identifiers written into files
 and browser storage, not product names, and changing them would break documents that already exist:
 
-- the `umo-` CSS prefix, which is in every saved `document.html`
+- the `pdoc-` CSS prefix, which is in every saved `document.html`
 - `format: "umodoc"` in every saved `settings.json`, which the reader checks before opening a file
-- the `umo-editor:` localStorage keys holding the open document and the profile list
+- the `practicaldocs:` localStorage keys holding the open document and the profile list
 
 ---
 
@@ -25,7 +25,7 @@ and browser storage, not product names, and changing them would break documents 
 ```bash
 npm run server
 ```
-*Runs `practical-umodoc-server` on `http://localhost:3001`.*
+*Runs `practicaldocs-server` on `http://localhost:3001`.*
 
 ### 2. Run Editor Web App
 ```bash
@@ -47,7 +47,7 @@ This compiles production static assets into the `./dist/` directory.
 Run the backend server in background using PM2:
 ```bash
 npm install -g pm2
-PORT=3001 ENCRYPTION_SECRET="your-secure-custom-key" pm2 start storage-server/server.js --name "practical-umodoc-server"
+PORT=3001 ENCRYPTION_SECRET="your-secure-custom-key" pm2 start storage-server/server.js --name "practicaldocs-server"
 pm2 save
 ```
 
@@ -60,7 +60,7 @@ doc.yourdomain.com {
     root * /var/www/practical-umodoc/dist
     file_server
 
-    # Reverse proxy API requests to practical-umodoc-server
+    # Reverse proxy API requests to practicaldocs-server
     handle /api/* {
         reverse_proxy 127.0.0.1:3001
     }
@@ -81,6 +81,6 @@ sudo caddy reload
 
 ## Key Features
 - **AES-256-GCM Encrypted Storage**: Documents saved to `storage-server/data/` are encrypted at rest.
-- **Save Target Selector**: Switch between `practical-umodoc-server`, `Local Storage`, and `Google Drive`.
+- **Save Target Selector**: Switch between `practicaldocs-server`, `Local Storage`, and `Google Drive`.
 - **Unified Block Style Profiles**: Unified Paragraph and Heading profiles with ON/OFF auto-numbering toggles.
 - **Portable JSON Snapshots**: Export/import `.umodoc.json` documents with full profile state persistence.

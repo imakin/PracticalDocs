@@ -1,7 +1,7 @@
 {
-  "name": "@np_makin/umopractical",
+  "name": "@np_makin/practicaldocs",
   "version": "11.0.4",
-  "description": "UmoPractical is a document editor for long, page-accurate documents - theses and reports - built on Vue 3 and Tiptap. It is based on Umo Editor by Umodoc (MIT), with its own pagination engine, numbering profiles and PDF tooling.",
+  "description": "PracticalDocs is a document editor for long, page-accurate documents - theses and reports - built on Vue 3 and Tiptap. It is based on Umo Editor by Umodoc (MIT), with its own pagination engine, numbering profiles and PDF tooling.",
   "keywords": [
     "docs editor",
     "document editor",
@@ -34,10 +34,10 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/umo-editor.js"
+      "import": "./dist/practicaldocs.js"
     },
     "./style": {
-      "import": "./dist/umo-editor.css"
+      "import": "./dist/practicaldocs.css"
     }
   },
   "scripts": {

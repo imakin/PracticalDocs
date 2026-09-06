@@ -9,8 +9,8 @@
       <icon name="qrcode" />
       {{ dialogTitle }}
     </template>
-    <div class="umo-qrcode-container">
-      <div class="umo-qrcode-toolbar">
+    <div class="pdoc-qrcode-container">
+      <div class="pdoc-qrcode-toolbar">
         <menus-button
           style="width: 126px"
           :text="t('tools.qrcode.level')"
@@ -61,7 +61,7 @@
           @change="(value) => (config.background = value)"
         />
       </div>
-      <div class="umo-qrcode-code">
+      <div class="pdoc-qrcode-code">
         <t-textarea
           v-model="config.content"
           maxlength="200"
@@ -72,19 +72,19 @@
         />
         <div
           v-if="renderError && config.content !== ''"
-          class="umo-barcode-error"
+          class="pdoc-barcode-error"
           v-text="t('tools.qrcode.renderError')"
         ></div>
       </div>
-      <div class="umo-qrcode-render">
-        <div class="umo-qrcode-title" v-text="t('tools.qrcode.preview')"></div>
-        <div class="umo-qrcode-svg umo-scrollbar">
+      <div class="pdoc-qrcode-render">
+        <div class="pdoc-qrcode-title" v-text="t('tools.qrcode.preview')"></div>
+        <div class="pdoc-qrcode-svg pdoc-scrollbar">
           <div
             v-if="!svgCode"
-            class="umo-qrcode-empty"
+            class="pdoc-qrcode-empty"
             v-text="t('tools.qrcode.notEmpty')"
           ></div>
-          <div v-else class="umo-svg-render" v-html="svgCode"></div>
+          <div v-else class="pdoc-svg-render" v-html="svgCode"></div>
         </div>
       </div>
     </div>
@@ -224,53 +224,53 @@ watch(
 </script>
 
 <style lang="less" scoped>
-.umo-qrcode-container {
+.pdoc-qrcode-container {
   padding: 2px;
-  .umo-qrcode-toolbar {
+  .pdoc-qrcode-toolbar {
     margin-bottom: 10px;
     display: flex;
     align-items: center;
   }
-  .umo-qrcode-code {
+  .pdoc-qrcode-code {
     margin-bottom: 10px;
-    :deep(.umo-textarea__inner) {
+    :deep(.pdoc-textarea__inner) {
       height: 100%;
       resize: none;
     }
-    .umo-barcode-error {
+    .pdoc-barcode-error {
       font-size: 12px;
-      color: var(--umo-error-color);
+      color: var(--pdoc-error-color);
     }
   }
-  .umo-qrcode-render {
+  .pdoc-qrcode-render {
     border: solid 1px var(--td-border-level-2-color);
-    border-radius: var(--umo-radius);
+    border-radius: var(--pdoc-radius);
     position: relative;
     overflow: hidden;
     box-sizing: border-box;
-    .umo-qrcode-title {
-      background-color: var(--umo-button-hover-background);
+    .pdoc-qrcode-title {
+      background-color: var(--pdoc-button-hover-background);
       padding: 0 10px;
       position: absolute;
       font-size: 12px;
-      border-bottom-right-radius: var(--umo-radius);
+      border-bottom-right-radius: var(--pdoc-radius);
     }
-    .umo-qrcode-empty {
-      color: var(--umo-text-color-light);
+    .pdoc-qrcode-empty {
+      color: var(--pdoc-text-color-light);
       font-size: 12px;
       margin: 40px;
     }
-    .umo-qrcode-svg {
+    .pdoc-qrcode-svg {
       box-sizing: border-box;
       padding: 30px 10px;
       min-height: 100px;
       overflow: auto;
-      color: var(--umo-text-color);
+      color: var(--pdoc-text-color);
       display: flex;
       align-items: center;
       justify-content: center;
-      > .umo-svg-render {
-        border: solid 1px var(--umo-border-color-light);
+      > .pdoc-svg-render {
+        border: solid 1px var(--pdoc-border-color-light);
         :deep(svg) {
           display: block;
           width: 256px;

@@ -17,19 +17,19 @@
     @menu-click="toggleOrderedList(options[0].value)"
   >
     <template #content>
-      <div class="umo-ordered-list-group">
+      <div class="pdoc-ordered-list-group">
         <tooltip
           v-for="item in options"
           :key="item.value"
           :content="item.label"
         >
           <div
-            class="umo-ordered-list-item"
+            class="pdoc-ordered-list-item"
             :class="{ active: listStyleType === item.value }"
             @click="toggleOrderedList(item.value)"
           >
             <icon
-              class="umo-icon-ordered-list"
+              class="pdoc-icon-ordered-list"
               :name="`ordered-list-${item.value}`"
             />
           </div>
@@ -94,29 +94,29 @@ const toggleOrderedList = (listType) => {
 </script>
 
 <style lang="less" scoped>
-.umo-ordered-list-group {
+.pdoc-ordered-list-group {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
   gap: 8px;
   width: 248px;
-  .umo-ordered-list-item {
+  .pdoc-ordered-list-item {
     cursor: pointer;
     padding: 5px;
-    border: solid 1px var(--umo-border-color);
+    border: solid 1px var(--pdoc-border-color);
     box-sizing: border-box;
     &:nth-child(4n) {
       margin-right: 0;
     }
     &:hover {
-      background-color: var(--umo-button-hover-background);
+      background-color: var(--pdoc-button-hover-background);
     }
     &.active {
-      border-color: var(--umo-primary-color);
+      border-color: var(--pdoc-primary-color);
     }
   }
-  .umo-icon-ordered-list {
+  .pdoc-icon-ordered-list {
     font-size: 44px;
   }
 }

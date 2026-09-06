@@ -117,10 +117,10 @@ async function runFullCDPAudit() {
     {
       expression: `
         (async () => {
-          const statusBtn = document.querySelector('.umo-editor-status-item') || document.querySelector('.umo-editor-status');
+          const statusBtn = document.querySelector('.pdoc-editor-status-item') || document.querySelector('.pdoc-editor-status');
           if (statusBtn) statusBtn.click();
           await new Promise((r) => setTimeout(r, 500));
-          const docTitleInput = document.querySelector('.umo-server-url-field input');
+          const docTitleInput = document.querySelector('.pdoc-server-url-field input');
           const docTitle = docTitleInput ? docTitleInput.value : 'file-identifier';
           return { docTitle };
         })()
@@ -141,7 +141,7 @@ async function runFullCDPAudit() {
     {
       expression: `
         (async () => {
-          const input = document.querySelector('.umo-server-url-field input');
+          const input = document.querySelector('.pdoc-server-url-field input');
           if (input) {
             input.value = 'a';
             input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -165,10 +165,10 @@ async function runFullCDPAudit() {
               fontFamily: 'Times New Roman',
             }
           ];
-          localStorage.setItem('umo-editor:profiles', JSON.stringify(testProfiles));
+          localStorage.setItem('practicaldocs:profiles', JSON.stringify(testProfiles));
 
           // Trigger save button in toolbar
-          const saveBtn = document.querySelector('.umo-status-popup button') || document.querySelector('[data-testid="save"]');
+          const saveBtn = document.querySelector('.pdoc-status-popup button') || document.querySelector('[data-testid="save"]');
           if (saveBtn) saveBtn.click();
           await new Promise((r) => setTimeout(r, 1000));
           return { titleSet: input ? input.value : null };
@@ -272,7 +272,7 @@ async function runFullCDPAudit() {
           const doc = data.document;
 
           // Replace editor content with loaded document
-          const h1 = document.querySelector('.umo-editor h1') || document.createElement('h1');
+          const h1 = document.querySelector('.pdoc-editor h1') || document.createElement('h1');
           if (!h1.parentElement) document.body.appendChild(h1);
           h1.style.textAlign = doc.json.content[0].attrs.textAlign;
           h1.style.lineHeight = doc.json.content[0].attrs.lineHeight;
@@ -281,10 +281,10 @@ async function runFullCDPAudit() {
           h1.style.fontWeight = doc.json.content[0].attrs.fontWeight;
 
           // Create multiline decoration element
-          let widget = h1.querySelector('.umo-heading-number');
+          let widget = h1.querySelector('.pdoc-heading-number');
           if (!widget) {
             widget = document.createElement('span');
-            widget.className = 'umo-heading-number umo-heading-number-block ProseMirror-widget';
+            widget.className = 'pdoc-heading-number pdoc-heading-number-block ProseMirror-widget';
             widget.contentEditable = 'false';
             widget.style.display = 'block';
             widget.style.width = '100%';
@@ -383,8 +383,8 @@ async function runFullCDPAudit() {
     {
       expression: `
         (async () => {
-          const h1 = document.querySelector('.umo-editor h1') || document.querySelector('h1');
-          const p = document.querySelector('.umo-editor p') || document.querySelector('p');
+          const h1 = document.querySelector('.pdoc-editor h1') || document.querySelector('h1');
+          const p = document.querySelector('.pdoc-editor p') || document.querySelector('p');
 
           if (h1) {
             h1.style.lineHeight = '2';
@@ -398,7 +398,7 @@ async function runFullCDPAudit() {
           const pStyle = p ? window.getComputedStyle(p) : null;
 
           // Open status popup to check New Document button presence
-          const statusBtn = document.querySelector('.umo-status-popup-button') || document.querySelector('.umo-status') || document.querySelector('[data-testid="save"]');
+          const statusBtn = document.querySelector('.pdoc-status-popup-button') || document.querySelector('.pdoc-status') || document.querySelector('[data-testid="save"]');
           if (statusBtn) statusBtn.click();
           await new Promise((r) => setTimeout(r, 300));
 
@@ -407,7 +407,7 @@ async function runFullCDPAudit() {
             h1ComputedLineHeight: h1Style ? h1Style.lineHeight : '28px',
             pLineHeightStyle: p ? p.style.lineHeight : '1.5',
             pTextIndentStyle: p ? p.style.textIndent : '2em',
-            hasNewDocBtn: Boolean(document.querySelector('.umo-document-button-container button')),
+            hasNewDocBtn: Boolean(document.querySelector('.pdoc-document-button-container button')),
           };
         })()
       `,
@@ -436,11 +436,11 @@ async function runFullCDPAudit() {
     {
       expression: `
         (async () => {
-          const pageContainer = document.querySelector('.umo-page-content');
+          const pageContainer = document.querySelector('.pdoc-page-content');
           if (!pageContainer) return { error: 'Page container not found' };
 
           const getVuePage = () => {
-            const el = document.querySelector('.umo-zoomable-container') || pageContainer;
+            const el = document.querySelector('.pdoc-zoomable-container') || pageContainer;
             let vm = el?.__vnode?.ctx;
             while (vm) {
               if (vm.provides && vm.provides.page) return vm.provides.page;

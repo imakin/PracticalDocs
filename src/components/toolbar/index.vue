@@ -1,5 +1,5 @@
 <template>
-  <div v-if="$toolbar.show" class="umo-toolbar-container">
+  <div v-if="$toolbar.show" class="pdoc-toolbar-container">
     <toolbar-ribbon
       v-if="$toolbar.mode === 'ribbon'"
       :menus="toolbarMenus"
@@ -29,11 +29,11 @@
       </template>
     </toolbar-classic>
     <div
-      class="umo-toolbar-actions"
-      :class="`umo-toolbar-actions-${$toolbar.mode}`"
+      class="pdoc-toolbar-actions"
+      :class="`pdoc-toolbar-actions-${$toolbar.mode}`"
     >
       <t-button
-        class="umo-toolbar-actions-button"
+        class="pdoc-toolbar-actions-button"
         variant="text"
         size="small"
         @click="triggerLoadModal"
@@ -52,17 +52,17 @@
         @visible-change="(visible) => (statusPopup = visible)"
       >
         <t-button
-          class="umo-toolbar-actions-button"
+          class="pdoc-toolbar-actions-button"
           variant="text"
           size="small"
           :class="{ active: statusPopup }"
         >
-          <span class="umo-status">
+          <span class="pdoc-status">
             <span
-              class="umo-status-online"
+              class="pdoc-status-online"
               :class="{ offline: !online }"
             ></span>
-            <span class="umo-status-saved button-text">
+            <span class="pdoc-status-saved button-text">
               <span
                 v-if="savedAt"
                 v-text="t('save.savedAtText', { time: timeAgo(savedAt) })"
@@ -72,7 +72,7 @@
           </span>
         </t-button>
         <template #content>
-          <div class="umo-document-status-container umo-status">
+          <div class="pdoc-document-status-container pdoc-status">
             <div>
               {{ t('save.network') }}
               {{ online ? t('save.online') : t('save.offline') }}
@@ -85,7 +85,7 @@
               ></span>
               <span v-else v-text="t('save.unsaved')"></span>
             </div>
-            <div class="umo-document-button-container" style="display: flex; gap: 6px;">
+            <div class="pdoc-document-button-container" style="display: flex; gap: 6px;">
               <t-button
                 size="small"
                 theme="primary"
@@ -109,19 +109,19 @@
                 New Document
               </t-button>
             </div>
-            <div class="umo-save-target-container">
-              <div class="umo-save-target-title">Save Destination:</div>
-              <t-radio-group v-model="saveTarget" size="small" class="umo-save-target-group">
-                <t-radio value="practical-umodoc-server">practical-umodoc-server (Encrypted)</t-radio>
+            <div class="pdoc-save-target-container">
+              <div class="pdoc-save-target-title">Save Destination:</div>
+              <t-radio-group v-model="saveTarget" size="small" class="pdoc-save-target-group">
+                <t-radio value="practicaldocs-server">practicaldocs-server (Encrypted)</t-radio>
                 <t-radio value="local-storage">Local Storage</t-radio>
                 <t-radio value="google-drive" disabled>Google Drive (Coming Soon)</t-radio>
               </t-radio-group>
-              <div class="umo-server-url-field">
-                <div class="umo-server-url-label">File Name / Document Title:</div>
+              <div class="pdoc-server-url-field">
+                <div class="pdoc-server-url-label">File Name / Document Title:</div>
                 <t-input v-model="documentTitle" placeholder="e.g. report_chapter1" size="small" />
               </div>
-              <div v-if="saveTarget === 'practical-umodoc-server'" class="umo-server-url-field">
-                <div class="umo-server-url-label">Server API URL:</div>
+              <div v-if="saveTarget === 'practicaldocs-server'" class="pdoc-server-url-field">
+                <div class="pdoc-server-url-label">Server API URL:</div>
                 <t-input v-model="serverUrl" placeholder="http://localhost:3001/api/documents/save" size="small" />
               </div>
             </div>
@@ -139,12 +139,12 @@
         @click="toggleToolbarMode"
       >
         <t-button
-          class="umo-toolbar-actions-button"
+          class="pdoc-toolbar-actions-button"
           variant="text"
           size="small"
         >
           <icon name="expand-down" />
-          <span class="umo-button-text">{{ t('toolbar.toggle') }}</span>
+          <span class="pdoc-button-text">{{ t('toolbar.toggle') }}</span>
         </t-button>
         <template #dropdown>
           <t-dropdown-menu
@@ -164,7 +164,7 @@
     </div>
   </div>
   <tooltip v-else :content="t('toolbar.show')" placement="bottom-right">
-    <div class="umo-show-toolbar" @click="$toolbar.show = true">
+    <div class="pdoc-show-toolbar" @click="$toolbar.show = true">
       <icon name="arrow-down" />
     </div>
   </tooltip>
@@ -203,8 +203,8 @@ const documentTitle = computed({
 
 import { useConfirm, useMessage } from '@/composables/dialog'
 
-const saveTarget = useStorage('umo-editor:save-target', 'practical-umodoc-server')
-const serverUrl = useStorage('umo-editor:server-url', 'http://localhost:3001/api/documents/save')
+const saveTarget = useStorage('practicaldocs:save-target', 'practicaldocs-server')
+const serverUrl = useStorage('practicaldocs:server-url', 'http://localhost:3001/api/documents/save')
 
 const triggerLoadModal = () => {
   statusPopup = false
@@ -326,13 +326,13 @@ const setContentFromCache = () => {
 </script>
 
 <style lang="less" scoped>
-.umo-toolbar-container {
+.pdoc-toolbar-container {
   display: flex;
   justify-content: space-between;
   user-select: none;
   position: relative;
 }
-.umo-toolbar-actions {
+.pdoc-toolbar-actions {
   padding: 6px 10px;
   display: flex;
   align-items: center;
@@ -343,48 +343,48 @@ const setContentFromCache = () => {
   }
   &-button {
     &.active {
-      background-color: var(--umo-button-hover-background);
+      background-color: var(--pdoc-button-hover-background);
     }
     &:not(:last-child) {
       margin-right: 3px;
     }
-    :deep(.umo-button__text) {
+    :deep(.pdoc-button__text) {
       display: flex;
       align-items: center;
-      .umo-icon {
+      .pdoc-icon {
         margin-right: 3px;
       }
     }
   }
   @media screen and (max-width: 640px) {
     padding-left: 0;
-    .umo-status-online {
+    .pdoc-status-online {
       margin-right: 0;
     }
-    .umo-button-text {
+    .pdoc-button-text {
       display: none;
     }
   }
 }
-.umo-show-toolbar {
+.pdoc-show-toolbar {
   cursor: pointer;
   position: absolute;
   right: 20px;
   font-size: 18px;
   padding: 3px 6px;
   z-index: 99;
-  background-color: var(--umo-color-white);
-  color: var(--umo-text-color-light);
-  border-bottom-left-radius: var(--umo-radius);
-  border-bottom-right-radius: var(--umo-radius);
-  border: solid 1px var(--umo-border-color);
+  background-color: var(--pdoc-color-white);
+  color: var(--pdoc-text-color-light);
+  border-bottom-left-radius: var(--pdoc-radius);
+  border-bottom-right-radius: var(--pdoc-radius);
+  border: solid 1px var(--pdoc-border-color);
   border-top: none;
   &:hover {
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.08);
-    color: var(--umo-primary-color);
+    color: var(--pdoc-primary-color);
   }
 }
-.umo-status {
+.pdoc-status {
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -399,59 +399,59 @@ const setContentFromCache = () => {
     }
   }
   &-saved {
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     margin-left: 5px;
     .unsaved {
-      color: var(--umo-error-color);
+      color: var(--pdoc-error-color);
     }
   }
 }
-.umo-document-status-container {
+.pdoc-document-status-container {
   flex-direction: column;
   align-items: unset;
   padding: 12px 16px;
-  color: var(--umo-text-color);
+  color: var(--pdoc-text-color);
   min-width: 260px;
   cursor: default;
-  .umo-document-button-container {
+  .pdoc-document-button-container {
     margin: 8px 0 4px;
     display: flex;
     gap: 8px;
   }
 }
-.umo-save-target-container {
+.pdoc-save-target-container {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid var(--umo-border-color-light);
+  border-top: 1px solid var(--pdoc-border-color-light);
 }
-.umo-save-target-title {
+.pdoc-save-target-title {
   font-weight: 600;
   font-size: 12px;
   margin-bottom: 6px;
-  color: var(--umo-text-color);
+  color: var(--pdoc-text-color);
 }
-.umo-save-target-group {
+.pdoc-save-target-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.umo-server-url-field {
+.pdoc-server-url-field {
   margin-top: 8px;
 }
-.umo-server-url-label {
+.pdoc-server-url-label {
   font-size: 11px;
-  color: var(--umo-text-color-secondary);
+  color: var(--pdoc-text-color-secondary);
   margin-bottom: 4px;
 }
 </style>
 
 <style lang="less">
-.umo-skin-modern {
+.pdoc-skin-modern {
   &.toolbar-classic {
-    .umo-toolbar-actions {
+    .pdoc-toolbar-actions {
       margin: 15px 15px 2px 0;
       border-radius: 6px;
-      background-color: var(--umo-color-white);
+      background-color: var(--pdoc-color-white);
       box-shadow:
         0 0 0 1px hsla(0, 0%, 5%, 0.04),
         0 2px 5px hsla(0, 0%, 5%, 0.06);
@@ -463,16 +463,16 @@ const setContentFromCache = () => {
     }
   }
   &.toolbar-ribbon {
-    .umo-toolbar-actions {
+    .pdoc-toolbar-actions {
       right: 5px !important;
       top: 6px !important;
     }
   }
 }
-[theme-mode='dark'] .umo-skin-modern {
+[theme-mode='dark'] .pdoc-skin-modern {
   &.toolbar-classic {
-    .umo-toolbar-actions {
-      outline: solid 1px var(--umo-border-color-light);
+    .pdoc-toolbar-actions {
+      outline: solid 1px var(--pdoc-border-color-light);
     }
   }
 }

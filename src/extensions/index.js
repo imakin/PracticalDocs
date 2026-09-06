@@ -134,7 +134,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     'bullet-list': BulletList,
     'task-list': TaskList.configure({
       HTMLAttributes: {
-        class: 'umo-task-list',
+        class: 'pdoc-task-list',
       },
     }),
     margin: Margin,
@@ -210,7 +210,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
       },
     }),
     Focus.configure({
-      className: 'umo-node-focused',
+      className: 'pdoc-node-focused',
       mode: 'all',
     }),
     TrailingNode.configure({
@@ -244,17 +244,17 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     File,
     Details.configure({
       HTMLAttributes: {
-        class: 'umo-node-details',
+        class: 'pdoc-node-details',
       },
     }),
     DetailsContent.configure({
       HTMLAttributes: {
-        class: 'umo-node-details-content',
+        class: 'pdoc-node-details-content',
       },
     }),
     DetailsSummary.configure({
       HTMLAttributes: {
-        class: 'umo-node-details-summary',
+        class: 'pdoc-node-details-summary',
       },
     }),
 
@@ -278,7 +278,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     TableOfContents.configure({
       getIndex: getHierarchicalIndexes,
       scrollParent: () =>
-        document.querySelector(`${container} .umo-zoomable-container`),
+        document.querySelector(`${container} .pdoc-zoomable-container`),
       getId: () => shortId(10),
     }),
     Typography.configure(doc?.typographyRules),
@@ -290,7 +290,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
       async onPaste(editor, files) {
         // 记录 已有位置
         const pageContainer = document.querySelector(
-          `${container} .umo-zoomable-container`,
+          `${container} .pdoc-zoomable-container`,
         )
         const scrollTop = pageContainer?.scrollTop || 0
         for (const file of files) {
@@ -324,7 +324,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
       },
     }),
     Dropcursor.configure({
-      color: 'var(--umo-primary-color)',
+      color: 'var(--pdoc-primary-color)',
     }),
     TypeWriter,
     OfficePaste,

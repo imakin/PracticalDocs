@@ -2,16 +2,16 @@
   <node-view-wrapper
     :id="attrs.id"
     ref="containerRef"
-    class="umo-node-view umo-floating-node"
+    class="pdoc-node-view pdoc-floating-node"
     :style="{
       zIndex: 90,
-      '--umo-textbox-border-color': attrs.borderColor,
-      '--umo-textbox-border-width': attrs.borderWidth + 'px',
-      '--umo-textbox-border-style': attrs.borderStyle,
-      '--umo-textbox-background-color': attrs.backgroundColor,
+      '--pdoc-textbox-border-color': attrs.borderColor,
+      '--pdoc-textbox-border-width': attrs.borderWidth + 'px',
+      '--pdoc-textbox-border-style': attrs.borderStyle,
+      '--pdoc-textbox-background-color': attrs.backgroundColor,
     }"
   >
-    <div class="umo-node-container umo-node-text-box">
+    <div class="pdoc-node-container pdoc-node-text-box">
       <drager
         class="is-draggable"
         :style="{
@@ -40,7 +40,7 @@
       >
         <node-view-content
           ref="contentRef"
-          class="umo-node-text-box-content"
+          class="pdoc-node-text-box-content"
           :style="{ writingMode: attrs.writingMode }"
         />
       </drager>
@@ -93,14 +93,14 @@ const editTextBox = () => {
 </script>
 
 <style lang="less">
-.umo-node-view {
-  .umo-node-text-box {
+.pdoc-node-view {
+  .pdoc-node-text-box {
     position: absolute;
     .es-drager {
       user-select: text !important;
       cursor: default !important;
       z-index: 90 !important;
-      background-color: var(--umo-textbox-background-color);
+      background-color: var(--pdoc-textbox-background-color);
       &.dragging {
         caret-color: transparent;
       }
@@ -111,20 +111,20 @@ const editTextBox = () => {
         }
       }
       &.selected {
-        .umo-node-text-box-content {
+        .pdoc-node-text-box-content {
           outline: none;
         }
       }
       &.disabled.selected {
-        .umo-node-text-box-content {
-          outline: var(--umo-textbox-border-style)
-            var(--umo-textbox-border-width) var(--umo-textbox-border-color);
+        .pdoc-node-text-box-content {
+          outline: var(--pdoc-textbox-border-style)
+            var(--pdoc-textbox-border-width) var(--pdoc-textbox-border-color);
         }
       }
     }
-    .umo-node-text-box-content {
-      outline: var(--umo-textbox-border-style) var(--umo-textbox-border-width)
-        var(--umo-textbox-border-color);
+    .pdoc-node-text-box-content {
+      outline: var(--pdoc-textbox-border-style) var(--pdoc-textbox-border-width)
+        var(--pdoc-textbox-border-color);
       width: 100%;
       height: 100%;
       padding: 5px;

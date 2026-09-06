@@ -1,5 +1,5 @@
 <template>
-  <iframe ref="iframeRef" class="umo-print-iframe" :srcdoc="iframeCode" />
+  <iframe ref="iframeRef" class="pdoc-print-iframe" :srcdoc="iframeCode" />
   <modal
     :visible="askVisible"
     width="420px"
@@ -9,8 +9,8 @@
     @close="cancelPrint"
     @confirm="confirmPrint"
   >
-    <div class="umo-print-dialog">
-      <p class="umo-print-dialog-message">
+    <div class="pdoc-print-dialog">
+      <p class="pdoc-print-dialog-message">
         {{ printing ? t('print.message') : t('export.pdf.message') }}
       </p>
       <!--
@@ -19,7 +19,7 @@
         believe - and it was hardcoded to Chinese for every document this editor ever exported.
       -->
       <t-input v-model="draftLanguage" :label="t('print.language')" />
-      <p class="umo-print-dialog-hint">{{ t('print.languageHint') }}</p>
+      <p class="pdoc-print-dialog-hint">{{ t('print.languageHint') }}</p>
     </div>
   </modal>
 </template>
@@ -60,7 +60,7 @@ const CM_PER_PX = 2.54 / 96
 
 // Every page's margins become real blocks, so `@page` needs no padding at all.
 //
-// The canvas already starts with `.umo-page-node-header` and ends with `.umo-page-node-footer`, each
+// The canvas already starts with `.pdoc-page-node-header` and ends with `.pdoc-page-node-footer`, each
 // exactly one margin tall - real elements, not invisible space. What was missing was the pair in the
 // middle of the document, and the engine's spacer already holds precisely that: the leftover column
 // space, the ending page's bottom margin, the sheet gap, and the next page's top margin. Print has no
@@ -77,7 +77,7 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
     // Still strip the spacers. They are screen-only decorations sized with the sheet gap included;
     // leaving them in stacks their blank space on top of Chrome's own page breaks. Forgetting this
     // turned a 10-sheet document into a 14-page export.
-    for (const spacer of root.querySelectorAll('.umo-page-spacer')) {
+    for (const spacer of root.querySelectorAll('.pdoc-page-spacer')) {
       spacer.remove()
     }
     return
@@ -90,7 +90,7 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
   const addNumber = (host, entry, edge) => {
     if (!entry) return
     const label = document.createElement('div')
-    label.className = 'umo-page-number umo-profile-page-number'
+    label.className = 'pdoc-page-number pdoc-profile-page-number'
     label.textContent = entry.text
     // Sit inside the margin strip rather than against the paper edge, mirroring what the engine does
     // on screen so the two agree.
@@ -110,12 +110,12 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
   // that spacer becomes a band that ends the page. Both firing gives two breaks at one point and an
   // extra blank page, which is exactly what the export did. The bands are authoritative here, so the
   // element's own break is turned off.
-  for (const brk of root.querySelectorAll('.umo-page-break')) {
+  for (const brk of root.querySelectorAll('.pdoc-page-break')) {
     brk.style.breakBefore = 'auto'
     brk.style.pageBreakBefore = 'auto'
   }
 
-  const spacers = [...root.querySelectorAll('.umo-page-spacer')]
+  const spacers = [...root.querySelectorAll('.pdoc-page-spacer')]
   spacers.forEach((spacerSpan, index) => {
     const screenHeight = Number.parseFloat(spacerSpan.style.height) || 0
     const closing = Math.max(marginBottomPx, screenHeight - gapPx - marginTopPx)
@@ -125,7 +125,7 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
     // is a real <div> that replaces the span rather than the span dressed up as one.
     const spacer = document.createElement('div')
     spacerSpan.replaceWith(spacer)
-    spacer.className = 'umo-page-band umo-page-band-closing'
+    spacer.className = 'pdoc-page-band pdoc-page-band-closing'
     spacer.style.cssText = [
       `height: ${closing.toFixed(2)}px`,
       'box-sizing: border-box',
@@ -145,7 +145,7 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
     }
 
     const opening = document.createElement('div')
-    opening.className = 'umo-page-band'
+    opening.className = 'pdoc-page-band'
     opening.style.cssText = [
       `height: ${marginTopPx.toFixed(2)}px`,
       'box-sizing: border-box',
@@ -165,7 +165,7 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
   // page boundary like every other, and the footer's own margin becomes redundant.
   // The first page's top margin is the canvas header, which is already a real block.
   const first = numbersBySheet.get(0)
-  const header = root.querySelector('.umo-page-node-header')
+  const header = root.querySelector('.pdoc-page-node-header')
   if (first?.edge === 'top' && header) {
     header.style.position = 'relative'
     header.style.overflow = 'visible'
@@ -173,10 +173,10 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
   }
 
   const last = numbersBySheet.get(spacers.length)
-  const footer = root.querySelector('.umo-page-node-footer')
+  const footer = root.querySelector('.pdoc-page-node-footer')
   if (last?.edge === 'bottom') {
     const band = document.createElement('div')
-    band.className = 'umo-page-band umo-page-band-closing'
+    band.className = 'pdoc-page-band pdoc-page-band-closing'
     band.dataset.last = 'true'
     band.style.cssText = [
       `height: ${marginBottomPx.toFixed(2)}px`,
@@ -185,13 +185,13 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
       'position: relative',
     ].join(';')
     addNumber(band, last, 'bottom')
-    // Into the text flow, not before the footer. `.umo-page-content` is a flex container and the
+    // Into the text flow, not before the footer. `.pdoc-page-content` is a flex container and the
     // footer is one of its flex items, so a band placed there is laid out by flex rather than after
     // the last line - measured at 96px from the top of the document, stretched to 5515px tall.
     const flow =
       root.querySelector('.ProseMirror') ||
-      root.querySelector('.umo-page-node-content') ||
-      root.querySelector('.umo-page-content')
+      root.querySelector('.pdoc-page-node-content') ||
+      root.querySelector('.pdoc-page-content')
     flow?.appendChild(band)
     if (footer) {
       footer.style.height = '0px'
@@ -207,7 +207,7 @@ const stripScreenPagination = (htmlContent) => {
   // The engine drew these absolutely, in screen coordinates. Their text is what matters; the bands
   // below place it.
   const numbersBySheet = new Map()
-  for (const element of tempDiv.querySelectorAll('.umo-page-number')) {
+  for (const element of tempDiv.querySelectorAll('.pdoc-page-number')) {
     const sheet = Number(element.dataset.sheet)
     if (Number.isFinite(sheet)) {
       numbersBySheet.set(sheet, {
@@ -219,8 +219,8 @@ const stripScreenPagination = (htmlContent) => {
     element.remove()
   }
 
-  for (const sheet of tempDiv.querySelectorAll('.umo-page-content')) {
-    sheet.style.removeProperty('--umo-page-total-height')
+  for (const sheet of tempDiv.querySelectorAll('.pdoc-page-content')) {
+    sheet.style.removeProperty('--pdoc-page-total-height')
   }
   convertSpacersToMarginBands(tempDiv, numbersBySheet)
   return tempDiv.innerHTML
@@ -228,7 +228,7 @@ const stripScreenPagination = (htmlContent) => {
 
 const getContentHtml = () => {
   const originalContent =
-    document.querySelector(`${container} .umo-page-content`)?.outerHTML || ''
+    document.querySelector(`${container} .pdoc-page-content`)?.outerHTML || ''
   return prepareEchartsForPrint(stripScreenPagination(originalContent))
 }
 // 因echart依赖于组件动态展示，打印时效果无法通过html实现，所以通过转成图片方式解决
@@ -238,7 +238,7 @@ const prepareEchartsForPrint = (htmlContent) => {
   tempDiv.innerHTML = htmlContent
 
   // 找到所有需要转换的ECharts实例
-  const charts = tempDiv.querySelectorAll('.umo-node-echarts-body')
+  const charts = tempDiv.querySelectorAll('.pdoc-node-echarts-body')
   for (const chartElement of charts) {
     const chartInstance = echarts.getInstanceByDom(chartElement)
     if (chartInstance) {
@@ -271,7 +271,7 @@ const getIframeCode = () => {
   const { orientation, size, margin, background } = page.value
   const hasPageNumbers =
     page.value.pageNumber?.enabled === true &&
-    document.querySelector(`${container} .umo-page-content > .umo-page-number`) !== null
+    document.querySelector(`${container} .pdoc-page-content > .pdoc-page-number`) !== null
   /* eslint-disable */
   return `
     <!DOCTYPE html>
@@ -293,10 +293,10 @@ const getIframeCode = () => {
         background-color: ${background};
         -webkit-print-color-adjust: exact;
       }
-      .umo-editor-container{
+      .pdoc-editor-container{
         background-color: ${background} !important;
       }
-      .umo-page-content{
+      .pdoc-page-content{
         transform: scale(1) !important;
         overflow: hidden;
         /* The page numbers are absolutely positioned against this box. */
@@ -316,7 +316,7 @@ const getIframeCode = () => {
         ${hasPageNumbers ? '' : 'padding-bottom: 0;'}
         page-break-after: avoid;
       }
-      .umo-page-band {
+      .pdoc-page-band {
         break-inside: avoid;
         page-break-inside: avoid;
       }
@@ -326,8 +326,8 @@ const getIframeCode = () => {
       <div id="sprite-plyr" style="display: none;">
       ${getPlyrSprite()}
       </div>
-      <div class="umo-editor-container" style="line-height: ${defaultLineHeight};" aria-expanded="false">
-        <div class="tiptap umo-editor" translate="no">
+      <div class="pdoc-editor-container" style="line-height: ${defaultLineHeight};" aria-expanded="false">
+        <div class="tiptap pdoc-editor" translate="no">
           ${getContentHtml()}
         </div>
       </div>
@@ -341,8 +341,8 @@ const getIframeCode = () => {
         const snapPageBands = () => {
           const pageHeight = ${orientation === 'portrait' ? size?.height : size?.width} / 2.54 * 96
           if (!(pageHeight > 0)) return
-          const bands = Array.from(document.querySelectorAll('.umo-page-band-closing'))
-          const origin = document.querySelector('.umo-page-content')?.getBoundingClientRect().top ?? 0
+          const bands = Array.from(document.querySelectorAll('.pdoc-page-band-closing'))
+          const origin = document.querySelector('.pdoc-page-content')?.getBoundingClientRect().top ?? 0
           bands.forEach((band, index) => {
             band.style.height = '0px'
             const top = band.getBoundingClientRect().top - origin
@@ -374,7 +374,7 @@ const getIframeCode = () => {
             mutations.forEach(mutation => {
               if (mutation.removedNodes) {
                 Array.from(mutation.removedNodes).forEach(node => {
-                  if (node?.classList?.contains('umo-page-watermark')) {
+                  if (node?.classList?.contains('pdoc-page-watermark')) {
                     location.reload();
                   }
                 });
@@ -450,21 +450,21 @@ watch(
 </script>
 
 <style lang="less" scoped>
-.umo-print-dialog {
-  .umo-print-dialog-message {
+.pdoc-print-dialog {
+  .pdoc-print-dialog-message {
     margin: 0 0 16px;
     line-height: 1.6;
   }
 
-  .umo-print-dialog-hint {
+  .pdoc-print-dialog-hint {
     margin: 8px 0 0;
     font-size: 12px;
     line-height: 1.6;
-    color: var(--umo-text-color-light, #8c8c8c);
+    color: var(--pdoc-text-color-light, #8c8c8c);
   }
 }
 
-.umo-print-iframe {
+.pdoc-print-iframe {
   position: absolute;
   width: 0;
   height: 0;

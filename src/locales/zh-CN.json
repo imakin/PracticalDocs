@@ -1,5 +1,5 @@
 {
-  "welcome": "%c感谢使用 UmoPractical%c当前版本：v{version}，更多信息请访问：{homepage}",
+  "welcome": "%c感谢使用 PracticalDocs%c当前版本：v{version}，更多信息请访问：{homepage}",
   "toolbar": {
     "ribbon": "专业工具栏",
     "classic": "经典工具栏",
@@ -800,7 +800,7 @@
     "reset": "立即重置"
   },
   "about": {
-    "title": "关于 UmoPractical",
+    "title": "关于 PracticalDocs",
     "poweredBy": "基于 <a href=\"https://www.umodoc.com\" target=\"_blank\">Umo Editor</a>（Umodoc，MIT 许可）",
     "version": "当前版本",
     "openSource": "开源版",
@@ -965,7 +965,7 @@
   },
   "documentFile": {
     "open": "打开 JSON",
-    "openTip": "打开 UmoPractical JSON 文档",
+    "openTip": "打开 PracticalDocs JSON 文档",
     "save": "保存为 JSON",
     "saveTip": "将当前文档下载为 JSON",
     "saveSuccess": "文档已下载。",
@@ -983,7 +983,7 @@
     },
     "errors": {
       "invalidJson": "所选文件不是有效的 JSON。",
-      "unknownFormat": "所选文件不是 UmoPractical 文档。",
+      "unknownFormat": "所选文件不是 PracticalDocs 文档。",
       "unsupportedVersion": "此文档使用了不受支持的文件格式版本。",
       "invalidFile": "所选文档文件不完整或无效。",
       "invalidContent": "文档包含当前编辑器无法加载的内容。",

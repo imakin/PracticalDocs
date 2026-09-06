@@ -1,9 +1,9 @@
 <template>
-  <div class="umo-bubble-tag-builtin">
+  <div class="pdoc-bubble-tag-builtin">
     <div
       v-for="item in tags"
       :key="item.type"
-      class="umo-bubble-tag-item"
+      class="pdoc-bubble-tag-item"
       :style="{
         color: item.color,
         backgroundColor: item.backgroundColor,
@@ -15,7 +15,7 @@
         name="selected"
         size="14"
       />
-      <span v-else class="umo-bubble-tag-item-text">A</span>
+      <span v-else class="pdoc-bubble-tag-item-text">A</span>
     </div>
   </div>
 </template>
@@ -64,12 +64,12 @@ const selectStyle = (item) => {
 </script>
 
 <style lang="less">
-.umo-bubble-tag-builtin {
+.pdoc-bubble-tag-builtin {
   margin-right: 5px;
   display: flex;
   align-items: center;
 }
-.umo-bubble-tag-item {
+.pdoc-bubble-tag-item {
   display: flex;
   align-items: center;
   justify-content: center;

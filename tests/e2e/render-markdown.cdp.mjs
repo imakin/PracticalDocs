@@ -8,7 +8,7 @@ const cdpUrl = (process.env.CDP_URL || 'http://127.0.0.1:9222').replace(
   /\/$/,
   '',
 )
-const editorUrl = process.env.EDITOR_URL || 'http://localhost:9000/umo-editor'
+const editorUrl = process.env.EDITOR_URL || 'http://localhost:9000/practicaldocs'
 
 const sleep = (duration) =>
   new Promise((resolve) => setTimeout(resolve, duration))
@@ -238,7 +238,7 @@ try {
     const editor = document.querySelector('.ProseMirror')
     const h1 = editor.querySelector('h1')
     const clone = h1?.cloneNode(true)
-    clone?.querySelectorAll('.umo-heading-number').forEach((n) => n.remove())
+    clone?.querySelectorAll('.pdoc-heading-number').forEach((n) => n.remove())
     return {
       heading: clone?.textContent?.trim() || '',
       text: editor.innerText,
@@ -265,7 +265,7 @@ try {
       const el = editor.querySelector(sel)
       if (!el) return ''
       const clone = el.cloneNode(true)
-      clone.querySelectorAll('.umo-heading-number').forEach((n) => n.remove())
+      clone.querySelectorAll('.pdoc-heading-number').forEach((n) => n.remove())
       return clone.textContent.trim()
     }
     return {

@@ -18,7 +18,7 @@ test('nothing set means no rules at all', () => {
 
 test('a setting becomes a rule scoped inside a markdown block', () => {
   const css = markdownStyleRules({ h1: { fontSize: '24pt' } }, '.scope')
-  assert.match(css, /\.scope \.umo-markdown-rendered h1 \{/)
+  assert.match(css, /\.scope \.pdoc-markdown-rendered h1 \{/)
   assert.match(css, /font-size: 24pt;/)
   // Scoped, or two editors on one page restyle each other.
   assert.doesNotMatch(css, /^h1 \{/m)
@@ -58,9 +58,9 @@ test('a block section keeps every setting', () => {
 test('nesting indent puts level zero at the margin and adds one step per level', () => {
   const css = markdownStyleRules({ bulletList: { nestedIndent: '2em' } }, '.scope')
   // Level 0 at zero was asked for explicitly: a markdown list starts at the text margin.
-  assert.match(css, /\.umo-markdown-rendered > ul \{\n {2}padding-left: 0;\n\}/)
+  assert.match(css, /\.pdoc-markdown-rendered > ul \{\n {2}padding-left: 0;\n\}/)
   // One step per level, accumulating because a nested list sits inside its parent's box.
-  assert.match(css, /\.umo-markdown-rendered ul ul \{\n {2}padding-left: 2em;\n\}/)
+  assert.match(css, /\.pdoc-markdown-rendered ul ul \{\n {2}padding-left: 2em;\n\}/)
 })
 
 test('nesting indent is only offered where nesting means something', () => {

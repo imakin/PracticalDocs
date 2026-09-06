@@ -11,7 +11,7 @@
       <icon name="page-margin" />
       {{ t('pageOptions.title') }}
     </template>
-    <div class="umo-page-options-container">
+    <div class="pdoc-page-options-container">
       <t-form label-align="left">
         <t-form-item
           v-if="page.layout === 'page'"
@@ -35,7 +35,7 @@
           <t-select
             :value="selectedPageSizeIndex >= 0 ? selectedPageSizeIndex : undefined"
             :popup-props="{
-              overlayClassName: 'umo-page-size-select',
+              overlayClassName: 'pdoc-page-size-select',
               destroyOnClose: true,
               attach: container,
             }"
@@ -62,12 +62,12 @@
           v-if="page.layout === 'page'"
           :label="t('pageOptions.size.text')"
         >
-          <div class="umo-page-setting">
+          <div class="pdoc-page-setting">
             <div class="item">
               <t-input-number
                 v-if="pageOptions?.size"
                 v-model="pageOptions.size.width"
-                class="umo-page-setting-number"
+                class="pdoc-page-setting-number"
                 theme="normal"
                 align="center"
                 :min="10"
@@ -82,7 +82,7 @@
               <t-input-number
                 v-if="pageOptions?.size"
                 v-model="pageOptions.size.height"
-                class="umo-page-setting-number"
+                class="pdoc-page-setting-number"
                 theme="normal"
                 align="center"
                 :min="10"
@@ -97,7 +97,7 @@
         </t-form-item>
         <t-form-item :label="t('pageOptions.margin.text')" name="name">
           <div>
-            <div class="umo-page-margin-inbuilt">
+            <div class="pdoc-page-margin-inbuilt">
               <div
                 class="item"
                 :class="{ active: !pageOptions.margin?.layout }"
@@ -147,12 +147,12 @@
                 v-text="t('pageOptions.margin.wide')"
               ></div>
             </div>
-            <div class="umo-page-setting">
+            <div class="pdoc-page-setting">
               <div class="item">
                 <t-input-number
                   v-if="pageOptions?.margin"
                   v-model="pageOptions.margin.top"
-                  class="umo-page-setting-number"
+                  class="pdoc-page-setting-number"
                   theme="normal"
                   align="center"
                   :min="0"
@@ -169,7 +169,7 @@
                 <t-input-number
                   v-if="pageOptions?.margin"
                   v-model="pageOptions.margin.bottom"
-                  class="umo-page-setting-number"
+                  class="pdoc-page-setting-number"
                   theme="normal"
                   align="center"
                   :min="0"
@@ -186,7 +186,7 @@
                 <t-input-number
                   v-if="pageOptions?.margin"
                   v-model="pageOptions.margin.left"
-                  class="umo-page-setting-number"
+                  class="pdoc-page-setting-number"
                   theme="normal"
                   align="center"
                   :min="0"
@@ -203,7 +203,7 @@
                 <t-input-number
                   v-if="pageOptions?.margin"
                   v-model="pageOptions.margin.right"
-                  class="umo-page-setting-number"
+                  class="pdoc-page-setting-number"
                   theme="normal"
                   align="center"
                   :min="0"
@@ -311,13 +311,13 @@ const onConfirm = () => {
 </script>
 
 <style lang="less" scoped>
-.umo-page-options-container {
+.pdoc-page-options-container {
   width: 400px;
   margin-top: 15px;
-  :deep(.umo-radio-button__label) {
+  :deep(.pdoc-radio-button__label) {
     display: flex;
     align-items: center;
-    .umo-icon {
+    .pdoc-icon {
       margin-right: 5px;
       font-size: 20px;
       &.icon-rotate {
@@ -327,19 +327,19 @@ const onConfirm = () => {
   }
 }
 
-.umo-page-margin-inbuilt {
+.pdoc-page-margin-inbuilt {
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
   .item {
     width: 60px;
     height: 80px;
-    border: solid 1px var(--umo-border-color);
-    border-radius: var(--umo-radius);
+    border: solid 1px var(--pdoc-border-color);
+    border-radius: var(--pdoc-radius);
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--umo-button-hover-background);
+    background-color: var(--pdoc-button-hover-background);
     position: relative;
     cursor: pointer;
     overflow: hidden;
@@ -352,7 +352,7 @@ const onConfirm = () => {
       right: 0;
       top: 0;
       bottom: 0;
-      border: solid 8px var(--umo-color-white);
+      border: solid 8px var(--pdoc-color-white);
       border-left-width: 10px;
       border-right-width: 10px;
     }
@@ -369,11 +369,11 @@ const onConfirm = () => {
     }
     &:hover,
     &.active {
-      border-color: var(--umo-primary-color);
+      border-color: var(--pdoc-primary-color);
     }
   }
 }
-.umo-page-setting {
+.pdoc-page-setting {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -390,7 +390,7 @@ const onConfirm = () => {
   }
   &-number {
     width: 140px;
-    :deep(.umo-input__suffix) {
+    :deep(.pdoc-input__suffix) {
       opacity: 0.4;
     }
   }
@@ -398,8 +398,8 @@ const onConfirm = () => {
 </style>
 
 <style lang="less">
-.umo-page-size-select {
-  .umo-select-option {
+.pdoc-page-size-select {
+  .pdoc-select-option {
     padding: 0 8px;
     > span {
       display: flex;
@@ -408,7 +408,7 @@ const onConfirm = () => {
     }
     .desc {
       font-size: 12px;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
     }
   }
 }

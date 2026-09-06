@@ -15,27 +15,27 @@
     :cancel-btn="t('base.markdown.close')"
     @close="open = false"
   >
-    <div class="umo-markdown-styles">
+    <div class="pdoc-markdown-styles">
       <!--
         Both columns are built from the tables in `src/utils/markdown-styles.js`. Adding a section or
         a setting there makes it appear here with nothing to change in this file, which is what the
         user asked for when they asked that more settings be possible later.
       -->
-      <div class="umo-markdown-styles-sections">
+      <div class="pdoc-markdown-styles-sections">
         <button
           v-for="target in targets"
           :key="target.key"
           type="button"
-          class="umo-markdown-styles-section"
+          class="pdoc-markdown-styles-section"
           :class="{ 'is-active': target.key === activeKey, 'is-set': isSet(target.key) }"
           @click="activeKey = target.key"
         >
           {{ target.name }}
-          <span v-if="isSet(target.key)" class="umo-markdown-styles-dot"></span>
+          <span v-if="isSet(target.key)" class="pdoc-markdown-styles-dot"></span>
         </button>
       </div>
 
-      <div class="umo-markdown-styles-form">
+      <div class="pdoc-markdown-styles-form">
         <t-form label-align="left" label-width="150px">
           <!--
             `v-model` into a local draft, not `:value` bound to the stored setting. A TDesign input
@@ -68,7 +68,7 @@
             />
           </t-form-item>
         </t-form>
-        <p class="umo-markdown-styles-hint">
+        <p class="pdoc-markdown-styles-hint">
           {{ t('base.markdown.stylesHint') }}
         </p>
       </div>
@@ -154,12 +154,12 @@ watch(() => [open, activeKey], loadDraft, { immediate: true })
 </script>
 
 <style lang="less">
-.umo-markdown-styles {
+.pdoc-markdown-styles {
   display: flex;
   gap: 16px;
   min-height: 320px;
 
-  .umo-markdown-styles-sections {
+  .pdoc-markdown-styles-sections {
     flex: 0 0 180px;
     display: flex;
     flex-direction: column;
@@ -167,10 +167,10 @@ watch(() => [open, activeKey], loadDraft, { immediate: true })
     max-height: 380px;
     overflow-y: auto;
     padding-right: 8px;
-    border-right: 1px solid var(--umo-border-color, #e7e7e7);
+    border-right: 1px solid var(--pdoc-border-color, #e7e7e7);
   }
 
-  .umo-markdown-styles-section {
+  .pdoc-markdown-styles-section {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -178,41 +178,41 @@ watch(() => [open, activeKey], loadDraft, { immediate: true })
     padding: 6px 10px;
     text-align: left;
     font-size: 13px;
-    color: var(--umo-text-color, #1f1f1f);
+    color: var(--pdoc-text-color, #1f1f1f);
     background: transparent;
     border: 1px solid transparent;
     border-radius: 3px;
     cursor: pointer;
 
     &:hover {
-      background-color: var(--umo-color-hover, #f5f5f5);
+      background-color: var(--pdoc-color-hover, #f5f5f5);
     }
 
     &.is-active {
-      background-color: var(--umo-color-hover, #f5f5f5);
-      border-color: var(--umo-border-color, #e7e7e7);
+      background-color: var(--pdoc-color-hover, #f5f5f5);
+      border-color: var(--pdoc-border-color, #e7e7e7);
     }
   }
 
   // A section that carries a setting says so, so the writer can see what they have changed without
   // opening each one in turn.
-  .umo-markdown-styles-dot {
+  .pdoc-markdown-styles-dot {
     flex: 0 0 auto;
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background-color: var(--umo-primary-color, #2b5aed);
+    background-color: var(--pdoc-primary-color, #2b5aed);
   }
 
-  .umo-markdown-styles-form {
+  .pdoc-markdown-styles-form {
     flex: 1 1 auto;
     min-width: 0;
   }
 
-  .umo-markdown-styles-hint {
+  .pdoc-markdown-styles-hint {
     margin: 8px 0 0;
     font-size: 12px;
-    color: var(--umo-text-color-light, #8c8c8c);
+    color: var(--pdoc-text-color-light, #8c8c8c);
   }
 }
 </style>

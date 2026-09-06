@@ -55,7 +55,7 @@ Provide per-profile font family, font size, font weight, line height, bottom mar
   damage is invisible until a document is reopened somewhere without them or the Profiles dialog is
   used.
 - **Resolution**: `saveContent()` now calls the same `getRefStorage()` helper. As a side effect the
-  `umo-editor:profiles` localStorage mirror is refreshed on save again, which the empty list had been
+  `practicaldocs:profiles` localStorage mirror is refreshed on save again, which the empty list had been
   skipping.
 - **Test**: `tests/e2e/profile-save.cdp.mjs`, 10 checks. It intercepts the POST to
   `/api/documents/save` and asserts the payload's profile ids match the ones the editor is actually

@@ -27,7 +27,7 @@ const RECOMPUTE_DELAY = 200
 const TOLERANCE = 1
 
 const readMetrics = (view) => {
-  const sheet = view.dom.closest('.umo-page-content')
+  const sheet = view.dom.closest('.pdoc-page-content')
   if (!sheet) {
     return null
   }
@@ -38,12 +38,12 @@ const readMetrics = (view) => {
     ruler.style.height = `var(${name}, ${fallback})`
     return ruler.getBoundingClientRect().height
   }
-  const pageHeight = measure('--umo-page-height', '29.7cm')
-  const marginTop = measure('--umo-page-margin-top', '0cm')
-  const marginBottom = measure('--umo-page-margin-bottom', '0cm')
-  const gap = measure('--umo-page-sheet-gap', '16px')
-  const marginLeft = measure('--umo-page-margin-left', '0cm')
-  const marginRight = measure('--umo-page-margin-right', '0cm')
+  const pageHeight = measure('--pdoc-page-height', '29.7cm')
+  const marginTop = measure('--pdoc-page-margin-top', '0cm')
+  const marginBottom = measure('--pdoc-page-margin-bottom', '0cm')
+  const gap = measure('--pdoc-page-sheet-gap', '16px')
+  const marginLeft = measure('--pdoc-page-margin-left', '0cm')
+  const marginRight = measure('--pdoc-page-margin-right', '0cm')
   ruler.remove()
 
   const column = pageHeight - marginTop - marginBottom
@@ -180,7 +180,7 @@ const collectLines = (view, originTop) => {
 const contentTopAfterBreak = (view, pos, node) => {
   const dom = view.nodeDOM(pos)
   let sibling = dom?.nextElementSibling ?? null
-  while (sibling?.classList?.contains('umo-page-spacer')) {
+  while (sibling?.classList?.contains('pdoc-page-spacer')) {
     sibling = sibling.nextElementSibling
   }
   if (sibling) {
@@ -196,7 +196,7 @@ const contentTopAfterBreak = (view, pos, node) => {
 /**
  * Manual page breaks the user inserted.
  *
- * `.umo-page-break` carries `break-before: page`, which print honours and this engine used to ignore
+ * `.pdoc-page-break` carries `break-before: page`, which print honours and this engine used to ignore
  * entirely, so the screen kept flowing where the export started a new page and every sheet after the
  * break inherited the difference. In print the element collapses to zero height, so it is the content
  * *after* the break that opens the new page - which is why the spacer is anchored after the node
@@ -431,7 +431,7 @@ const buildDecorations = (doc, breaks) =>
         item.pos,
         () => {
           const spacer = document.createElement('span')
-          spacer.className = 'umo-page-spacer'
+          spacer.className = 'pdoc-page-spacer'
           spacer.setAttribute('contenteditable', 'false')
           spacer.setAttribute('aria-hidden', 'true')
           spacer.style.display = 'block'
@@ -442,7 +442,7 @@ const buildDecorations = (doc, breaks) =>
           // -1 keeps the spacer before the character it is anchored to, so that character opens the
           // next sheet instead of being stranded at the bottom of this one.
           side: -1,
-          key: `umo-page-spacer-${index}-${Math.round(item.height)}`,
+          key: `pdoc-page-spacer-${index}-${Math.round(item.height)}`,
           ignoreSelection: true,
         },
       ),
@@ -495,7 +495,7 @@ export const pageOfElement = (editor, element) => {
     editor?.extensionStorage?.pagination || editor?.storage?.pagination
   const pages = storage?.pages
   const stride = storage?.stride
-  const host = editor?.view?.dom?.closest('.umo-page-content')
+  const host = editor?.view?.dom?.closest('.pdoc-page-content')
   if (!element || !host || !(stride > 0) || !(pages?.length > 0)) {
     return null
   }
@@ -695,7 +695,7 @@ class PaginationDriver {
    * Work out what every sheet is numbered and publish it, whether or not the numbers are drawn.
    *
    * The table of contents needs the same answer, and it used to compute its own by counting
-   * `.umo-page-node` elements - of which there is one for the whole canvas, so every entry came out
+   * `.pdoc-page-node` elements - of which there is one for the whole canvas, so every entry came out
    * as page 1. Two answers to one question is what produced the pagination-versus-PDF bug in
    * ADR 0002, so there is one computation here and everything else reads it.
    *
@@ -743,7 +743,7 @@ class PaginationDriver {
    */
   renderPageNumbers(metrics) {
     const host = metrics.sheet
-    const existing = [...host.querySelectorAll(':scope > .umo-page-number')]
+    const existing = [...host.querySelectorAll(':scope > .pdoc-page-number')]
     const settings = this.storage?.pageNumber || defaultPageNumberSettings()
 
     if (!settings.enabled || !(this.storage.pages?.length > 0)) {
@@ -764,7 +764,7 @@ class PaginationDriver {
         element = document.createElement('div')
         // The profile class makes this stylable like any other block, through the same Profiles
         // dialog and the same generated stylesheet.
-        element.className = 'umo-page-number umo-profile-page-number'
+        element.className = 'pdoc-page-number pdoc-profile-page-number'
         element.setAttribute('contenteditable', 'false')
         element.setAttribute('aria-hidden', 'true')
         host.appendChild(element)
@@ -809,7 +809,7 @@ class PaginationDriver {
     const lastBottom = lines.length > 0 ? lines[lines.length - 1].bottom : 0
     const sheets = Math.max(1, Math.floor(lastBottom / metrics.stride) + 1)
     metrics.sheet.style.setProperty(
-      '--umo-page-total-height',
+      '--pdoc-page-total-height',
       `${sheets * metrics.stride - metrics.gap}px`,
     )
     return sheets
@@ -817,8 +817,8 @@ class PaginationDriver {
 
   destroy() {
     this.view?.dom
-      ?.closest('.umo-page-content')
-      ?.querySelectorAll(':scope > .umo-page-number')
+      ?.closest('.pdoc-page-content')
+      ?.querySelectorAll(':scope > .pdoc-page-number')
       .forEach((element) => element.remove())
     if (this.timer) {
       clearTimeout(this.timer)

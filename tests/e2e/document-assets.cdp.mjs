@@ -18,10 +18,10 @@ import crypto from 'node:crypto'
 import WebSocket from 'ws'
 
 const CDP = (process.env.CDP_URL || 'http://127.0.0.1:9222').replace(/\/$/, '')
-const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:9000/umo-editor'
+const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:9000/practicaldocs'
 const STORAGE_URL = process.env.STORAGE_URL || 'http://localhost:3001'
 const DOCUMENT = 'asset-roundtrip-probe'
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 

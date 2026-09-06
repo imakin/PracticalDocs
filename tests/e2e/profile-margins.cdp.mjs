@@ -3,7 +3,7 @@
  *
  * Two faults, one cause each.
  *
- * The gap between blocks was `.umo-editor-content .umo-editor > * + *:not(.umo-floating-node)`,
+ * The gap between blocks was `.pdoc-editor-content .pdoc-editor > * + *:not(.pdoc-floating-node)`,
  * three classes, against a profile rule's two. It won every time and set `margin-top` to a variable
  * that resolves to zero, so a profile's Top Margin did nothing at any value while its Bottom Margin,
  * which nothing competes for, worked. The rule is a default and now says so with `:where()`.
@@ -60,7 +60,7 @@ const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: t
 await call('Runtime.enable', {}, sessionId)
 
 // The profile list is one of these. The test edits a profile, so restoring them is not optional.
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -160,7 +160,7 @@ const measure = `(() => {
     marginTop: Number.parseFloat(cs.marginTop),
     marginBottom: Number.parseFloat(cs.marginBottom),
     inlineStyle: block.getAttribute('style') || '',
-    defaultGap: getComputedStyle(pm).getPropertyValue('--umo-content-node-bottom').trim(),
+    defaultGap: getComputedStyle(pm).getPropertyValue('--pdoc-content-node-bottom').trim(),
   }
 })()`
 
@@ -184,7 +184,7 @@ const bare = await evaluate(measure)
 const gap = Number.parseFloat(bare.defaultGap) || 0
 check('the default gap is unchanged for a block with no profile top margin',
   Math.abs(bare.marginTop - gap) <= 1,
-  `computed ${bare.marginTop}px against --umo-content-node-bottom of ${JSON.stringify(bare.defaultGap)}`)
+  `computed ${bare.marginTop}px against --pdoc-content-node-bottom of ${JSON.stringify(bare.defaultGap)}`)
 
 console.log('\nA per-block override still beats the profile')
 await setup('5em', '3em')
@@ -206,14 +206,14 @@ check('an override of 11px wins over the profile bottom margin', Math.abs(overri
 // The panel is opened by pressing its own arrow handle, so the selectors it depends on are covered.
 const openMarginPanel = `(async () => {
   const uses = [...document.querySelectorAll('use')]
-  const icon = uses.find((u) => (u.getAttribute('xlink:href') || u.getAttribute('href')) === '#umo-icon-margin')
+  const icon = uses.find((u) => (u.getAttribute('xlink:href') || u.getAttribute('href')) === '#pdoc-icon-margin')
   if (!icon) return 'NO_MARGIN_BUTTON'
-  const button = icon.closest('button, .umo-menu-button')
+  const button = icon.closest('button, .pdoc-menu-button')
   if (!button) return 'NO_BUTTON_WRAPPER'
-  const handle = button.querySelector('.umo-button-handle') || button
+  const handle = button.querySelector('.pdoc-button-handle') || button
   handle.click()
   await new Promise((r) => setTimeout(r, 900))
-  const box = document.querySelector('.umo-node-margin-input')
+  const box = document.querySelector('.pdoc-node-margin-input')
   if (!box) return 'PANEL_DID_NOT_OPEN'
   const inputs = [...box.querySelectorAll('input')]
   return {
@@ -252,7 +252,7 @@ if (typeof panel === 'string') {
 
 console.log('\nAn override is shown as the value, not as the profile')
 await evaluate(`(async () => {
-  const box = document.querySelector('.umo-node-margin-input')
+  const box = document.querySelector('.pdoc-node-margin-input')
   if (box) document.body.click()
   await new Promise((r) => setTimeout(r, 500))
   const ed = window.__ed

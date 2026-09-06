@@ -2,14 +2,14 @@
   <node-view-wrapper
     :id="attrs.id"
     ref="containerRef"
-    class="umo-node-view"
+    class="pdoc-node-view"
     :style="nodeStyle"
     @click.capture="editor?.commands.setNodeSelection(getPos())"
   >
     <div
-      class="umo-node-container umo-node-video"
+      class="pdoc-node-container pdoc-node-video"
       :class="{
-        'umo-hover-shadow': !options.document?.readOnly,
+        'pdoc-hover-shadow': !options.document?.readOnly,
       }"
     >
       <drager
@@ -151,11 +151,11 @@ onClickOutside(containerRef, () => {
 </script>
 
 <style lang="less">
-.umo-node-view {
-  .umo-node-video {
+.pdoc-node-view {
+  .pdoc-node-video {
     max-width: 100%;
     pointer-events: none;
-    border-radius: var(--umo-radius);
+    border-radius: var(--pdoc-radius);
 
     .es-drager {
       max-width: 100%;
@@ -170,7 +170,7 @@ onClickOutside(containerRef, () => {
 
       video {
         display: block;
-        border-radius: var(--umo-radius);
+        border-radius: var(--pdoc-radius);
         overflow: hidden;
         pointer-events: auto;
         outline: none;
@@ -192,14 +192,14 @@ onClickOutside(containerRef, () => {
       background: rgba(255, 255, 255, 0.7);
       height: 2px;
       left: 0;
-      border-top-left-radius: var(--umo-radius);
-      border-top-right-radius: var(--umo-radius);
+      border-top-left-radius: var(--pdoc-radius);
+      border-top-right-radius: var(--pdoc-radius);
 
       &:after {
         content: '';
         display: block;
         height: 100%;
-        background-color: var(--umo-primary-color);
+        background-color: var(--pdoc-primary-color);
         animation: progress 1s linear infinite;
       }
     }

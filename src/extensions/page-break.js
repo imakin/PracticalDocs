@@ -25,7 +25,7 @@ export default Node.create({
   addOptions() {
     return {
       HTMLAttributes: {
-        class: 'umo-page-break',
+        class: 'pdoc-page-break',
         'data-line-number': false,
       },
       getContentLabel: () => t('page.break'),
@@ -96,7 +96,7 @@ export default Node.create({
     }
   },
   parseHTML() {
-    return [{ tag: 'div[class*="umo-page-break"]' }]
+    return [{ tag: 'div[class*="pdoc-page-break"]' }]
   },
   renderHTML({ HTMLAttributes }) {
     return [

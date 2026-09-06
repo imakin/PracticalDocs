@@ -1,6 +1,6 @@
 export function useState(key, editorOptions) {
   const options = editorOptions.value
-  const storageKey = `umo-editor:${options.editorKey || 'default'}:${key}`
+  const storageKey = `practicaldocs:${options.editorKey || 'default'}:${key}`
 
   if (key === 'document') {
     // Not persisted. Restoring the document across a reload meant the editor came back holding a

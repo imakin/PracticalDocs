@@ -11,12 +11,12 @@ A profile is a CSS rule, so whether it applies is a question about the cascade. 
 `margin-top` on a block. Measured in Chrome on a paragraph carrying `profile-paragraph`:
 
 ```
-.umo-editor-content .umo-editor > * + *:not(.umo-floating-node)   var(--umo-content-node-bottom)   (0,3,0)
-.umo-editor-container p, ul, ol                                   0px                              (0,1,1)
-[data-umo-profile-styles="..."] .umo-profile-paragraph            5em                              (0,2,0)
+.pdoc-editor-content .pdoc-editor > * + *:not(.pdoc-floating-node)   var(--pdoc-content-node-bottom)   (0,3,0)
+.pdoc-editor-container p, ul, ol                                   0px                              (0,1,1)
+[data-pdoc-profile-styles="..."] .pdoc-profile-paragraph            5em                              (0,2,0)
 ```
 
-The first wins on specificity. `--umo-content-node-bottom` resolves to `0`, so a profile's Top Margin
+The first wins on specificity. `--pdoc-content-node-bottom` resolves to `0`, so a profile's Top Margin
 was set to zero at every value, and the rule's only remaining effect was to suppress it.
 
 Bottom Margin worked because nothing competes for `margin-bottom`. The container reset sets
@@ -26,8 +26,8 @@ one half of the same field worked and the other did nothing.
 The gap between blocks is a default, so the rule now says so with `:where()` and scores nothing:
 
 ```less
-:where(& > * + *:not(.umo-floating-node)) {
-  margin-top: var(--umo-content-node-bottom);
+:where(& > * + *:not(.pdoc-floating-node)) {
+  margin-top: var(--pdoc-content-node-bottom);
 }
 ```
 

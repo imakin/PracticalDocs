@@ -62,7 +62,7 @@ const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: t
 await call('Runtime.enable', {}, sessionId)
 await call('Page.enable', {}, sessionId)
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)

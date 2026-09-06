@@ -10,7 +10,7 @@ const cdpUrl = (process.env.CDP_URL || 'http://127.0.0.1:9222').replace(
   /\/$/,
   '',
 )
-const editorUrl = process.env.EDITOR_URL || 'http://localhost:9000/umo-editor'
+const editorUrl = process.env.EDITOR_URL || 'http://localhost:9000/practicaldocs'
 const downloadPath = await mkdtemp(path.join(tmpdir(), 'umodoc-save-file-'))
 const sleep = (duration) =>
   new Promise((resolve) => setTimeout(resolve, duration))
@@ -341,7 +341,7 @@ try {
   assert.deepEqual(secondFile.content, firstFile.content)
 
   const changedPageBackground = await evaluate(`(() => {
-    let instance = document.querySelector('.umo-editor-container')
+    let instance = document.querySelector('.pdoc-editor-container')
       ?.__vueParentComponent
     while (instance && !instance.exposed?.setPage) {
       instance = instance.parent
@@ -363,7 +363,7 @@ try {
   await waitFor(
     () =>
       evaluate(`(() => {
-        let instance = document.querySelector('.umo-editor-container')
+        let instance = document.querySelector('.pdoc-editor-container')
           ?.__vueParentComponent
         while (instance && !instance.exposed?.getPage) {
           instance = instance.parent

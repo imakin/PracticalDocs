@@ -1,8 +1,8 @@
 <template>
-  <node-view-wrapper class="umo-node-view">
+  <node-view-wrapper class="pdoc-node-view">
     <t-popup
-      :attach="`${container} .umo-zoomable-container`"
-      overlay-inner-class-name="umo-editor-bubble-menu"
+      :attach="`${container} .pdoc-zoomable-container`"
+      overlay-inner-class-name="pdoc-editor-bubble-menu"
       trigger="click"
       :visible="
         editor?.isEditable &&
@@ -12,7 +12,7 @@
       @visible-change="(visible) => (bubbleMenu = visible)"
     >
       <div
-        class="umo-node-container hover-shadow umo-node-callout"
+        class="pdoc-node-container hover-shadow pdoc-node-callout"
         :style="{
           color: attrs.fontColor,
           backgroundColor: attrs.backgroundColor,
@@ -21,27 +21,27 @@
       >
         <span
           v-if="attrs.icon"
-          class="umo-node-callout-icon"
+          class="pdoc-node-callout-icon"
           contenteditable="false"
           >{{ attrs.icon }}</span
         >
         <node-view-content
-          class="umo-node-callout-content"
+          class="pdoc-node-callout-content"
           :class="{
-            'umo-node-callout-empty': node.content.size <= 2,
+            'pdoc-node-callout-empty': node.content.size <= 2,
           }"
           :data-placeholder="t('callout.placeholder')"
         />
       </div>
       <template #content>
         <menus-bubble-callout-builtin />
-        <div class="umo-bubble-menu-divider"></div>
+        <div class="pdoc-bubble-menu-divider"></div>
         <menus-toolbar-insert-emoji @select-emoji="selectEmoji" />
         <menus-bubble-callout-emoji-remove
           v-if="editor.getAttributes('callout').icon"
         />
         <menus-bubble-callout-background />
-        <div class="umo-bubble-menu-divider"></div>
+        <div class="pdoc-bubble-menu-divider"></div>
         <menus-bubble-node-delete />
       </template>
     </t-popup>
@@ -72,7 +72,7 @@ const focusCalloutContent = (event) => {
     return
   }
   // 点击文本区域时保留原生定位行为；仅为空白区域提供兜底聚焦。
-  if (target.closest('.umo-node-callout-content')) {
+  if (target.closest('.pdoc-node-callout-content')) {
     return
   }
   const pos = props.getPos?.()
@@ -88,9 +88,9 @@ const focusCalloutContent = (event) => {
 </script>
 
 <style lang="less">
-.umo-node-callout {
+.pdoc-node-callout {
   padding: 8px 12px;
-  border-radius: var(--umo-radius);
+  border-radius: var(--pdoc-radius);
   display: flex;
   width: 100%;
   border: 1px solid rgba(0, 0, 0, 0.2);
@@ -108,7 +108,7 @@ const focusCalloutContent = (event) => {
     white-space: pre-wrap;
     word-break: break-word;
 
-    &.umo-node-callout-empty {
+    &.pdoc-node-callout-empty {
       display: flex;
       align-items: center;
       &::after {

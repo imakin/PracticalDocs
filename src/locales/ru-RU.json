@@ -1,5 +1,5 @@
 {
-  "welcome": "%cСпасибо за использование UmoPractical%cТекущая версия: v{version}, Подробнее: {homepage}",
+  "welcome": "%cСпасибо за использование PracticalDocs%cТекущая версия: v{version}, Подробнее: {homepage}",
   "toolbar": {
     "ribbon": "Профессиональный",
     "classic": "Классический",
@@ -703,7 +703,7 @@
     "reset": "Сбросить"
   },
   "feedback": "Проблемы / Отзыв",
-  "poweredBy": "Работает на базе UmoPractical",
+  "poweredBy": "Работает на базе PracticalDocs",
   "wordCount": {
     "characters": "Символы",
     "title": "Статистика документа",

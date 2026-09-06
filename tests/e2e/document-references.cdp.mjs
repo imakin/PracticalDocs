@@ -8,7 +8,7 @@ const cdpUrl = (process.env.CDP_URL || 'http://127.0.0.1:9222').replace(
   /\/$/,
   '',
 )
-const editorUrl = process.env.EDITOR_URL || 'http://localhost:9000/umo-editor'
+const editorUrl = process.env.EDITOR_URL || 'http://localhost:9000/practicaldocs'
 const sleep = (duration) =>
   new Promise((resolve) => setTimeout(resolve, duration))
 
@@ -160,7 +160,7 @@ try {
 
   const clickVisibleText = async (text) => {
     const clicked = await evaluate(`(() => {
-      const candidates = [...document.querySelectorAll('button, [role="tab"], .umo-ribbon-tabs-item')]
+      const candidates = [...document.querySelectorAll('button, [role="tab"], .pdoc-ribbon-tabs-item')]
         .filter((item) => item.getClientRects().length > 0)
       const element = candidates.find(
         (item) => item.textContent.trim() === ${JSON.stringify(text)} && !item.disabled,
@@ -209,7 +209,7 @@ try {
 
   const getEditorExpression = `
     (() => {
-      let instance = document.querySelector('.umo-editor-container')
+      let instance = document.querySelector('.pdoc-editor-container')
         ?.__vueParentComponent
       while (instance && !instance.exposed?.useEditor) {
         instance = instance.parent
@@ -413,9 +413,9 @@ try {
       p.textContent.includes('Overhead'),
     )
     return {
-      h1: root.querySelector('h1 .umo-heading-number')?.textContent.trim(),
-      h2: root.querySelector('h2 .umo-heading-number')?.textContent.trim(),
-      figure: caption?.querySelector('.umo-heading-number')?.textContent.trim(),
+      h1: root.querySelector('h1 .pdoc-heading-number')?.textContent.trim(),
+      h2: root.querySelector('h2 .pdoc-heading-number')?.textContent.trim(),
+      figure: caption?.querySelector('.pdoc-heading-number')?.textContent.trim(),
       // A table has carried no caption element of its own since adr/0009, so its number is not
       // drawn anywhere on screen. The engine still computes one, which is what a cross-reference to
       // the table resolves to - that is asserted from the node below rather than from the DOM,
@@ -460,7 +460,7 @@ try {
   const customLabels = await evaluate(`(() => {
     const root = document.querySelector('.ProseMirror')
     return {
-      h1: root.querySelector('h1 .umo-heading-number')?.textContent.trim(),
+      h1: root.querySelector('h1 .pdoc-heading-number')?.textContent.trim(),
       table: root.querySelector('table caption')?.textContent.trim(),
     }
   })()`)
@@ -474,7 +474,7 @@ try {
 
   const disabledH1 = await evaluate(`(() => {
     const root = document.querySelector('.ProseMirror')
-    return root.querySelector('h1 .umo-heading-number')?.textContent || ''
+    return root.querySelector('h1 .pdoc-heading-number')?.textContent || ''
   })()`)
   assert.equal(disabledH1, '')
 
@@ -548,14 +548,14 @@ try {
       evaluate(`(() => {
         const root = document.querySelector('.ProseMirror')
         const p = [...root.querySelectorAll('p')].find((el) => el.textContent.includes('References'))
-        return Boolean(p?.querySelector('.umo-heading-number'))
+        return Boolean(p?.querySelector('.pdoc-heading-number'))
       })()`),
     'A caption given the table profile was not numbered.',
   )
   const tableCaption = await evaluate(`(() => {
     const root = document.querySelector('.ProseMirror')
     const p = [...root.querySelectorAll('p')].find((el) => el.textContent.includes('References'))
-    return p?.querySelector('.umo-heading-number')?.textContent.trim()
+    return p?.querySelector('.pdoc-heading-number')?.textContent.trim()
   })()`)
   const captionAfterUndo = null
   const captionAfterRedo = null
@@ -663,7 +663,7 @@ try {
   await waitFor(
     () =>
       evaluate(
-        "document.querySelectorAll('.ProseMirror a.umo-node-footnote-ref').length === 2",
+        "document.querySelectorAll('.ProseMirror a.pdoc-node-footnote-ref').length === 2",
       ),
     'The citation footnote references were not created.',
   )

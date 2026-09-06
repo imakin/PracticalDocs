@@ -1,5 +1,5 @@
 {
-  "welcome": "%cThanks for using UmoPractical%cCurrent version: v{version}, More info: {homepage}",
+  "welcome": "%cThanks for using PracticalDocs%cCurrent version: v{version}, More info: {homepage}",
   "toolbar": {
     "ribbon": "Professional",
     "classic": "Classic",
@@ -820,7 +820,7 @@
     "reset": "Reset"
   },
   "about": {
-    "title": "About UmoPractical",
+    "title": "About PracticalDocs",
     "poweredBy": "Based on <a href=\"https://www.umodoc.com/en\" target=\"_blank\">Umo Editor</a> by Umodoc, MIT licensed",
     "version": "Version",
     "openSource": "open-source edition",
@@ -986,7 +986,7 @@
   },
   "documentFile": {
     "open": "Open JSON",
-    "openTip": "Open a UmoPractical JSON document",
+    "openTip": "Open a PracticalDocs JSON document",
     "save": "Save to JSON",
     "saveTip": "Download the current document as JSON",
     "saveSuccess": "Document downloaded.",
@@ -1004,7 +1004,7 @@
     },
     "errors": {
       "invalidJson": "The selected file is not valid JSON.",
-      "unknownFormat": "The selected file is not a UmoPractical document.",
+      "unknownFormat": "The selected file is not a PracticalDocs document.",
       "unsupportedVersion": "This document was created with an unsupported file format version.",
       "invalidFile": "The selected document file is incomplete or invalid.",
       "invalidContent": "The document contains content that this editor cannot load.",

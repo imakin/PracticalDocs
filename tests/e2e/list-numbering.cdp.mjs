@@ -64,7 +64,7 @@ await call('Emulation.setDeviceMetricsOverride', {
 }, sessionId).catch(() => {})
 await call('Page.bringToFront', {}, sessionId).catch(() => {})
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -146,7 +146,7 @@ const markers = async () => evaluate(`[...document.querySelectorAll('.ProseMirro
       while (el && !el.classList.contains('ProseMirror')) { if (el.tagName === 'OL' || el.tagName === 'UL') n += 1; el = el.parentElement }
       return n })(),
   markers: [...ol.children].filter((li) => li.tagName === 'LI')
-    .map((li) => (li.querySelector(':scope > .umo-list-item-marker .umo-list-item-marker-text') || {}).textContent || ''),
+    .map((li) => (li.querySelector(':scope > .pdoc-list-item-marker .pdoc-list-item-marker-text') || {}).textContent || ''),
 }))`)
 
 // Open the marker menu for one list item by clicking the marker itself, the way the writer does.
@@ -155,7 +155,7 @@ const openMarkerMenu = async (listIndex, itemIndex) => {
     const ol = document.querySelectorAll('.ProseMirror ol')[${listIndex}]
     if (!ol) return null
     const li = [...ol.children].filter((n) => n.tagName === 'LI')[${itemIndex}]
-    const marker = li && li.querySelector(':scope > .umo-list-item-marker')
+    const marker = li && li.querySelector(':scope > .pdoc-list-item-marker')
     if (!marker) return null
     const r = marker.getBoundingClientRect()
     return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), w: Math.round(r.width) }
@@ -163,16 +163,16 @@ const openMarkerMenu = async (listIndex, itemIndex) => {
   if (!spot || spot.w === 0) return null
   await clickAt(spot.x, spot.y)
   return evaluate(`(() => {
-    const menu = document.querySelector('.umo-list-item-overlay')
+    const menu = document.querySelector('.pdoc-list-item-overlay')
     if (!menu || menu.offsetParent === null) return null
-    const info = menu.querySelector('.umo-list-item-menu-info')
+    const info = menu.querySelector('.pdoc-list-item-menu-info')
     return {
       info: info ? info.textContent.trim() : null,
-      items: [...menu.querySelectorAll('.umo-list-item-menu-item')].filter((el) => !el.classList.contains('umo-list-item-menu-info')).map((el) => {
+      items: [...menu.querySelectorAll('.pdoc-list-item-menu-item')].filter((el) => !el.classList.contains('pdoc-list-item-menu-info')).map((el) => {
         const r = el.getBoundingClientRect()
         return {
           text: el.textContent.trim(),
-          disabled: el.classList.contains('t-is-disabled') || el.classList.contains('umo-dropdown__item--disabled') || el.getAttribute('disabled') !== null,
+          disabled: el.classList.contains('t-is-disabled') || el.classList.contains('pdoc-dropdown__item--disabled') || el.getAttribute('disabled') !== null,
           x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), w: Math.round(r.width),
         }
       }),
@@ -284,9 +284,9 @@ const shape = async () => evaluate(`(() => {
   const walk = (el) => [...el.children].map((c) => {
     if (c.tagName === 'OL' || c.tagName === 'UL') return c.tagName + '[' + walk(c).join(' ') + ']'
     if (c.tagName === 'LI') {
-      const t = (c.querySelector(':scope > .umo-list-item-content > p') || {}).textContent || ''
-      const m = (c.querySelector(':scope > .umo-list-item-marker .umo-list-item-marker-text') || {}).textContent || ''
-      const nested = [...c.querySelectorAll(':scope > .umo-list-item-content > ol, :scope > .umo-list-item-content > ul')]
+      const t = (c.querySelector(':scope > .pdoc-list-item-content > p') || {}).textContent || ''
+      const m = (c.querySelector(':scope > .pdoc-list-item-marker .pdoc-list-item-marker-text') || {}).textContent || ''
+      const nested = [...c.querySelectorAll(':scope > .pdoc-list-item-content > ol, :scope > .pdoc-list-item-content > ul')]
       return m + t + (nested.length ? '{' + nested.map(walk).map((a) => a.join(' ')).join('') + '}' : '')
     }
     return null
@@ -323,7 +323,7 @@ await setContent('<ol><li><p>Satu</p></li><li><p>Dua</p></li></ol>')
 menu = await openMarkerMenu(0, 1)
 check('the menu opens on the second item', !!menu)
 const buttons = await evaluate(`(() => {
-  const els = [...document.querySelectorAll('.umo-list-item-overlay .umo-list-item-menu-indent-button')]
+  const els = [...document.querySelectorAll('.pdoc-list-item-overlay .pdoc-list-item-menu-indent-button')]
   return els.map((el) => { const r = el.getBoundingClientRect()
     return { title: el.getAttribute('title'), x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), w: Math.round(r.width) } })
 })()`)
@@ -336,9 +336,9 @@ if (increase && increase.w > 0) {
   const indented = await shape()
   check('pressing it in the panel indents the item', indented.includes('Satu{'), indented)
   const stillOpen = await evaluate(`(() => {
-    const o = document.querySelector('.umo-list-item-overlay')
+    const o = document.querySelector('.pdoc-list-item-overlay')
     if (!o || o.offsetParent === null) return null
-    const i = o.querySelector('.umo-list-item-menu-info')
+    const i = o.querySelector('.pdoc-list-item-menu-info')
     return i ? i.textContent.trim() : null
   })()`)
   check('the panel stays open and reports the new level',
@@ -378,8 +378,8 @@ console.log('\nCase H: the levels line up, and indenting is reversible')
 // this is what says the drawn step still matches the measured one.
 const stepOf = async () => evaluate(`(() => {
   const marks = [...document.querySelectorAll('.ProseMirror li')].map((li) => {
-    const m = li.querySelector(':scope > .umo-list-item-marker')
-    const p = li.querySelector(':scope > .umo-list-item-content > p')
+    const m = li.querySelector(':scope > .pdoc-list-item-marker')
+    const p = li.querySelector(':scope > .pdoc-list-item-content > p')
     return { text: (p || {}).textContent, left: m ? Math.round(m.getBoundingClientRect().left) : null }
   })
   return marks

@@ -1,10 +1,10 @@
 <template>
   <div class="examples">
     <div class="box">
-      <umo-editor ref="editorRef" v-bind="options"></umo-editor>
+      <practical-docs ref="editorRef" v-bind="options"></practical-docs>
     </div>
     <!-- <div class="box">
-      <umo-editor editor-key="testaaa" :toolbar="{ defaultMode: 'classic' }" />
+      <practical-docs editor-key="testaaa" :toolbar="{ defaultMode: 'classic' }" />
     </div> -->
   </div>
 </template>
@@ -24,25 +24,25 @@ const remoteMentionUsers = [
     id: 'remote-alice',
     label: 'Alice Chen',
     bio: '远程目录用户',
-    color: 'var(--umo-primary-color)',
+    color: 'var(--pdoc-primary-color)',
   },
   {
     id: 'remote-bob',
     label: 'Bob Li',
     bio: '远程目录用户',
-    color: 'var(--umo-primary-color)',
+    color: 'var(--pdoc-primary-color)',
   },
   {
     id: 'remote-charlie',
     label: 'Charlie Wang',
     bio: '远程目录用户',
-    color: 'var(--umo-primary-color)',
+    color: 'var(--pdoc-primary-color)',
   },
   {
     id: 'remote-dora',
     label: 'Dora Xu',
     bio: '远程目录用户',
-    color: 'var(--umo-primary-color)',
+    color: 'var(--pdoc-primary-color)',
   },
 ]
 const templates = [
@@ -91,29 +91,29 @@ const options = $ref({
     // ],
   },
   user: {
-    id: 'umoeditor',
-    label: 'UmoPractical',
+    id: 'practicaldocs',
+    label: 'PracticalDocs',
     avatar: 'https://tdesign.gtimg.com/site/avatar.jpg',
   },
   users: [
     {
       id: 'umodoc',
-      label: 'Umo Team',
+      label: 'PracticalDocs',
       bio: '核心开发者',
       avatar: 'https://s1.umodoc.com/images/favicon.png',
-      color: 'var(--umo-primary-color)',
+      color: 'var(--pdoc-primary-color)',
     },
     {
       id: 'china-wangxu',
       label: 'china-wangxu',
       bio: '重要贡献者',
-      color: 'var(--umo-primary-color)',
+      color: 'var(--pdoc-primary-color)',
     },
     {
       id: 'Cassielxd',
       label: 'Cassielxd',
       bio: '重要贡献者',
-      color: 'var(--umo-primary-color)',
+      color: 'var(--pdoc-primary-color)',
     },
     { id: 'Goldziher', label: "Na'aman Hirschfeld" },
     { id: 'SerRashin', label: 'SerRashin' },
@@ -144,20 +144,22 @@ const options = $ref({
     }
     if (content.profiles && content.profiles.length > 0) {
       try {
-        localStorage.setItem('umo-editor:profiles', JSON.stringify(content.profiles))
+        localStorage.setItem('practicaldocs:profiles', JSON.stringify(content.profiles))
       } catch {}
     }
 
-    const saveTarget = localStorage.getItem('umo-editor:save-target') || 'practical-umodoc-server'
-    const serverUrl = localStorage.getItem('umo-editor:server-url') || 'http://localhost:3001/api/documents/save'
+    const saveTarget = localStorage.getItem('practicaldocs:save-target') || 'practicaldocs-server'
+    const serverUrl = localStorage.getItem('practicaldocs:server-url') || 'http://localhost:3001/api/documents/save'
 
-    if (saveTarget === 'practical-umodoc-server') {
+    if (saveTarget === 'practicaldocs-server') {
       try {
         let rawTitle = (document?.title && String(document.title).trim()) ? String(document.title).trim() : (content?.snapshot?.document?.title || 'file-identifier')
         if (rawTitle === '测试文档') rawTitle = 'file-identifier'
         let baseName = rawTitle
         if (baseName.toLowerCase().endsWith('.enc')) baseName = baseName.slice(0, -4)
         if (baseName.toLowerCase().endsWith('.json')) baseName = baseName.slice(0, -5)
+        if (baseName.toLowerCase().endsWith('.practicaldocs')) baseName = baseName.slice(0, -14)
+        // Written before the rename. Still opened, still trimmed.
         if (baseName.toLowerCase().endsWith('.umodoc')) baseName = baseName.slice(0, -7)
 
         const cleanFilename = baseName.replaceAll(/[^a-zA-Z0-9_\-.]/g, '_').replaceAll(/_+/g, '_').replaceAll(/^_+|_+$/g, '')
@@ -214,7 +216,7 @@ const options = $ref({
           }
         }
 
-        return resData.message || `Document '${filename}' encrypted & saved to practical-umodoc-server successfully!`
+        return resData.message || `Document '${filename}' encrypted & saved to practicaldocs-server successfully!`
       } catch (error) {
         return {
           status: 'error',

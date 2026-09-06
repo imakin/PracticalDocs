@@ -10,13 +10,13 @@ carries. Before this, every entry read "1" and every entry was bare heading text
 `getPageNumber` in `extensions/toc/node-view.vue` did this:
 
 ```js
-const pageNode = el.closest('.umo-page-node')
-const allPages = [...document.querySelectorAll('.umo-page-node')]
+const pageNode = el.closest('.pdoc-page-node')
+const allPages = [...document.querySelectorAll('.pdoc-page-node')]
 return allPages.indexOf(pageNode) + 1
 ```
 
 It counted sheets as DOM elements. That was true of the engine ADR 0001 described. Since ADR 0002
-made pagination a set of decorations there is **one** `.umo-page-node` for the whole canvas - a sheet
+made pagination a set of decorations there is **one** `.pdoc-page-node` for the whole canvas - a sheet
 is a region of one tall element, not an element - so the lookup returned the same node for every
 heading and every entry fell back to 1. The contents was wrong on any document longer than a page,
 and had been since the pagination rewrite.
@@ -54,7 +54,7 @@ it, and then the contents agrees with `sheetOpenedByBreak`, which the engine use
 
 ## The heading's own number
 
-Read from the rendered `.umo-heading-number` decoration rather than recomputed, so a contents entry
+Read from the rendered `.pdoc-heading-number` decoration rather than recomputed, so a contents entry
 cannot disagree with the heading it points at. A template containing a newline - `BAB I\nPENDAHULUAN` -
 renders on several lines in the document and is collapsed to one in the contents.
 

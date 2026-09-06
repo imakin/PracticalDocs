@@ -1,7 +1,7 @@
 /**
  * The table of contents points at the page the reader will actually turn to.
  *
- * It used to count `.umo-page-node` elements and take the heading's index among them. Since
+ * It used to count `.pdoc-page-node` elements and take the heading's index among them. Since
  * pagination became decorations there is one such element for the whole canvas, so every entry came
  * out as page 1 - which is what the contents showed on a nine-page thesis. It now asks the pagination
  * engine, which has already solved the geometry and already computed what each sheet is numbered, so
@@ -56,7 +56,7 @@ const { targetId } = await call('Target.createTarget', { url: EDITOR_URL })
 const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true })
 await call('Runtime.enable', {}, sessionId)
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -154,10 +154,10 @@ const load = async (doc) =>
 // What the contents renders, row by row, plus where each heading really is, measured independently
 // of the contents by dividing the heading's offset by the sheet pitch.
 const readContents = `(() => {
-  const rows = [...document.querySelectorAll('.umo-node-toc .umo-toc-item-row')]
+  const rows = [...document.querySelectorAll('.pdoc-node-toc .pdoc-toc-item-row')]
   if (rows.length === 0) return { missing: true }
   const storage = window.__ed.extensionStorage?.pagination || window.__ed.storage?.pagination
-  const host = window.__ed.view.dom.closest('.umo-page-content')
+  const host = window.__ed.view.dom.closest('.pdoc-page-content')
   const originTop = host.getBoundingClientRect().top
   const stride = storage?.stride || 0
   // The first rendered line, not the box. A heading opening a sheet after a forced break has a box
@@ -183,10 +183,10 @@ const readContents = `(() => {
   }))
   return {
     rows: rows.map((row) => {
-      const page = row.querySelector('.umo-toc-item-page')
-      const text = row.querySelector('.umo-toc-item-text')
+      const page = row.querySelector('.pdoc-toc-item-page')
+      const text = row.querySelector('.pdoc-toc-item-text')
       return {
-        label: row.querySelector('.umo-toc-item-label')?.textContent?.trim() ?? '',
+        label: row.querySelector('.pdoc-toc-item-label')?.textContent?.trim() ?? '',
         text: text?.textContent?.trim() ?? '',
         page: page?.textContent?.trim() ?? '',
         // Measured, not read back from the style attribute: what matters is where the text starts
@@ -196,8 +196,8 @@ const readContents = `(() => {
         paddingLeft: Math.round(Number.parseFloat(getComputedStyle(row).paddingLeft) || 0),
       }
     }),
-    treeLines: document.querySelectorAll('.umo-node-toc .umo-tree__line, .umo-node-toc .t-tree__line').length,
-    treeIcons: document.querySelectorAll('.umo-node-toc .umo-tree__icon, .umo-node-toc .t-tree__icon').length,
+    treeLines: document.querySelectorAll('.pdoc-node-toc .pdoc-tree__line, .pdoc-node-toc .t-tree__line').length,
+    treeIcons: document.querySelectorAll('.pdoc-node-toc .pdoc-tree__icon, .pdoc-node-toc .t-tree__icon').length,
     headings,
     stride,
     sheetCount: storage?.pages?.length ?? 0,
@@ -246,11 +246,11 @@ check('the second chapter shows a different number from the first',
   labels[2] !== '' && labels[2] !== labels[0], JSON.stringify(labels))
 check('every label matches the number rendered on the heading itself',
   await evaluate(`(() => {
-    const rows = [...document.querySelectorAll('.umo-node-toc .umo-toc-item-row')]
+    const rows = [...document.querySelectorAll('.pdoc-node-toc .pdoc-toc-item-row')]
     const headings = [...window.__ed.view.dom.querySelectorAll('[data-toc-id]')]
     return rows.every((row, i) => {
-      const shown = row.querySelector('.umo-toc-item-label')?.textContent?.trim() ?? ''
-      const drawn = (headings[i]?.querySelector('.umo-heading-number')?.textContent || '')
+      const shown = row.querySelector('.pdoc-toc-item-label')?.textContent?.trim() ?? ''
+      const drawn = (headings[i]?.querySelector('.pdoc-heading-number')?.textContent || '')
         .replace(/\\s+/g, ' ').trim()
       return shown === drawn
     })
@@ -388,8 +388,8 @@ const picked = await evaluate(`(async () => {
   await new Promise((r) => setTimeout(r, 1200))
   ed.commands.updateNumberingProfile('profile-toc', { tocIndentFrom: 2, tocIndent: '3em' })
   await new Promise((r) => setTimeout(r, 1200))
-  const body = document.querySelector('.umo-node-toc-body')
-  const rowPadding = () => [...document.querySelectorAll('.umo-node-toc .umo-toc-item-row')]
+  const body = document.querySelector('.pdoc-node-toc-body')
+  const rowPadding = () => [...document.querySelectorAll('.pdoc-node-toc .pdoc-toc-item-row')]
     .map((r) => Math.round(Number.parseFloat(getComputedStyle(r).paddingLeft) || 0))
   const asDefault = { className: body.className, padding: rowPadding() }
 
@@ -403,14 +403,14 @@ const picked = await evaluate(`(async () => {
   await new Promise((r) => setTimeout(r, 400))
   const applied = ed.commands.setTableOfContentsProfile('profile-toc-flat')
   await new Promise((r) => setTimeout(r, 1500))
-  const b2 = document.querySelector('.umo-node-toc-body')
+  const b2 = document.querySelector('.pdoc-node-toc-body')
   const asFlat = { className: b2.className, padding: rowPadding(),
                    attr: ed.getAttributes('toc').profileId }
 
   // A named profile that no longer exists must fall back rather than leave the map unstyled.
   ed.commands.deleteNumberingProfile('profile-toc-flat')
   await new Promise((r) => setTimeout(r, 1500))
-  const b3 = document.querySelector('.umo-node-toc-body')
+  const b3 = document.querySelector('.pdoc-node-toc-body')
   const afterDelete = { className: b3.className, padding: rowPadding(),
                         attr: ed.getAttributes('toc').profileId }
   return { applied, asDefault, asFlat, afterDelete }
@@ -419,19 +419,19 @@ console.log(`  default: ${picked.asDefault.className} padding ${JSON.stringify(p
 console.log(`  chosen:  ${picked.asFlat.className} padding ${JSON.stringify(picked.asFlat.padding)}`)
 console.log(`  deleted: ${picked.afterDelete.className} padding ${JSON.stringify(picked.afterDelete.padding)}`)
 check('naming no profile uses the built-in',
-  picked.asDefault.className.includes('umo-profile-toc') &&
-    !picked.asDefault.className.includes('umo-profile-toc-flat'),
+  picked.asDefault.className.includes('pdoc-profile-toc') &&
+    !picked.asDefault.className.includes('pdoc-profile-toc-flat'),
   picked.asDefault.className)
 check('the map takes the profile it is given', picked.applied === true && picked.asFlat.attr === 'profile-toc-flat',
   `${picked.applied}, attr ${JSON.stringify(picked.asFlat.attr)}`)
-check('the chosen profile carries its own class', picked.asFlat.className.includes('umo-profile-toc-flat'),
+check('the chosen profile carries its own class', picked.asFlat.className.includes('pdoc-profile-toc-flat'),
   picked.asFlat.className)
 check('the two profiles indent differently',
   JSON.stringify(picked.asFlat.padding) !== JSON.stringify(picked.asDefault.padding),
   `${JSON.stringify(picked.asDefault.padding)} against ${JSON.stringify(picked.asFlat.padding)}`)
 check('deleting the named profile falls back to the built-in',
-  picked.afterDelete.className.includes('umo-profile-toc') &&
-    !picked.afterDelete.className.includes('umo-profile-toc-flat'),
+  picked.afterDelete.className.includes('pdoc-profile-toc') &&
+    !picked.afterDelete.className.includes('pdoc-profile-toc-flat'),
   picked.afterDelete.className)
 check('the map keeps the name, so restoring the profile restores the map',
   picked.afterDelete.attr === 'profile-toc-flat',
@@ -494,11 +494,11 @@ const gallery = await evaluate(`(async () => {
   const before = { type: node?.type?.name ?? null, profile: node?.attrs?.numberingProfileId ?? null }
 
   // Open the block gallery the way a user does.
-  const arrow = document.querySelector('.umo-toolbar-headding .arrow')
+  const arrow = document.querySelector('.pdoc-toolbar-headding .arrow')
   if (!arrow) return { missing: 'NO_GALLERY_ARROW' }
   arrow.click()
   await new Promise((r) => setTimeout(r, 900))
-  const cards = [...document.querySelectorAll('.umo-heading-container-popup .card, .umo-toolbar-headding .card')]
+  const cards = [...document.querySelectorAll('.pdoc-heading-container-popup .card, .pdoc-toolbar-headding .card')]
   const named = (title) => cards.find((c) => (c.querySelector('.title')?.textContent || '').trim() === title)
   const toc = named('Table of Contents')
   const pageNumber = named('Page Number')

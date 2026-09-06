@@ -55,7 +55,7 @@ const { targetId } = await call('Target.createTarget', { url: EDITOR_URL })
 const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true })
 await call('Runtime.enable', {}, sessionId)
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -137,7 +137,7 @@ const FIXTURE = [
 const LEGACY = [
   '<h1>Chapter</h1>',
   '<table data-caption="Ringkasan" data-reference-id="ref-legacy-table">',
-  '<caption class="umo-node-table-caption" contenteditable="false">Tabel 1: Ringkasan</caption>',
+  '<caption class="pdoc-node-table-caption" contenteditable="false">Tabel 1: Ringkasan</caption>',
   '<tbody>',
   '<tr><td><p>r1c1</p></td><td><p>r1c2</p></td></tr>',
   '<tr><td><p>r2c1</p></td><td><p>r2c2</p></td></tr>',

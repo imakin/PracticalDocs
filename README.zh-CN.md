@@ -37,19 +37,19 @@ Umo Editor Mobile 是基于 Vue3 和 Tiptap3 构建的移动端文档编辑器�
 
 **Umo Editor**
 
-![umo editor](https://s2.umodoc.com/images/umo-editor1-cn@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs1-cn@2x.png)
 
-![umo editor](https://s2.umodoc.com/images/umo-editor2-cn@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs2-cn@2x.png)
 
-![umo editor](https://s2.umodoc.com/images/umo-editor3-cn@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs3-cn@2x.png)
 
 **Umo Editor Next**
 
-![umo editor](https://s2.umodoc.com/images/umo-editor-next1-cn@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs-next1-cn@2x.png)
 
-![umo editor](https://s2.umodoc.com/images/umo-editor-next2-cn@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs-next2-cn@2x.png)
 
-![umo editor](https://s2.umodoc.com/images/umo-editor-next3-cn@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs-next3-cn@2x.png)
 
 了解 Umo Editor Next 更多功能，请访问：[https://www.umodoc.com](https://www.umodoc.com)。
 
@@ -77,7 +77,7 @@ Umo Editor 的诞生旨在解决 Web 应用中文档编辑的复杂性，为 Web
 
 ## 开源优势
 
-- **免费使用**：Umo Editor 基于[MIT 许可证](https://github.com/umo-editor/umo-editor/blob/main/LICENSE)对所有开发者免费开放，无需担心版权问题。
+- **免费使用**：Umo Editor 基于[MIT 许可证](https://github.com/practicaldocs/practicaldocs/blob/main/LICENSE)对所有开发者免费开放，无需担心版权问题。
 - **持续更新**：Umo Editor 将持续迭代，不断优化功能，提升用户体验。
 - **定制化开发**：开源意味着更大的灵活性，开发者可根据项目需求进行定制化开发，打造专属的文档编辑器。
 

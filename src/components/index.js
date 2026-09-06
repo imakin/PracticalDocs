@@ -1,22 +1,22 @@
 import 'virtual:svg-icons-register'
 
-import UmoEditor from './index.vue'
-import UmoMenuButton from './menus/button.vue'
-import UmoDialog from './modal.vue'
-import UmoTooltip from './tooltip.vue'
+import PracticalDocs from './index.vue'
+import PdocMenuButton from './menus/button.vue'
+import PdocDialog from './modal.vue'
+import PdocTooltip from './tooltip.vue'
 
-const useUmoEditor = {
+const usePracticalDocs = {
   install: (app, options) => {
     app.provide('defaultOptions', options || {})
-    app.component(UmoEditor.name || 'UmoEditor', UmoEditor)
+    app.component(PracticalDocs.name || 'PracticalDocs', PracticalDocs)
   },
 }
 
 export {
-  UmoEditor as default,
-  UmoDialog,
-  UmoEditor,
-  UmoMenuButton,
-  UmoTooltip,
-  useUmoEditor,
+  PracticalDocs as default,
+  PdocDialog,
+  PracticalDocs,
+  PdocMenuButton,
+  PdocTooltip,
+  usePracticalDocs,
 }

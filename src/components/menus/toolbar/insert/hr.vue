@@ -8,20 +8,20 @@
     @toggle-popup="togglePopup"
   >
     <template #content>
-      <div class="umo-page-divider-dropdown">
-        <div class="umo-page-divider-item-title">
+      <div class="pdoc-page-divider-dropdown">
+        <div class="pdoc-page-divider-item-title">
           <span v-text="t('insert.hr.title')"></span>
         </div>
         <div
           v-for="item in options"
           :key="item.value"
-          class="umo-page-divider-item"
+          class="pdoc-page-divider-item"
           :value="item.value"
           :title="item.label"
           @click="setHorizontalRule(item)"
         >
           <hr
-            class="umo-page-divider"
+            class="pdoc-page-divider"
             :data-type="item.value"
             :style="{ color: currentColor }"
           />
@@ -33,7 +33,7 @@
           trigger="click"
         >
           <div
-            class="umo-page-divider-item umo-open-color-picker"
+            class="pdoc-page-divider-item pdoc-open-color-picker"
             :class="{ active: colorPickerVisible }"
           >
             <span v-text="t('insert.hr.color')"></span>
@@ -42,7 +42,7 @@
             </div>
           </div>
           <template #content>
-            <div class="umo-page-divider-color-picker">
+            <div class="pdoc-page-divider-color-picker">
               <picker-color default-color="#000" @change="colorChange" />
             </div>
           </template>
@@ -92,45 +92,45 @@ const setHorizontalRule = ({ value }) => {
 <style lang="less" scoped>
 @import '@/assets/styles/_mixins.less';
 
-.umo-page-divider-dropdown {
+.pdoc-page-divider-dropdown {
   width: 200px;
-  .umo-page-divider-item {
+  .pdoc-page-divider-item {
     padding: 2px 5px;
     cursor: pointer;
-    border-radius: var(--umo-radius);
+    border-radius: var(--pdoc-radius);
     &:hover {
       background-color: var(--td-bg-color-container-hover);
     }
-    &.umo-open-color-picker {
+    &.pdoc-open-color-picker {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 5px 6px;
       cursor: pointer;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
       &:hover,
       &.active {
         background-color: var(--td-bg-color-container-hover);
-        border-radius: var(--umo-radius);
+        border-radius: var(--pdoc-radius);
       }
       .arrow {
-        .umo-icon {
+        .pdoc-icon {
           transform: rotate(-90deg);
         }
       }
     }
     &-title {
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
       padding: 5px 6px;
     }
   }
-  .umo-page-divider {
-    .umo-page-divider();
+  .pdoc-page-divider {
+    .pdoc-page-divider();
     margin: 3px;
     width: auto;
   }
 }
-:global(.umo-page-divider-color-picker) {
+:global(.pdoc-page-divider-color-picker) {
   padding: 12px;
 }
 </style>

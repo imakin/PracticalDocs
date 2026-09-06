@@ -3,28 +3,28 @@
     :key="options.editorKey"
     :global-config="{
       ...localeConfig[locale],
-      classPrefix: 'umo',
+      classPrefix: 'pdoc',
     }"
   >
     <div
       :id="container.substr(1)"
-      class="umo-editor-container"
+      class="pdoc-editor-container"
       :class="{
         'toolbar-classic': isRecord($toolbar) && $toolbar.mode === 'classic',
         'toolbar-ribbon': isRecord($toolbar) && $toolbar.mode === 'ribbon',
         'preview-mode': page.preview?.enabled,
         'laser-pointer': page.preview?.enabled && page.preview?.laserPointer,
-        'umo-editor-is-fullscreen': fullscreen,
-        'umo-editor-is-typerwriter-runing': typeWriterIsRunning,
-        'umo-skin-default': options.skin === 'default',
-        'umo-skin-modern': options.skin === 'modern',
+        'pdoc-editor-is-fullscreen': fullscreen,
+        'pdoc-editor-is-typerwriter-runing': typeWriterIsRunning,
+        'pdoc-skin-default': options.skin === 'default',
+        'pdoc-skin-modern': options.skin === 'modern',
       }"
       :style="{
         height: options.height,
         zIndex: fullscreen ? options.fullscreenZIndex : 'unset',
       }"
     >
-      <header class="umo-toolbar">
+      <header class="pdoc-toolbar">
         <toolbar
           :key="toolbarKey"
           @menu-change="(event) => emits('changed:menu', event)"
@@ -38,14 +38,14 @@
           </template>
         </toolbar>
       </header>
-      <main class="umo-main">
+      <main class="pdoc-main">
         <container-page>
           <template #bubble_menu="slotProps">
             <slot name="bubble_menu" v-bind="slotProps" />
           </template>
         </container-page>
       </main>
-      <footer class="umo-footer">
+      <footer class="pdoc-footer">
         <statusbar />
       </footer>
     </div>
@@ -92,7 +92,7 @@ import { shortId } from '@/utils/short-id'
 import { getCurrentInstance } from 'vue'
 const { toBlob, toJpeg, toPng } = domToImage
 
-defineOptions({ name: 'UmoEditor' })
+defineOptions({ name: 'PracticalDocs' })
 
 // Props and Emits
 const props = defineProps(propsOptions)
@@ -133,7 +133,7 @@ const historyRecords = ref({
   editorCount: 0,
 })
 
-const container = $ref(`#umo-editor-${shortId(4)}`)
+const container = $ref(`#pdoc-editor-${shortId(4)}`)
 const defaultOptions = inject('defaultOptions', {})
 const options = ref(getOptions(props, defaultOptions))
 const editor = ref(null)
@@ -234,8 +234,8 @@ watch(
 
 // Lifecycle Hooks
 onMounted(() => {
-  const theme = useStorage('umo-editor:theme', options.value.theme)
-  const skin = useStorage('umo-editor:skin', options.value.skin)
+  const theme = useStorage('practicaldocs:theme', options.value.theme)
+  const skin = useStorage('practicaldocs:skin', options.value.skin)
   setTheme(theme.value)
   setSkin(skin.value)
   window.addEventListener('beforeunload', handleBeforeUnload)
@@ -542,7 +542,7 @@ watch(
     try {
       setTimeout(() => {
         const containerEl = document.querySelector(
-          `${container} .umo-zoomable-container`,
+          `${container} .pdoc-zoomable-container`,
         )
         containerEl.scrollTop = 0
       }, 200)
@@ -574,7 +574,7 @@ watch(
 
 // i18n Setup
 const { t, locale, mergeLocaleMessage } = useI18n()
-const $locale = useStorage('umo-editor:locale', options.value.locale)
+const $locale = useStorage('practicaldocs:locale', options.value.locale)
 locale.value = $locale.value
 consoleCopyright()
 const getLocaleMessage = (lang) => {
@@ -607,7 +607,7 @@ const localeConfig = $ref({
 const setOptions = (value) => {
   try {
     options.value = getOptions(value, defaultOptions)
-    const $locale = useStorage('umo-editor:locale', options.value.locale)
+    const $locale = useStorage('practicaldocs:locale', options.value.locale)
     if (!$locale.value) {
       $locale.value = options.value.locale
     }
@@ -623,7 +623,7 @@ const setTheme = (theme) => {
   if (theme !== 'auto') {
     document.querySelector('html')?.setAttribute('theme-mode', theme)
 
-    const $theme = useStorage('umo-editor:theme', options.value.theme)
+    const $theme = useStorage('practicaldocs:theme', options.value.theme)
     $theme.value = theme
     emits('changed:theme', theme)
     return
@@ -641,7 +641,7 @@ const setSkin = (skin) => {
   if (!isString(skin) || !['modern', 'default'].includes(skin)) {
     throw new Error('"skin" must be one of "modern" or "default".')
   }
-  const $skin = useStorage('umo-editor:skin', options.value.skin)
+  const $skin = useStorage('practicaldocs:skin', options.value.skin)
   $skin.value = skin
   options.value.skin = skin
   emits('changed:skin', skin)
@@ -941,7 +941,7 @@ const getImage = async (format = 'blob') => {
   const { zoomLevel } = page.value
   try {
     page.value.zoomLevel = 100
-    const node = document.querySelector(`${container} .umo-page-content`)
+    const node = document.querySelector(`${container} .pdoc-page-content`)
     if (format === 'blob') {
       return await toBlob(node)
     }
@@ -975,16 +975,16 @@ const getVanillaHTML = async () => {
   }
   await nextTick()
   const pageNode = document
-    .querySelector(`${container} .umo-page-content`)
+    .querySelector(`${container} .pdoc-page-content`)
     ?.cloneNode(true)
   if (!readOnly) {
     options.value.document.readOnly = false
   }
 
   const replaceIcons = (nodes, size = '1em') => {
-    const iconsNode = document.querySelector('#umo-icons')
+    const iconsNode = document.querySelector('#pdoc-icons')
     nodes.forEach((el) => {
-      const icons = el.querySelectorAll('.umo-icon')
+      const icons = el.querySelectorAll('.pdoc-icon')
       icons.forEach((svg) => {
         const iconId = svg.childNodes[0].getAttribute('xlink:href')
         svg.setAttribute('viewBox', '0 0 48 48')
@@ -1004,7 +1004,7 @@ const getVanillaHTML = async () => {
 
   // 如果存在视频或音频节点，则替换视频标签
   const mediaNodes = pageNode.querySelectorAll(
-    '.umo-node-video, .umo-node-audio',
+    '.pdoc-node-video, .pdoc-node-audio',
   )
   mediaNodes.forEach((el) => {
     const mediaNode = el.querySelector('video, audio')
@@ -1012,25 +1012,25 @@ const getVanillaHTML = async () => {
   })
 
   // 如果存在文件节点，替换文件节点图标
-  const fileNodes = pageNode.querySelectorAll('.umo-node-file')
+  const fileNodes = pageNode.querySelectorAll('.pdoc-node-file')
   replaceIcons(fileNodes)
 
   // 代码块处理
-  const codeBlockNodes = pageNode.querySelectorAll('.umo-code-block')
+  const codeBlockNodes = pageNode.querySelectorAll('.pdoc-code-block')
   codeBlockNodes.forEach((el) => {
-    const wordWrapButton = el.querySelector('.umo-word-wrap-button')
+    const wordWrapButton = el.querySelector('.pdoc-word-wrap-button')
     if (wordWrapButton) {
       wordWrapButton.remove()
     }
-    const buttonNodes = el.querySelectorAll('.umo-button-text')
+    const buttonNodes = el.querySelectorAll('.pdoc-button-text')
     buttonNodes.forEach((item) => item.remove())
   })
   replaceIcons(codeBlockNodes, '16px')
 
   // 图表处理
-  const chartNodes = pageNode.querySelectorAll('.umo-node-echarts')
+  const chartNodes = pageNode.querySelectorAll('.pdoc-node-echarts')
   chartNodes.forEach((el) => {
-    const chartNode = el.querySelector('.umo-node-echarts-body')
+    const chartNode = el.querySelector('.pdoc-node-echarts-body')
     if (chartNode) {
       chartNode.removeAttribute('_echarts_instance_')
       chartNode.innerHTML = ''
@@ -1051,14 +1051,14 @@ const getVanillaHTML = async () => {
     const watermarkNode = pageNode.lastElementChild
     if (
       watermarkNode &&
-      !watermarkNode?.classList?.contains('umo-page-node-footer')
+      !watermarkNode?.classList?.contains('pdoc-page-node-footer')
     ) {
       watermarkNode.remove()
     }
   }
 
   // 移除菜单
-  const menuNodes = pageNode.querySelector('.umo-block-menu-drag-handle')
+  const menuNodes = pageNode.querySelector('.pdoc-block-menu-drag-handle')
   if (menuNodes) {
     menuNodes.remove()
   }
@@ -1101,8 +1101,8 @@ const toggleFullscreen = (isFullscreen) => {
 const reset = (silent) => {
   const resetLocalStorage = () => {
     const keys = Object.keys(localStorage)
-    const umoEditorKeys = keys.filter((key) => key.startsWith('umo-editor:'))
-    umoEditorKeys.forEach((key) => localStorage.removeItem(key))
+    const storedKeys = keys.filter((key) => key.startsWith('practicaldocs:'))
+    storedKeys.forEach((key) => localStorage.removeItem(key))
     location.reload()
   }
   if (silent) {
@@ -1174,7 +1174,7 @@ const saveContent = async (showMessage = true) => {
     const profiles = refStorage?.profiles || []
     if (profiles.length > 0) {
       try {
-        localStorage.setItem('umo-editor:profiles', JSON.stringify(profiles))
+        localStorage.setItem('practicaldocs:profiles', JSON.stringify(profiles))
       } catch {}
     }
     const snapshot = getDocumentSnapshot()
@@ -1357,7 +1357,7 @@ const applyDocumentSnapshot = async (snapshot) => {
         }
       }
       try {
-        localStorage.setItem('umo-editor:profiles', JSON.stringify(value.profiles))
+        localStorage.setItem('practicaldocs:profiles', JSON.stringify(value.profiles))
       } catch {}
     }
     setContent(value.content, {
@@ -1693,62 +1693,62 @@ defineExpose({
 <style lang="less">
 @import '@/assets/styles/index.less';
 
-.umo-editor-container {
-  --td-brand-color: var(--umo-primary-color);
-  --td-warning-color: var(--umo-warning-color);
-  --td-error-color: var(--umo-error-color);
-  --td-text-color-primary: var(--umo-text-color);
-  --td-text-color-disabled: var(--umo-text-color-disabled);
+.pdoc-editor-container {
+  --td-brand-color: var(--pdoc-primary-color);
+  --td-warning-color: var(--pdoc-warning-color);
+  --td-error-color: var(--pdoc-error-color);
+  --td-text-color-primary: var(--pdoc-text-color);
+  --td-text-color-disabled: var(--pdoc-text-color-disabled);
   width: 100%;
   height: 100%;
   min-height: 200px;
   display: flex;
   flex-direction: column;
-  color: var(--umo-text-color);
-  font-family: var(--umo-font-family);
+  color: var(--pdoc-text-color);
+  font-family: var(--pdoc-font-family);
   position: relative !important;
-  background-color: var(--umo-container-background);
-  .umo-footer {
-    background-color: var(--umo-color-white);
+  background-color: var(--pdoc-container-background);
+  .pdoc-footer {
+    background-color: var(--pdoc-color-white);
   }
-  &.umo-skin-default {
-    .umo-toolbar {
-      border-bottom: solid 1px var(--umo-border-color);
-      background-color: var(--umo-color-white);
+  &.pdoc-skin-default {
+    .pdoc-toolbar {
+      border-bottom: solid 1px var(--pdoc-border-color);
+      background-color: var(--pdoc-color-white);
     }
   }
-  &.umo-skin-default {
-    .umo-toolbar {
-      background-color: var(--umo-color-white);
+  &.pdoc-skin-default {
+    .pdoc-toolbar {
+      background-color: var(--pdoc-color-white);
     }
   }
-  .umo-main {
+  .pdoc-main {
     flex: 1;
-    background-color: var(--umo-container-background);
+    background-color: var(--pdoc-container-background);
     overflow: hidden;
   }
   &.preview-mode {
     &.laser-pointer {
-      .umo-main,
-      .umo-main * {
+      .pdoc-main,
+      .pdoc-main * {
         cursor: url('@/assets/images/laser-pointer.svg'), auto !important;
       }
     }
-    .umo-toolbar {
+    .pdoc-toolbar {
       display: none;
     }
-    .umo-page-container {
+    .pdoc-page-container {
       padding: 45px 0;
     }
   }
-  &.umo-editor-is-fullscreen {
+  &.pdoc-editor-is-fullscreen {
     position: fixed !important;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
   }
-  &.umo-editor-is-typerwriter-runing {
+  &.pdoc-editor-is-typerwriter-runing {
     pointer-events: none;
   }
 }

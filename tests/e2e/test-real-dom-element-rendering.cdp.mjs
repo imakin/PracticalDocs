@@ -167,7 +167,7 @@ async function run() {
           const openBtn = document.querySelector('[data-testid="open-json"]');
           if (openBtn) {
             // Put profiles into localStorage & window for test
-            localStorage.setItem('umo-editor:profiles', JSON.stringify(testProfiles));
+            localStorage.setItem('practicaldocs:profiles', JSON.stringify(testProfiles));
           }
           return { success: true };
         })()
@@ -186,11 +186,11 @@ async function run() {
     {
       expression: `
         (() => {
-          const h1 = document.querySelector('.umo-editor h1');
+          const h1 = document.querySelector('.pdoc-editor h1');
           if (!h1) return { error: 'h1 element not found in DOM!' };
 
           const computedStyle = window.getComputedStyle(h1);
-          const widgetNumber = h1.querySelector('.umo-heading-number');
+          const widgetNumber = h1.querySelector('.pdoc-heading-number');
           const spanText = h1.querySelector('span[style*="font-family"]');
           const widgetStyle = widgetNumber ? window.getComputedStyle(widgetNumber) : null;
 

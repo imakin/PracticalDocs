@@ -10,7 +10,7 @@
     @menu-click="resetMargin()"
   >
     <template #content>
-      <div class="umo-node-margin-input">
+      <div class="pdoc-node-margin-input">
         <t-input
           v-model="marginTop"
           size="small"
@@ -27,9 +27,9 @@
           clearable
           @change="setMargin"
         />
-        <div class="umo-margin-presets">
-          <span class="umo-preset-title">Bottom Margin:</span>
-          <div class="umo-preset-buttons">
+        <div class="pdoc-margin-presets">
+          <span class="pdoc-preset-title">Bottom Margin:</span>
+          <div class="pdoc-preset-buttons">
             <t-button
               v-for="preset in [0, 4, 8, 12, 16, 24]"
               :key="preset"
@@ -132,7 +132,7 @@ const resetMargin = () => {
 </script>
 
 <style lang="less" scoped>
-.umo-node-margin-input {
+.pdoc-node-margin-input {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -142,15 +142,15 @@ const resetMargin = () => {
     width: 100%;
   }
 
-  .umo-margin-presets {
+  .pdoc-margin-presets {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    .umo-preset-title {
+    .pdoc-preset-title {
       font-size: 11px;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
     }
-    .umo-preset-buttons {
+    .pdoc-preset-buttons {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 4px;

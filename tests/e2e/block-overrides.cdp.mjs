@@ -64,7 +64,7 @@ const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: t
 await call('Runtime.enable', {}, sessionId)
 await call('Page.enable', {}, sessionId)
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -139,7 +139,7 @@ const reset = () => evaluate(`(async () => {
 console.log('\nCase A: with no override, the block follows its profile through the class alone')
 await reset()
 const base = await evaluate(state())
-check('the block carries its profile class', /umo-profile-paragraph/.test(base.cls || ''), base.cls)
+check('the block carries its profile class', /pdoc-profile-paragraph/.test(base.cls || ''), base.cls)
 check('it has no inline style', base.inline === null, JSON.stringify(base.inline))
 check('the class supplies the profile line height', base.lineHeight === '24px', base.lineHeight)
 check('the class supplies the profile bottom margin', base.marginBottom === '4px', base.marginBottom)

@@ -1,7 +1,7 @@
 <template>
-  <toolbar-scrollable ref="scrollableRef" class="umo-scrollable-container">
-    <div class="umo-classic-menu">
-      <div v-if="menus.length > 1" class="umo-virtual-group">
+  <toolbar-scrollable ref="scrollableRef" class="pdoc-scrollable-container">
+    <div class="pdoc-classic-menu">
+      <div v-if="menus.length > 1" class="pdoc-virtual-group">
         <t-select
           v-if="selectVisible"
           v-model="currentMenu"
@@ -26,17 +26,17 @@
         </t-select>
       </div>
       <template v-if="currentMenu === 'base'">
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-base-open-json v-if="!disableMenu('open-json')" />
           <menus-toolbar-base-save-json v-if="!disableMenu('save-json')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-base-undo />
           <menus-toolbar-base-redo />
           <menus-toolbar-base-format-painter />
           <menus-toolbar-base-clear-format />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-base-heading />
           <menus-toolbar-base-font-family borderless />
           <menus-toolbar-base-font-size borderless />
@@ -52,7 +52,7 @@
           <menus-toolbar-base-highlight v-if="!disableMenu('highlight')" />
           <menus-toolbar-base-letter-spacing />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-base-ordered-list />
           <menus-toolbar-base-bullet-list />
           <menus-toolbar-base-task-list v-if="!disableMenu('task-list')" />
@@ -65,7 +65,7 @@
           <menus-toolbar-base-quote v-if="!disableMenu('quote')" />
           <menus-toolbar-base-select-all v-if="!disableMenu('select-all')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-base-markdown v-if="!disableMenu('markdown')" />
           <menus-toolbar-base-markdown-block
             v-if="!disableMenu('markdown-block')"
@@ -78,7 +78,7 @@
           />
           <menus-toolbar-base-search-replace />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-base-print v-if="!disableMenu('print')" />
         </div>
         <div class="virtual-group is-slot">
@@ -86,14 +86,14 @@
         </div>
       </template>
       <template v-if="currentMenu === 'insert'">
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-insert-link v-if="!disableMenu('link')" />
           <menus-toolbar-insert-image v-if="!disableMenu('image')" />
           <menus-toolbar-insert-video v-if="!disableMenu('video')" />
           <menus-toolbar-insert-audio v-if="!disableMenu('audio')" />
           <menus-toolbar-insert-file v-if="!disableMenu('file')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-insert-text-box v-if="!disableMenu('text-box')" />
           <menus-toolbar-insert-details v-if="!disableMenu('details')" />
           <menus-toolbar-insert-code-block v-if="!disableMenu('code-block')" />
@@ -103,14 +103,14 @@
           />
           <menus-toolbar-insert-emoji v-if="!disableMenu('emoji')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-insert-tag v-if="!disableMenu('tag')" />
           <menus-toolbar-insert-columns v-if="!disableMenu('columns')" />
           <menus-toolbar-insert-callout v-if="!disableMenu('callout')" />
           <menus-toolbar-insert-mention v-if="!disableMenu('mention')" />
           <menus-toolbar-insert-option-box v-if="!disableMenu('option-box')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-insert-hard-break v-if="!disableMenu('hard-break')" />
           <menus-toolbar-insert-hr v-if="!disableMenu('hr')" />
           <menus-toolbar-insert-bookmark v-if="!disableMenu('bookmark')" />
@@ -122,7 +122,7 @@
           <menus-toolbar-insert-citation v-if="!disableMenu('citation')" />
           <menus-toolbar-insert-toc v-if="!disableMenu('toc')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-insert-template v-if="!disableMenu('template')" />
           <menus-toolbar-insert-web-page v-if="!disableMenu('web-page')" />
         </div>
@@ -131,39 +131,39 @@
         </div>
       </template>
       <template v-if="currentMenu === 'table'">
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-table-insert />
           <menus-toolbar-table-fix />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-table-cells-align />
           <menus-toolbar-table-cells-background />
           <!-- <menus-toolbar-table-border-color /> -->
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-table-add-row-before :huge="false" />
           <menus-toolbar-table-add-row-after :huge="false" />
           <menus-toolbar-table-add-column-before :huge="false" />
           <menus-toolbar-table-add-column-after :huge="false" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-table-delete-row :huge="false" />
           <menus-toolbar-table-delete-column :huge="false" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-table-merge-cells :huge="false" />
           <menus-toolbar-table-split-cell :huge="false" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-table-toggle-header-row :huge="false" />
           <menus-toolbar-table-toggle-header-column :huge="false" />
           <menus-toolbar-table-toggle-header-cell :huge="false" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-table-next-cell :huge="false" />
           <menus-toolbar-table-previous-cell :huge="false" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-table-delete />
         </div>
         <div class="virtual-group is-slot">
@@ -171,20 +171,20 @@
         </div>
       </template>
       <template v-if="currentMenu === 'tools'">
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-tools-signature v-if="!disableMenu('signature')" />
           <menus-toolbar-tools-stamp v-if="!disableMenu('stamp')" />
           <menus-toolbar-tools-qrcode v-if="!disableMenu('qrcode')" />
           <menus-toolbar-tools-barcode v-if="!disableMenu('barcode')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-tools-math v-if="!disableMenu('math')" />
           <menus-toolbar-tools-diagrams v-if="!disableMenu('diagrams')" />
           <menus-toolbar-tools-echarts v-if="!disableMenu('echarts')" />
           <!-- <menus-toolbar-tools-mind-map v-if="!disableMenu('mind-map')" /> -->
           <menus-toolbar-tools-mermaid v-if="!disableMenu('mermaid')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-tools-chinese-case
             v-if="!disableMenu('chinese-case')"
           />
@@ -194,12 +194,12 @@
         </div>
       </template>
       <template v-if="currentMenu === 'page'">
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-page-margin />
           <menus-toolbar-page-size v-if="page.layout === 'page'" />
           <menus-toolbar-page-orientation v-if="page.layout === 'page'" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-page-break />
           <menus-toolbar-page-break-marks />
           <menus-toolbar-page-line-number />
@@ -212,28 +212,28 @@
         </div>
       </template>
       <template v-if="currentMenu === 'view'">
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-view-toc v-if="!disableMenu('toc')" />
           <menus-toolbar-view-fullscreen v-if="!disableMenu('fullscreen')" />
           <menus-toolbar-view-preview v-if="!disableMenu('preview')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-view-page v-if="!disableMenu('layout-page')" />
           <menus-toolbar-view-web v-if="!disableMenu('layout-web')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-view-zoom v-if="!disableMenu('zoom')" />
           <menus-toolbar-view-zoom-original
             v-if="!disableMenu('zoom-original')"
           />
           <menus-toolbar-view-zoom-auto v-if="!disableMenu('zoom-auto')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-view-skin v-if="!disableMenu('skin')" />
           <menus-toolbar-view-theme v-if="!disableMenu('theme')" />
           <menus-toolbar-view-locale v-if="!disableMenu('locale')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-view-reset v-if="!disableMenu('reset')" />
         </div>
         <div class="virtual-group is-slot">
@@ -241,7 +241,7 @@
         </div>
       </template>
       <template v-if="currentMenu === 'export'">
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-export-image v-if="!disableMenu('export-image')" />
           <menus-toolbar-export-pdf v-if="!disableMenu('export-pdf')" />
           <menus-toolbar-export-pdf-bookmarks
@@ -249,7 +249,7 @@
           />
           <menus-toolbar-export-text v-if="!disableMenu('export-text')" />
         </div>
-        <div class="umo-virtual-group">
+        <div class="pdoc-virtual-group">
           <menus-toolbar-export-share v-if="!disableMenu('share')" />
           <menus-toolbar-export-embed v-if="!disableMenu('embed')" />
         </div>
@@ -304,16 +304,16 @@ const toggoleMenu = async (menu) => {
 </script>
 
 <style lang="less" scoped>
-.umo-scrollable-container {
+.pdoc-scrollable-container {
   padding: 10px;
 }
-.umo-classic-menu {
+.pdoc-classic-menu {
   display: inline-flex;
   align-items: center;
   &:last-child {
     margin-right: 10px;
   }
-  .umo-virtual-group {
+  .pdoc-virtual-group {
     display: flex;
     align-items: center;
     &:empty {
@@ -326,15 +326,15 @@ const toggoleMenu = async (menu) => {
         display: block;
         height: 18px;
         width: 1px;
-        background-color: var(--umo-border-color-light);
+        background-color: var(--pdoc-border-color-light);
         margin: 0 10px;
       }
     }
     &:first-child::before {
       display: none;
     }
-    :deep(.umo-menu-button .umo-button--shape-square) {
-      .umo-icon {
+    :deep(.pdoc-menu-button .pdoc-button--shape-square) {
+      .pdoc-icon {
         font-size: 14px;
       }
     }

@@ -1,14 +1,14 @@
 <template>
-  <div ref="tocContainerRef" class="umo-toc-container">
-    <div class="umo-toc-title">
+  <div ref="tocContainerRef" class="pdoc-toc-container">
+    <div class="pdoc-toc-title">
       <icon class="icon-toc" name="toc" /> {{ t('toc.title') }}
-      <div class="umo-dialog__close" @click="$emit('close')">
+      <div class="pdoc-dialog__close" @click="$emit('close')">
         <icon name="close" />
       </div>
     </div>
-    <div class="umo-toc-content umo-scrollbar">
+    <div class="pdoc-toc-content pdoc-scrollbar">
       <t-tree
-        class="umo-toc-tree"
+        class="pdoc-toc-tree"
         :data="tocData"
         :keys="{
           label: 'textContent',
@@ -22,7 +22,7 @@
         @active="headingActive"
       />
     </div>
-    <div class="umo-toc-resize-handle" @mousedown="startResize"></div>
+    <div class="pdoc-toc-resize-handle" @mousedown="startResize"></div>
   </div>
 </template>
 
@@ -90,9 +90,9 @@ const headingActive = (value) => {
     `[data-toc-id="${value[0]}"]`,
   )
   const pageContainer = document.querySelector(
-    `${container} .umo-zoomable-container`,
+    `${container} .pdoc-zoomable-container`,
   )
-  const pageHeader = pageContainer?.querySelector('.umo-page-node-header')
+  const pageHeader = pageContainer?.querySelector('.pdoc-page-node-header')
   if (!nodeElement || !pageContainer || !pageHeader) {
     return
   }
@@ -113,7 +113,7 @@ const baseTocWidth = 320
 const minTocWidth = baseTocWidth / 1.5
 const maxTocWidth = baseTocWidth * 2
 const tocContainerRef = ref(null)
-const umoPageContainer = ref(null)
+const pdocPageContainer = ref(null)
 const isResizing = ref(false)
 const startX = ref(0)
 const initialWidth = ref(baseTocWidth)
@@ -135,7 +135,7 @@ const flushWidth = () => {
 }
 
 const startResize = (e) => {
-  if (!umoPageContainer.value || !tocContainerRef.value) {
+  if (!pdocPageContainer.value || !tocContainerRef.value) {
     return
   }
   e.preventDefault()
@@ -182,8 +182,8 @@ const stopResize = () => {
 }
 
 onMounted(() => {
-  umoPageContainer.value = document.querySelector(
-    `${container} .umo-main-container`,
+  pdocPageContainer.value = document.querySelector(
+    `${container} .pdoc-main-container`,
   )
 })
 
@@ -193,13 +193,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="less">
-.umo-toc-container {
+.pdoc-toc-container {
   width: 320px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   position: relative;
-  .umo-toc-resize-handle {
+  .pdoc-toc-resize-handle {
     position: absolute;
     top: 0;
     right: -5px;
@@ -220,16 +220,16 @@ onBeforeUnmount(() => {
     }
     &:hover {
       &::before {
-        background-color: var(--umo-primary-color);
+        background-color: var(--pdoc-primary-color);
       }
     }
   }
   &:hover {
-    .umo-dialog__close {
+    .pdoc-dialog__close {
       display: flex !important;
     }
   }
-  .umo-toc-title {
+  .pdoc-toc-title {
     display: flex;
     align-items: center;
     position: relative;
@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
       margin-right: 5px;
       font-size: 20px;
     }
-    .umo-dialog__close {
+    .pdoc-dialog__close {
       position: absolute;
       right: -4px;
       display: flex;
@@ -247,20 +247,20 @@ onBeforeUnmount(() => {
       display: none;
     }
   }
-  .umo-toc-content {
+  .pdoc-toc-content {
     flex: 1;
     display: flex;
     padding: 10px 10px 10px 15px;
     flex-direction: column;
-    .umo-toc-tree {
+    .pdoc-toc-tree {
       --td-comp-margin-xxl: 12px;
       user-select: none;
       --td-brand-color-light: rgba(0, 0, 0, 0.03);
-      .umo-tree {
+      .pdoc-tree {
         &__item {
           height: 32px;
           &--open .t-icon {
-            color: var(--umo-text-color-light);
+            color: var(--pdoc-text-color-light);
           }
         }
         &__label {
@@ -274,33 +274,33 @@ onBeforeUnmount(() => {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--umo-text-color-light);
+          color: var(--pdoc-text-color-light);
         }
       }
-      .umo-is-active {
+      .pdoc-is-active {
         font-weight: 400;
-        color: var(--umo-primary-color);
+        color: var(--pdoc-primary-color);
       }
     }
   }
 }
-.umo-editor-container.umo-skin-default {
-  .umo-toc-container {
-    background-color: var(--umo-color-white);
-    border-right: solid 1px var(--umo-border-color);
-    .umo-toc-title {
-      border-bottom: solid 1px var(--umo-border-color-light);
+.pdoc-editor-container.pdoc-skin-default {
+  .pdoc-toc-container {
+    background-color: var(--pdoc-color-white);
+    border-right: solid 1px var(--pdoc-border-color);
+    .pdoc-toc-title {
+      border-bottom: solid 1px var(--pdoc-border-color-light);
       padding: 10px 15px;
-      .umo-dialog__close {
+      .pdoc-dialog__close {
         right: 15px;
       }
     }
-    .umo-toc-content {
-      .umo-toc-tree {
+    .pdoc-toc-content {
+      .pdoc-toc-tree {
         --td-comp-size-m: 30px;
         --td-comp-paddingLR-xs: 8px;
         --td-comp-margin-xs: 0;
-        --td-brand-color-light: var(--umo-button-hover-background);
+        --td-brand-color-light: var(--pdoc-button-hover-background);
       }
     }
   }

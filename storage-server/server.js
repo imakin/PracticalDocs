@@ -94,7 +94,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && pathname === '/api/health') {
       sendJson(res, 200, {
         status: 'ok',
-        server: 'practical-umodoc-server',
+        server: 'practicaldocs-server',
         time: new Date().toISOString(),
       })
       return
@@ -132,7 +132,7 @@ const server = http.createServer(async (req, res) => {
         id: docId,
         filename,
         title,
-        message: `Document '${filename}' saved to practical-umodoc-server successfully!`,
+        message: `Document '${filename}' saved to practicaldocs-server successfully!`,
         savedAt: documentPayload.savedAt,
         assets,
         // Named so the client can resend them rather than leaving a document pointing at nothing.
@@ -212,5 +212,5 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, () => {
-  console.log(`practical-umodoc-server running on http://localhost:${PORT}`)
+  console.log(`practicaldocs-server running on http://localhost:${PORT}`)
 })

@@ -69,13 +69,13 @@ const call = (method, params = {}, sessionId) =>
     ws.send(JSON.stringify({ id: nextId, method, params, ...(sessionId ? { sessionId } : {}) }))
   })
 
-const workDir = await mkdtemp(path.join(tmpdir(), 'umo-page-numbers-'))
+const workDir = await mkdtemp(path.join(tmpdir(), 'pdoc-page-numbers-'))
 const { targetId } = await call('Target.createTarget', { url: EDITOR_URL })
 const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true })
 await call('Runtime.enable', {}, sessionId)
 let printTargetId = null
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression, sid) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sid || sessionId)
@@ -146,7 +146,7 @@ const screen = await evaluate(`(async () => {
   window.__ed.commands.setContent(${JSON.stringify(doc)})
   window.__p.page.value.pageNumber = { enabled: true, position: 'top-right', firstPagePosition: 'bottom-center', format: 'roman-lower', template: '{number}', startAt: 1 }
   await new Promise((r) => setTimeout(r, 4000))
-  return [...document.querySelectorAll('.umo-page-content > .umo-page-number')]
+  return [...document.querySelectorAll('.pdoc-page-content > .pdoc-page-number')]
     .sort((a, b) => Number(a.dataset.sheet) - Number(b.dataset.sheet))
     .map((e) => ({ text: e.textContent, edge: e.dataset.edge, align: e.dataset.align }))
 })()`)
@@ -170,7 +170,7 @@ check(
 const srcdoc = await evaluate(`(async () => {
   window.__p.exportFile.value.pdf = true
   await new Promise((r) => setTimeout(r, 2500))
-  const iframe = document.querySelector('.umo-print-iframe')
+  const iframe = document.querySelector('.pdoc-print-iframe')
   const code = iframe ? iframe.getAttribute('srcdoc') || '' : ''
   const dialog = [...document.querySelectorAll('.t-dialog')].find((d) => d.offsetParent !== null)
   if (dialog) { const cancel = [...dialog.querySelectorAll('button')].find((b) => /cancel|batal/i.test(b.textContent)); if (cancel) cancel.click() }

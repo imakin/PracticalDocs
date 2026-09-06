@@ -19,7 +19,7 @@
       <t-option
         v-for="item in group.children"
         :key="item.value"
-        class="umo-font-family-item"
+        class="pdoc-font-family-item"
         :value="item.value"
         :label="l(item.label)"
       >
@@ -28,14 +28,14 @@
           <span
             v-if="!isFontSupported(item)"
             :title="t('base.fontFamily.unsupport')"
-            class="umo-font-family-unsupport"
+            class="pdoc-font-family-unsupport"
             >!</span
           >
         </span>
-        <span v-if="!isFontSupported(item)" class="umo-font-family-unsupport">
+        <span v-if="!isFontSupported(item)" class="pdoc-font-family-unsupport">
           <span
             v-if="canDownloadFont(item) || isDownloadingFont(item.value)"
-            class="umo-font-family-download"
+            class="pdoc-font-family-download"
             :class="{ 'is-loading': isDownloadingFont(item.value) }"
             :title="
               isDownloadingFont(item.value)
@@ -498,22 +498,22 @@ onMounted(async () => {
 </script>
 
 <style lang="less">
-.umo-font-family-item {
+.pdoc-font-family-item {
   > span {
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 14px;
     width: 100%;
-    .umo-font-family-unsupport {
+    .pdoc-font-family-unsupport {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      color: var(--umo-error-color);
+      color: var(--pdoc-error-color);
       font-size: 14px;
     }
-    .umo-font-family-download {
-      color: var(--umo-text-color-light);
+    .pdoc-font-family-download {
+      color: var(--pdoc-text-color-light);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -523,7 +523,7 @@ onMounted(async () => {
       margin-left: 12px;
       user-select: none;
       &:hover {
-        color: var(--umo-primary-color);
+        color: var(--pdoc-primary-color);
       }
     }
   }

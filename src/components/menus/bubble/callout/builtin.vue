@@ -1,9 +1,9 @@
 <template>
-  <div class="umo-bubble-callout-builtin">
+  <div class="pdoc-bubble-callout-builtin">
     <div
       v-for="item in callouts"
       :key="item.type"
-      class="umo-bubble-callout-item"
+      class="pdoc-bubble-callout-item"
       :style="{
         color: item.color,
         backgroundColor: item.backgroundColor,
@@ -15,7 +15,7 @@
         name="selected"
         size="14"
       />
-      <span v-else class="umo-bubble-callout-item-text">{{ item.icon }}</span>
+      <span v-else class="pdoc-bubble-callout-item-text">{{ item.icon }}</span>
     </div>
   </div>
 </template>
@@ -66,11 +66,11 @@ const selectStyle = (item) => {
 </script>
 
 <style lang="less">
-.umo-bubble-callout-builtin {
+.pdoc-bubble-callout-builtin {
   display: flex;
   align-items: center;
 }
-.umo-bubble-callout-item {
+.pdoc-bubble-callout-item {
   display: flex;
   align-items: center;
   justify-content: center;

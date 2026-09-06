@@ -8,8 +8,8 @@
     @toggle-popup="togglePopup"
   >
     <template #content>
-      <div class="umo-watermark-container">
-        <div class="umo-watermark-toolbar">
+      <div class="pdoc-watermark-container">
+        <div class="pdoc-watermark-toolbar">
           <menus-button
             style="width: 140px"
             :tooltip="t('page.watermark.fontFamily')"
@@ -74,10 +74,10 @@
           @change="(newText) => updateWatermark({ text: newText })"
         />
         <div
-          class="umo-watermark-type-title"
+          class="pdoc-watermark-type-title"
           v-text="t('page.watermark.type')"
         ></div>
-        <div class="umo-watermark-type">
+        <div class="pdoc-watermark-type">
           <div
             v-if="page.watermark"
             class="item compact"
@@ -99,7 +99,7 @@
         </div>
         <t-button
           v-if="page.watermark?.text"
-          class="umo-clear-button"
+          class="pdoc-clear-button"
           block
           variant="outline"
           @click="clearWatermark"
@@ -135,17 +135,17 @@ const clearWatermark = () => {
 </script>
 
 <style lang="less" scoped>
-.umo-watermark-container {
+.pdoc-watermark-container {
   width: 320px;
-  .umo-watermark-toolbar {
+  .pdoc-watermark-toolbar {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
   }
-  .umo-watermark-type {
+  .pdoc-watermark-type {
     display: flex;
     &-title {
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
       margin: 10px 0;
       font-size: 12px;
     }
@@ -157,9 +157,9 @@ const clearWatermark = () => {
       .bg {
         width: 70px;
         height: 90px;
-        border: solid 1px var(--umo-border-color);
+        border: solid 1px var(--pdoc-border-color);
         position: relative;
-        border-radius: var(--umo-radius);
+        border-radius: var(--pdoc-radius);
         background-size: cover;
         background-position: center center;
         background-repeat: no-repeat;
@@ -176,10 +176,10 @@ const clearWatermark = () => {
       &:hover,
       &.active {
         .bg {
-          border-color: var(--umo-primary-color);
+          border-color: var(--pdoc-primary-color);
         }
         span {
-          color: var(--umo-primary-color);
+          color: var(--pdoc-primary-color);
         }
       }
       &.compact .bg {
@@ -190,7 +190,7 @@ const clearWatermark = () => {
       }
     }
   }
-  .umo-clear-button {
+  .pdoc-clear-button {
     margin-top: 20px;
   }
 }

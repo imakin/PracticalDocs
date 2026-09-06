@@ -19,7 +19,7 @@
     @close="modalVisible = false"
   >
     <t-tabs v-model="activeTab">
-      <t-tab-panel value="server" label="From Server (practical-umodoc-server)">
+      <t-tab-panel value="server" label="From Server (practicaldocs-server)">
         <div style="margin-top: 16px;">
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <t-input v-model="searchQuery" placeholder="Search filename or title..." clearable />
@@ -32,7 +32,7 @@
             <t-loading text="Loading server document list..." size="small" />
           </div>
 
-          <div v-else-if="filteredDocuments.length === 0" style="padding: 24px; text-align: center; color: var(--umo-text-color-muted, #999);">
+          <div v-else-if="filteredDocuments.length === 0" style="padding: 24px; text-align: center; color: var(--pdoc-text-color-muted, #999);">
             No documents stored on the server yet.
           </div>
 
@@ -41,7 +41,7 @@
               <template #content>
                 <div style="display: flex; flex-direction: column;">
                   <strong style="font-size: 14px;">{{ doc.title || doc.filename }}</strong>
-                  <span style="font-size: 12px; color: var(--umo-text-color-muted, #888);">
+                  <span style="font-size: 12px; color: var(--pdoc-text-color-muted, #888);">
                     File: <code>{{ doc.filename }}.enc</code> &bull; Saved: {{ formatDate(doc.savedAt) }}
                   </span>
                 </div>
@@ -63,8 +63,8 @@
 
       <t-tab-panel value="local" label="From Local File (.json / .umodoc)">
         <div style="padding: 24px; text-align: center;">
-          <p style="margin-bottom: 16px; color: var(--umo-text-color-muted, #666);">
-            Select a document file <code>.umodoc.json</code> from your computer to open.
+          <p style="margin-bottom: 16px; color: var(--pdoc-text-color-muted, #666);">
+            Select a document file <code>.practicaldocs.json</code> from your computer to open.
           </p>
           <t-button theme="primary" size="large" @click="fileInput?.click()">
             Choose Document File...
@@ -100,7 +100,7 @@ let loadingServerDocs = $ref(false)
 let serverDocuments = $ref([])
 
 const getServerBaseUrl = () => {
-  const fullUrl = localStorage.getItem('umo-editor:server-url') || 'http://localhost:3001/api/documents/save'
+  const fullUrl = localStorage.getItem('practicaldocs:server-url') || 'http://localhost:3001/api/documents/save'
   return fullUrl.replace(/\/api\/documents\/save\/?$/, '')
 }
 

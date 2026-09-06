@@ -2,7 +2,7 @@
   <node-view-wrapper
     as="li"
     ref="wrapperRef"
-    class="umo-list-item"
+    class="pdoc-list-item"
     :class="wrapperClass"
     :data-checked="isTaskChecked || null"
     data-list-item=""
@@ -10,20 +10,20 @@
     <t-dropdown
       v-if="isOrderedList"
       trigger="click"
-      overlay-class-name="umo-list-item-popup"
+      overlay-class-name="pdoc-list-item-popup"
       :visible="editor?.isEditable && markerMenuVisible"
       size="small"
       :max-column-width="260"
       :popup-props="popupProps"
     >
       <span
-        class="umo-list-item-marker is-ordered-list-marker"
+        class="pdoc-list-item-marker is-ordered-list-marker"
         contenteditable="false"
         data-list-marker=""
         @mousedown.prevent
         @click.stop="focusListItem"
       >
-        <span class="umo-list-item-marker-text">{{ markerText }}</span>
+        <span class="pdoc-list-item-marker-text">{{ markerText }}</span>
       </span>
       <template #dropdown>
         <t-dropdown-menu>
@@ -35,8 +35,8 @@
             It has to be a `t-dropdown-item`: `t-dropdown-menu` renders only the children it
             recognises and drops anything else, so a plain element here vanished without a word.
           -->
-          <t-dropdown-item class="umo-list-item-menu-info">
-            <div class="umo-list-item-menu-info-row" @click.stop.prevent>
+          <t-dropdown-item class="pdoc-list-item-menu-info">
+            <div class="pdoc-list-item-menu-info-row" @click.stop.prevent>
               <span>{{ t('list.ordered.indentLevel') }}: {{ indentLevel }}</span>
               <!--
                 The same two actions as Tab and Shift-Tab, next to the level they change, so the
@@ -44,7 +44,7 @@
               -->
               <button
                 type="button"
-                class="umo-list-item-menu-indent-button"
+                class="pdoc-list-item-menu-indent-button"
                 :title="t('base.outdent')"
                 @click.stop.prevent="changeIndent(-1)"
               >
@@ -52,7 +52,7 @@
               </button>
               <button
                 type="button"
-                class="umo-list-item-menu-indent-button"
+                class="pdoc-list-item-menu-indent-button"
                 :title="t('base.indent')"
                 @click.stop.prevent="changeIndent(1)"
               >
@@ -66,14 +66,14 @@
             no-op is handled in the command instead, where it belongs.
           -->
           <t-dropdown-item
-            class="umo-list-item-menu-item"
+            class="pdoc-list-item-menu-item"
             @click="continueNumbering"
           >
             <icon name="continued-outlined" />
             <span>{{ t('list.ordered.continuePrevious') }} ({{ continueNumber }})</span>
           </t-dropdown-item>
           <t-dropdown-item
-            class="umo-list-item-menu-item"
+            class="pdoc-list-item-menu-item"
             @click="startNewList"
           >
             <icon name="new-outlined" />
@@ -81,26 +81,26 @@
           </t-dropdown-item>
           <t-dropdown-item
             divider
-            class="umo-list-item-menu-item"
+            class="pdoc-list-item-menu-item"
             @click="openStartDialog"
           >
             <icon name="reset-outlined" />
             <span>{{ t('list.ordered.changeStart') }}</span>
           </t-dropdown-item>
           <t-dropdown-item
-            class="umo-list-item-menu-item"
+            class="pdoc-list-item-menu-item"
             @click="openTemplateDialog"
           >
             <icon name="ordered-list" />
             <span>{{ t('list.ordered.markerTemplate') }}</span>
           </t-dropdown-item>
-          <t-dropdown-item class="umo-list-item-menu-item">
+          <t-dropdown-item class="pdoc-list-item-menu-item">
             <t-dropdown
-              class="umo-list-item-menu-item"
+              class="pdoc-list-item-menu-item"
               trigger="click"
               placement="right-top"
             >
-              <div class="umo-list-item-submenu-trigger" @click.stop>
+              <div class="pdoc-list-item-submenu-trigger" @click.stop>
                 <icon name="ordered-list" />
                 <span>{{ t('list.ordered.numberType') }}</span>
               </div>
@@ -109,7 +109,7 @@
                   <t-dropdown-item
                     v-for="item in orderedListTypeOptions"
                     :key="item.value"
-                    class="umo-list-item-menu-item"
+                    class="pdoc-list-item-menu-item"
                     :class="{ 'is-active': orderedListType === item.value }"
                     @click="changeOrderedListType(item.value)"
                   >
@@ -125,30 +125,30 @@
     <t-dropdown
       v-else-if="isBulletList"
       trigger="click"
-      overlay-class-name="umo-list-item-popup"
+      overlay-class-name="pdoc-list-item-popup"
       :visible="editor?.isEditable && markerMenuVisible"
       size="small"
       :popup-props="popupProps"
     >
       <span
-        class="umo-list-item-marker is-bullet-list-marker"
+        class="pdoc-list-item-marker is-bullet-list-marker"
         contenteditable="false"
         data-list-marker=""
         @mousedown.prevent
         @click.stop="focusListItem"
       >
-        <span class="umo-list-item-marker-text">{{ markerText }}</span>
+        <span class="pdoc-list-item-marker-text">{{ markerText }}</span>
       </span>
       <template #dropdown>
         <t-dropdown-menu>
           <t-dropdown-item
             v-for="item in bulletListTypeOptions"
             :key="item.value"
-            class="umo-list-item-menu-item"
+            class="pdoc-list-item-menu-item"
             :class="{ 'is-active': bulletListType === item.value }"
             @click="changeBulletListType(item.value)"
           >
-            <span class="umo-list-item-submenu-marker">{{ item.marker }}</span>
+            <span class="pdoc-list-item-submenu-marker">{{ item.marker }}</span>
             <span>{{ item.label }}</span>
           </t-dropdown-item>
         </t-dropdown-menu>
@@ -156,12 +156,12 @@
     </t-dropdown>
     <label
       v-else-if="isTaskItem"
-      class="umo-list-item-task-marker"
+      class="pdoc-list-item-task-marker"
       contenteditable="false"
       @mousedown.prevent
     >
       <input
-        class="umo-list-item-task-checkbox"
+        class="pdoc-list-item-task-checkbox"
         type="checkbox"
         :checked="isTaskChecked"
         :disabled="!editor?.isEditable"
@@ -177,7 +177,7 @@
       @close="closeStartDialog"
       @confirm="applyStartValue"
     >
-      <div class="umo-list-item-start-dialog">
+      <div class="pdoc-list-item-start-dialog">
         <t-input-number
           v-model="pendingStart"
           :min="1"
@@ -199,19 +199,19 @@
       @close="closeTemplateDialog"
       @confirm="applyTemplate"
     >
-      <div class="umo-list-item-start-dialog">
+      <div class="pdoc-list-item-start-dialog">
         <t-input v-model="pendingTemplate" autofocus />
-        <div class="umo-list-item-template-hint">
+        <div class="pdoc-list-item-template-hint">
           {{ t('list.ordered.markerTemplateHint') }}
         </div>
-        <div class="umo-list-item-template-preview">
+        <div class="pdoc-list-item-template-preview">
           {{ t('list.ordered.markerTemplatePreview') }}: {{ templatePreview }}
         </div>
       </div>
     </modal>
     <node-view-content
       as="div"
-      class="umo-list-item-content"
+      class="pdoc-list-item-content"
       data-list-item-content=""
     />
   </node-view-wrapper>
@@ -273,8 +273,8 @@ const clearMarkerMetricVars = (wrapperElement) => {
     return
   }
 
-  wrapperElement.style.removeProperty('--umo-list-marker-font-size')
-  wrapperElement.style.removeProperty('--umo-list-marker-offset-y')
+  wrapperElement.style.removeProperty('--pdoc-list-marker-font-size')
+  wrapperElement.style.removeProperty('--pdoc-list-marker-offset-y')
 }
 
 const getMarkerSourceElement = (contentElement) => {
@@ -406,13 +406,13 @@ const syncMarkerMetrics = () => {
       ? (markerLineHeight - parsedFontSize) / 2
       : 0)
   wrapperElement.style.setProperty(
-    '--umo-list-marker-font-size',
+    '--pdoc-list-marker-font-size',
     Number.isFinite(parsedFontSize) && parsedFontSize > 0
       ? `${parsedFontSize}px`
       : fontSize,
   )
   wrapperElement.style.setProperty(
-    '--umo-list-marker-offset-y',
+    '--pdoc-list-marker-offset-y',
     `${markerOffsetY}px`,
   )
 }
@@ -548,8 +548,8 @@ const focusListItem = () => {
 }
 
 const popupProps = $computed(() => ({
-  attach: `${container} .umo-zoomable-container`,
-  overlayClassName: 'umo-list-item-overlay',
+  attach: `${container} .pdoc-zoomable-container`,
+  overlayClassName: 'pdoc-list-item-overlay',
   destroyOnClose: false,
   onVisibleChange: handleMarkerMenuVisibleChange,
 }))
@@ -823,16 +823,16 @@ ol {
   list-style-type: none;
 }
 
-.umo-list-item-popup {
-  .umo-popup__content {
+.pdoc-list-item-popup {
+  .pdoc-popup__content {
     min-width: 180px;
   }
 }
 
-.umo-list-item-menu-info {
+.pdoc-list-item-menu-info {
   // A row that states a fact rather than offering an action, so it must not look like one.
   font-size: 12px;
-  color: var(--umo-text-color-light, #8c8c8c);
+  color: var(--pdoc-text-color-light, #8c8c8c);
   cursor: default;
   user-select: none;
 
@@ -841,14 +841,14 @@ ol {
   }
 }
 
-.umo-list-item-menu-info-row {
+.pdoc-list-item-menu-info-row {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
 }
 
-.umo-list-item-menu-indent-button {
+.pdoc-list-item-menu-indent-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -858,34 +858,34 @@ ol {
   border: none;
   border-radius: 3px;
   background-color: transparent;
-  color: var(--umo-text-color, #1f1f1f);
+  color: var(--pdoc-text-color, #1f1f1f);
   font-size: 14px;
   cursor: pointer;
 
   &:hover {
-    background-color: var(--umo-button-hover-background, rgb(0 0 0 / 6%));
+    background-color: var(--pdoc-button-hover-background, rgb(0 0 0 / 6%));
   }
 }
 
-.umo-list-item-menu-item {
-  .umo-dropdown__item-text {
+.pdoc-list-item-menu-item {
+  .pdoc-dropdown__item-text {
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .umo-icon {
+  .pdoc-icon {
     font-size: 16px;
   }
 
   &.is-active {
-    .umo-dropdown__item-text {
-      color: var(--umo-primary-color);
+    .pdoc-dropdown__item-text {
+      color: var(--pdoc-primary-color);
     }
   }
 }
 
-.umo-list-item-submenu-marker {
+.pdoc-list-item-submenu-marker {
   display: inline-flex;
   align-items: center;
   font-size: 18px;
@@ -899,18 +899,18 @@ ol {
 // to be drawn. Measured against the classic shape, an item's content column starts 26px in at the
 // default size, so this is set close to it - an approximation on purpose, because that column grows
 // with the number inside it and no static rule can follow it. Override the variable to taste.
-.umo-editor {
+.pdoc-editor {
   ol > ol,
   ol > ul,
   ul > ol,
   ul > ul {
-    padding-left: var(--umo-list-nested-indent, calc(1.35em + 0.5em));
+    padding-left: var(--pdoc-list-nested-indent, calc(1.35em + 0.5em));
   }
 }
 
-.umo-list-item {
-  --offset-y: var(--umo-list-marker-offset-y, 0);
-  --font-size: var(--umo-list-marker-font-size, inherit);
+.pdoc-list-item {
+  --offset-y: var(--pdoc-list-marker-offset-y, 0);
+  --font-size: var(--pdoc-list-marker-font-size, inherit);
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
@@ -918,7 +918,7 @@ ol {
   min-width: 0;
   // No `word-break` here. `break-all` breaks between any two characters, so ordinary prose in a
   // list came out cut mid-word - `latensi` as `la` and `tensi` - while the same prose in a
-  // paragraph was fine. Overflow was never the reason it was needed: `.umo-editor` sets
+  // paragraph was fine. Overflow was never the reason it was needed: `.pdoc-editor` sets
   // `overflow-wrap: anywhere`, which is inherited and breaks a token genuinely too long for the
   // line and nothing else, and `min-width: 0` above is what keeps this flex item from being pushed
   // wide by one. It also put the Word Wrap control out of reach for list text, because the
@@ -929,14 +929,14 @@ ol {
   font-size: inherit;
   padding: 0.25em 0;
 
-  .umo-list-item-marker {
+  .pdoc-list-item-marker {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     font-size: var(--font-size);
     line-height: 1;
-    color: var(--umo-text-color);
+    color: var(--pdoc-text-color);
     border-radius: 0.125em;
     white-space: nowrap;
     user-select: none;
@@ -947,7 +947,7 @@ ol {
       cursor: pointer;
 
       &:hover {
-        background-color: var(--umo-content-table-selected-background);
+        background-color: var(--pdoc-content-table-selected-background);
       }
     }
 
@@ -957,25 +957,25 @@ ol {
       cursor: pointer;
 
       &:hover {
-        background-color: var(--umo-content-table-selected-background);
+        background-color: var(--pdoc-content-table-selected-background);
       }
     }
   }
 
-  .umo-list-item-marker-text {
+  .pdoc-list-item-marker-text {
     display: inline-block;
     line-height: 1;
     white-space: nowrap;
   }
 
-  .umo-list-item-task-marker {
+  .pdoc-list-item-task-marker {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     transform: translateY(var(--offset-y));
   }
 
-  .umo-list-item-task-checkbox {
+  .pdoc-list-item-task-checkbox {
     appearance: none;
     cursor: pointer;
     width: var(--font-size);
@@ -988,12 +988,12 @@ ol {
     border-radius: calc(var(--font-size) * 0.125);
 
     &:hover {
-      border-color: var(--umo-primary-color);
+      border-color: var(--pdoc-primary-color);
     }
 
     &:checked {
-      background-color: var(--umo-primary-color);
-      border-color: var(--umo-primary-color);
+      background-color: var(--pdoc-primary-color);
+      border-color: var(--pdoc-primary-color);
 
       &::after {
         content: '';
@@ -1018,14 +1018,14 @@ ol {
     &.is-current-item,
     &.is-selected,
     &.is-marker-menu-active {
-      .umo-list-item-marker {
-        background-color: var(--umo-content-table-selected-background);
+      .pdoc-list-item-marker {
+        background-color: var(--pdoc-content-table-selected-background);
       }
     }
   }
 
   &.is-task-checked {
-    .umo-list-item-content > p {
+    .pdoc-list-item-content > p {
       opacity: 0.5;
       text-decoration: line-through;
       margin: 0;
@@ -1040,9 +1040,9 @@ ol {
     }
   }
   &-overlay {
-    .umo-popup__content {
+    .pdoc-popup__content {
       min-width: unset;
-      .umo-dropdown__item-text {
+      .pdoc-dropdown__item-text {
         padding-right: 30px;
       }
     }
@@ -1056,23 +1056,23 @@ ol {
   }
 }
 
-.umo-list-item-template-hint {
+.pdoc-list-item-template-hint {
   margin-top: 10px;
   font-size: 12px;
   line-height: 1.6;
-  color: var(--umo-text-color-light, #8c8c8c);
+  color: var(--pdoc-text-color-light, #8c8c8c);
 }
 
-.umo-list-item-template-preview {
+.pdoc-list-item-template-preview {
   margin-top: 8px;
   font-size: 13px;
-  color: var(--umo-text-color, #1f1f1f);
+  color: var(--pdoc-text-color, #1f1f1f);
 }
 
-.umo-list-item-start-dialog {
+.pdoc-list-item-start-dialog {
   padding-top: 8px;
 
-  .umo-input-number {
+  .pdoc-input-number {
     width: 100%;
   }
 }

@@ -22,9 +22,9 @@ import WebSocket from 'ws'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SHOTS = path.join(__dirname, '..', 'screenshots')
 const CDP = (process.env.CDP_URL || 'http://127.0.0.1:9222').replace(/\/$/, '')
-const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:9000/umo-editor'
+const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:9000/practicaldocs'
 const DOCUMENT = process.env.PAGINATION_DOC || 'tesis4'
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -137,7 +137,7 @@ const check = (label, ok, detail) => {
 // ---------------------------------------------------------------------------
 console.log(`\nDocument under test: ${DOCUMENT}`)
 const geometry = await evaluate(`(() => {
-  const pc = document.querySelector('.umo-page-content')
+  const pc = document.querySelector('.pdoc-page-content')
   const pm = document.querySelector('.ProseMirror')
   const ruler = document.createElement('div')
   ruler.style.cssText = 'position:absolute;visibility:hidden;width:1px'
@@ -146,10 +146,10 @@ const geometry = await evaluate(`(() => {
     ruler.style.height = 'var(' + v + ', ' + fallback + ')'
     return ruler.getBoundingClientRect().height
   }
-  const pageH = measure('--umo-page-height', '29.7cm')
-  const mTop = measure('--umo-page-margin-top', '0cm')
-  const mBot = measure('--umo-page-margin-bottom', '0cm')
-  const gap = measure('--umo-page-sheet-gap', '16px')
+  const pageH = measure('--pdoc-page-height', '29.7cm')
+  const mTop = measure('--pdoc-page-margin-top', '0cm')
+  const mBot = measure('--pdoc-page-margin-bottom', '0cm')
+  const gap = measure('--pdoc-page-sheet-gap', '16px')
   ruler.remove()
 
   const origin = pc.getBoundingClientRect().top
@@ -179,8 +179,8 @@ const geometry = await evaluate(`(() => {
     }
   }
 
-  const sc = document.querySelector('.umo-zoomable-container')
-  const zc = document.querySelector('.umo-zoomable-content')
+  const sc = document.querySelector('.pdoc-zoomable-container')
+  const zc = document.querySelector('.pdoc-zoomable-content')
   return {
     pageH, mTop, mBot, gap, columnHeight: pageH - mTop - mBot,
     lineCount: lines.length,
@@ -220,7 +220,7 @@ check('the page settles when idle', raf2 - raf1 <= 4, `${raf2 - raf1} animation 
 // The container animates scrolling (scroll-behavior: smooth), so read the value only once it has
 // stopped moving. Sampling mid-flight would report a false failure.
 const scroll = await evaluate(`(async () => {
-  const sc = document.querySelector('.umo-zoomable-container')
+  const sc = document.querySelector('.pdoc-zoomable-container')
   const settle = async () => {
     let last = -1
     for (let i = 0; i < 40; i++) {
@@ -251,10 +251,10 @@ const leak = await evaluate(`(() => {
   if (!ed) return { unreachable: true }
   window.__ed = ed
   return {
-    renderedSpacers: document.querySelectorAll('.ProseMirror .umo-page-spacer').length,
-    inHtml: ed.getHTML().includes('umo-page-spacer'),
-    inJson: JSON.stringify(ed.getJSON()).includes('umo-page-spacer'),
-    inText: ed.getText().includes('umo-page-spacer'),
+    renderedSpacers: document.querySelectorAll('.ProseMirror .pdoc-page-spacer').length,
+    inHtml: ed.getHTML().includes('pdoc-page-spacer'),
+    inJson: JSON.stringify(ed.getJSON()).includes('pdoc-page-spacer'),
+    inText: ed.getText().includes('pdoc-page-spacer'),
   }
 })()`)
 check('spacers are rendered as decorations', !leak.unreachable && leak.renderedSpacers > 0, `${leak.renderedSpacers} spacer(s) in the view`)
@@ -264,13 +264,13 @@ check('spacers never reach the saved content', leak.inHtml === false && leak.inJ
 // ---------------------------------------------------------------------------
 // Editing must repaginate, and must not disturb the document itself.
 const liveStats = `(() => {
-  const pc = document.querySelector('.umo-page-content')
+  const pc = document.querySelector('.pdoc-page-content')
   const ruler = document.createElement('div')
   ruler.style.cssText = 'position:absolute;visibility:hidden;width:1px'
   pc.appendChild(ruler)
   const m = (v, f) => { ruler.style.height = 'var(' + v + ', ' + f + ')'; return ruler.getBoundingClientRect().height }
-  const pageH = m('--umo-page-height', '29.7cm'), mTop = m('--umo-page-margin-top', '0cm')
-  const mBot = m('--umo-page-margin-bottom', '0cm'), gap = m('--umo-page-sheet-gap', '16px')
+  const pageH = m('--pdoc-page-height', '29.7cm'), mTop = m('--pdoc-page-margin-top', '0cm')
+  const mBot = m('--pdoc-page-margin-bottom', '0cm'), gap = m('--pdoc-page-sheet-gap', '16px')
   ruler.remove()
   const stride = pageH + gap, origin = pc.getBoundingClientRect().top
   const pm = document.querySelector('.ProseMirror')
@@ -292,7 +292,7 @@ const liveStats = `(() => {
       }
     }
   }
-  return { bad, offenders, spacers: pm.querySelectorAll('.umo-page-spacer').length,
+  return { bad, offenders, spacers: pm.querySelectorAll('.pdoc-page-spacer').length,
            marginBottom: Math.round(mBot), marginTop: Math.round(mTop),
            pageHeight: Math.round(pageH), stride: Math.round(stride),
            chars: window.__ed.state.doc.textContent.length }
@@ -340,7 +340,7 @@ const printHtml = await evaluate(`(async () => {
   if (!p || !p.exportFile) return { unreachable: true }
   p.exportFile.value.pdf = true
   await new Promise(r => setTimeout(r, 1500))
-  const iframe = document.querySelector('.umo-print-iframe')
+  const iframe = document.querySelector('.pdoc-print-iframe')
   const srcdoc = iframe ? iframe.getAttribute('srcdoc') || '' : ''
   const dialog = [...document.querySelectorAll('.t-dialog')].find(d => d.offsetParent !== null)
   if (dialog) {
@@ -349,14 +349,14 @@ const printHtml = await evaluate(`(async () => {
   }
   p.exportFile.value.pdf = false
   await new Promise(r => setTimeout(r, 500))
-  // Parse rather than string-match: the stylesheet legitimately mentions --umo-page-total-height as a
+  // Parse rather than string-match: the stylesheet legitimately mentions --pdoc-page-total-height as a
   // CSS fallback, and only the inline value on the sheet element would distort the print layout.
   const parsed = new DOMParser().parseFromString(srcdoc, 'text/html')
-  const sheet = parsed.querySelector('.umo-page-content')
+  const sheet = parsed.querySelector('.pdoc-page-content')
   return {
     built: srcdoc.length > 0,
-    hasSpacer: parsed.querySelectorAll('.umo-page-spacer').length > 0,
-    inlinePaddedHeight: sheet ? sheet.style.getPropertyValue('--umo-page-total-height') : 'NO_SHEET',
+    hasSpacer: parsed.querySelectorAll('.pdoc-page-spacer').length > 0,
+    inlinePaddedHeight: sheet ? sheet.style.getPropertyValue('--pdoc-page-total-height') : 'NO_SHEET',
     carriesText: srcdoc.includes('Latar Belakang'),
   }
 })()`)
@@ -371,7 +371,7 @@ if (printHtml.unreachable) {
 await mkdir(SHOTS, { recursive: true })
 const shot = await call('Page.captureScreenshot', { format: 'png' }, sessionId)
 await writeFile(path.join(SHOTS, 'pagination-geometry-top.png'), Buffer.from(shot.data, 'base64'))
-await evaluate(`(() => { document.querySelector('.umo-zoomable-container').scrollTop = ${Math.round(geometry.pageH * 0.75)}; return 1 })()`)
+await evaluate(`(() => { document.querySelector('.pdoc-zoomable-container').scrollTop = ${Math.round(geometry.pageH * 0.75)}; return 1 })()`)
 await sleep(800)
 const shot2 = await call('Page.captureScreenshot', { format: 'png' }, sessionId)
 await writeFile(path.join(SHOTS, 'pagination-geometry-boundary.png'), Buffer.from(shot2.data, 'base64'))

@@ -21,7 +21,7 @@ const headingElement = (editor, id) => {
  * space.
  */
 const headingNumber = (element) => {
-  const number = element?.querySelector('.umo-heading-number')
+  const number = element?.querySelector('.pdoc-heading-number')
   return (number?.textContent || '').replace(/\s+/g, ' ').trim()
 }
 

@@ -2,7 +2,7 @@
 
 ## The problem
 
-Autosave writes to `practical-umodoc-server` under **the document title currently loaded in the
+Autosave writes to `practicaldocs-server` under **the document title currently loaded in the
 editor**, not under the name of whatever the user last deliberately saved. That makes an empty editor
 dangerous: if the title still says `tesis3` while the editor holds nothing, the next autosave replaces
 `tesis3.enc` with a blank document, and the stored copy is gone.

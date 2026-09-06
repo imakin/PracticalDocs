@@ -35,7 +35,7 @@ class ReferenceTableView extends TableView {
         this.table.removeAttribute(name)
       }
     })
-    this.table.classList.add('umo-node-table')
+    this.table.classList.add('pdoc-node-table')
   }
 
   update(node) {
@@ -53,7 +53,7 @@ const CustomTable = Table.extend({
     return {
       ...this.parent?.(),
       HTMLAttributes: {
-        class: 'umo-node-table',
+        class: 'pdoc-node-table',
       },
       allowTableNodeSelection: true,
       resizable: true,

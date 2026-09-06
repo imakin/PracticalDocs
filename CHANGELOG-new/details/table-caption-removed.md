@@ -50,7 +50,7 @@ and load.
   the only thing a table accepts is a row.
 - `Insert > Caption` applies to figures only. It is disabled with a table selected, and
   `setReferenceCaption` refuses one, so a caption cannot be stored where nothing would render it.
-- `.umo-node-table-caption` was removed from the stylesheet, and the button's tooltip no longer
+- `.pdoc-node-table-caption` was removed from the stylesheet, and the button's tooltip no longer
   mentions tables.
 
 A table caption is now written the way any other text is: a block above or below the table, styled

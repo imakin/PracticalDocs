@@ -1,6 +1,6 @@
 <template>
-  <div class="umo-toc-profile-picker">
-    <span class="umo-toc-profile-label">{{ t('toc.profile.label') }}</span>
+  <div class="pdoc-toc-profile-picker">
+    <span class="pdoc-toc-profile-label">{{ t('toc.profile.label') }}</span>
     <t-select
       :value="current"
       size="small"
@@ -66,15 +66,15 @@ const apply = (value) => {
 </script>
 
 <style lang="less" scoped>
-.umo-toc-profile-picker {
+.pdoc-toc-profile-picker {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0 4px;
 
-  .umo-toc-profile-label {
+  .pdoc-toc-profile-label {
     font-size: 12px;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     white-space: nowrap;
   }
 

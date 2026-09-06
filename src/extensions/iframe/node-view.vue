@@ -2,14 +2,14 @@
   <node-view-wrapper
     :id="attrs.id"
     ref="containerRef"
-    class="umo-node-view"
+    class="pdoc-node-view"
     :style="nodeStyle"
     @click.capture="editor?.commands.setNodeSelection(getPos())"
   >
     <div
-      class="umo-node-container umo-select-outline umo-node-iframe"
+      class="pdoc-node-container pdoc-select-outline pdoc-node-iframe"
       :class="{
-        'umo-hover-shadow': !options.document?.readOnly,
+        'pdoc-hover-shadow': !options.document?.readOnly,
       }"
     >
       <drager
@@ -80,12 +80,12 @@ onClickOutside(containerRef, () => {
 </script>
 
 <style lang="less">
-.umo-node-view {
-  .umo-node-iframe {
+.pdoc-node-view {
+  .pdoc-node-iframe {
     max-width: 100%;
     .es-drager {
       &:not(.selected) {
-        outline: solid 1px var(--umo-content-node-border);
+        outline: solid 1px var(--pdoc-content-node-border);
       }
     }
     iframe {

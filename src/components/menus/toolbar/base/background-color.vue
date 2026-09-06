@@ -10,7 +10,7 @@
   >
     <icon
       name="background-color"
-      class="umo-icon-background-color"
+      class="pdoc-icon-background-color"
       :style="{
         background: editor?.getAttributes('highlight')?.color || currentColor,
       }"
@@ -61,7 +61,7 @@ const colorChange = (color) => {
 </script>
 
 <style lang="less" scoped>
-.umo-icon-background-color {
+.pdoc-icon-background-color {
   border-radius: 2px;
 }
 </style>

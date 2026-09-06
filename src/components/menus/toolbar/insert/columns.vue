@@ -8,13 +8,13 @@
     @toggle-popup="togglePopup"
   >
     <template #content>
-      <div class="umo-columns-title">{{ t('insert.columns.number') }}</div>
-      <div class="umo-columns-container">
+      <div class="pdoc-columns-title">{{ t('insert.columns.number') }}</div>
+      <div class="pdoc-columns-container">
         <div
           v-for="column in columns"
           :key="column"
-          class="umo-columns-item"
-          :class="{ 'umo-columns-item-selected': activeColumn >= column }"
+          class="pdoc-columns-item"
+          :class="{ 'pdoc-columns-item-selected': activeColumn >= column }"
           @mouseenter="setActiveColumn(column)"
           @click="setColumns(column)"
         >
@@ -36,7 +36,7 @@ const setActiveColumn = (column) => {
   activeColumn = column
 }
 const setColumns = (column) => {
-  let content = '<div class="umo-node-column-container">'
+  let content = '<div class="pdoc-node-column-container">'
   for (let i = 0; i < column; i++) {
     content += '<div class="prosemirror-column"><p></p></div>'
   }
@@ -57,10 +57,10 @@ watch(
 </script>
 
 <style lang="less" scoped>
-.umo-columns {
+.pdoc-columns {
   &-title {
     font-size: 14px;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     line-height: 1;
     margin-bottom: 10px;
   }
@@ -73,18 +73,18 @@ watch(
   }
 
   &-item {
-    background-color: var(--umo-content-table-selected-background);
-    border-radius: var(--umo-radius);
+    background-color: var(--pdoc-content-table-selected-background);
+    border-radius: var(--pdoc-radius);
     cursor: pointer;
     height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     &-selected {
-      background-color: var(--umo-primary-color);
-      color: var(--umo-color-white);
+      background-color: var(--pdoc-primary-color);
+      color: var(--pdoc-color-white);
       opacity: 0.9;
     }
   }

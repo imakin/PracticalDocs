@@ -1,23 +1,23 @@
 <template>
   <node-view-wrapper
     :id="node.attrs.id"
-    class="umo-node-view"
+    class="pdoc-node-view"
     @click.capture="editor?.commands.setNodeSelection(getPos())"
   >
-    <div class="umo-node-container umo-node-toc">
-      <div class="umo-node-toc-body" :class="profileClass">
-        <p v-if="entries.length === 0" class="umo-toc-empty">{{ t('toc.empty') }}</p>
+    <div class="pdoc-node-container pdoc-node-toc">
+      <div class="pdoc-node-toc-body" :class="profileClass">
+        <p v-if="entries.length === 0" class="pdoc-toc-empty">{{ t('toc.empty') }}</p>
         <div
           v-for="entry in entries"
           :key="entry.id"
-          class="umo-toc-item-row"
+          class="pdoc-toc-item-row"
           :style="{ paddingLeft: entry.indent }"
           @click="goToHeading(entry.id)"
         >
-          <span v-if="entry.label" class="umo-toc-item-label">{{ entry.label }}</span>
-          <span class="umo-toc-item-text">{{ entry.textContent }}</span>
-          <span class="umo-toc-item-dots"></span>
-          <span class="umo-toc-item-page">{{ entry.pageNumber }}</span>
+          <span v-if="entry.label" class="pdoc-toc-item-label">{{ entry.label }}</span>
+          <span class="pdoc-toc-item-text">{{ entry.textContent }}</span>
+          <span class="pdoc-toc-item-dots"></span>
+          <span class="pdoc-toc-item-page">{{ entry.pageNumber }}</span>
         </div>
       </div>
     </div>
@@ -55,7 +55,7 @@ const headingElement = (id) => {
 /**
  * The page a heading is on, as the reader would say it.
  *
- * This used to count `.umo-page-node` elements and take the heading's index among them. Since
+ * This used to count `.pdoc-page-node` elements and take the heading's index among them. Since
  * pagination became decorations there is one such element for the whole canvas, so every entry came
  * out as page 1 - which is what the contents showed. It now asks the pagination engine, which has
  * already solved the geometry and already computed what each sheet is numbered, so a contents entry
@@ -78,7 +78,7 @@ const getPageNumber = (id) => {
  * them on one.
  */
 const getLabel = (id) => {
-  const number = headingElement(id)?.querySelector('.umo-heading-number')
+  const number = headingElement(id)?.querySelector('.pdoc-heading-number')
   return (number?.textContent || '').replace(/\s+/g, ' ').trim()
 }
 
@@ -149,9 +149,9 @@ const goToHeading = (id) => {
   const nodeElement = headingElement(id)
   if (!nodeElement) return
   const pageContainer = document.querySelector(
-    `${container} .umo-zoomable-container`,
+    `${container} .pdoc-zoomable-container`,
   )
-  const pageHeader = pageContainer?.querySelector('.umo-page-node-header')
+  const pageHeader = pageContainer?.querySelector('.pdoc-page-node-header')
   pageContainer?.scrollTo({
     top: nodeElement.offsetTop + (pageHeader?.offsetHeight || 0),
   })
@@ -164,8 +164,8 @@ const goToHeading = (id) => {
 </script>
 
 <style lang="less">
-.umo-node-view {
-  .umo-node-toc {
+.pdoc-node-view {
+  .pdoc-node-toc {
     padding: 8px 0;
     position: relative;
     outline: none;
@@ -173,7 +173,7 @@ const goToHeading = (id) => {
     background-color: transparent;
     width: 100%;
 
-    .umo-toc-empty {
+    .pdoc-toc-empty {
       margin: 0;
       padding: 8px 0;
       color: #999;
@@ -184,7 +184,7 @@ const goToHeading = (id) => {
     // One row per heading. Indentation is padding on the row, so it moves the text and leaves the
     // page number where it is - the number column is a fixed track at the right edge and the dot
     // leader takes up whatever is left between them.
-    .umo-toc-item-row {
+    .pdoc-toc-item-row {
       display: flex;
       align-items: baseline;
       // border-box, or the indent is added to a width that is already the full width and the row
@@ -202,20 +202,20 @@ const goToHeading = (id) => {
       }
 
       // The heading's own number, kept whole while the title is the part that may be clipped.
-      .umo-toc-item-label {
+      .pdoc-toc-item-label {
         flex: 0 0 auto;
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
       }
 
-      .umo-toc-item-text {
+      .pdoc-toc-item-text {
         flex: 0 1 auto;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
-      .umo-toc-item-dots {
+      .pdoc-toc-item-dots {
         flex: 1 1 auto;
         min-width: 12px;
         border-bottom: 1px dotted #bbb;
@@ -223,7 +223,7 @@ const goToHeading = (id) => {
         margin: 0 4px;
       }
 
-      .umo-toc-item-page {
+      .pdoc-toc-item-page {
         flex: 0 0 auto;
         font-variant-numeric: tabular-nums;
         text-align: right;

@@ -54,7 +54,7 @@ const createFixture = () => ({
 test('creates a portable snapshot with only supported document and page fields', () => {
   const snapshot = createDocumentSnapshot(createFixture())
 
-  assert.equal(snapshot.format, 'umodoc')
+  assert.equal(snapshot.format, 'practicaldocs')
   assert.equal(snapshot.formatVersion, 1)
   assert.deepEqual(snapshot.document, { title: 'Project Plan' })
   assert.equal(snapshot.page.size.default, undefined)
@@ -141,14 +141,19 @@ test('finds distinct non-portable blob URLs at any content depth', () => {
 test('creates safe and identifiable JSON file names', () => {
   assert.equal(
     getDocumentFileName('Quarter: 1 / Plan'),
-    'Quarter- 1 - Plan.umodoc.json',
+    'Quarter- 1 - Plan.practicaldocs.json',
   )
   assert.equal(
-    getDocumentFileName('Project.umodoc.json'),
-    'Project.umodoc.json',
+    getDocumentFileName('Project.practicaldocs.json'),
+    'Project.practicaldocs.json',
   )
-  assert.equal(getDocumentFileName(''), 'Untitled Document.umodoc.json')
-  assert.equal(getDocumentFileName('CON'), '_CON.umodoc.json')
+  // A name written by an older version keeps one suffix, not two.
+  assert.equal(
+    getDocumentFileName('Project.umodoc.json'),
+    'Project.practicaldocs.json',
+  )
+  assert.equal(getDocumentFileName(''), 'Untitled Document.practicaldocs.json')
+  assert.equal(getDocumentFileName('CON'), '_CON.practicaldocs.json')
 })
 
 test('page number settings survive the round trip', () => {

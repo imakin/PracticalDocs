@@ -1,11 +1,11 @@
 <template>
   <div
     v-if="$toolbar.mode !== 'classic'"
-    class="umo-toolbar-headding"
+    class="pdoc-toolbar-headding"
     :class="{ unfold: popupVisible }"
     :disabled="!editor?.isEditable"
   >
-    <div class="umo-heading-container">
+    <div class="pdoc-heading-container">
       <!--
         Every profile, in a strip that scrolls sideways. Four at a time meant the rest could only be
         reached through the dropdown, and a profile the writer uses constantly could sit behind it.
@@ -33,7 +33,7 @@
         :attach="container"
         trigger="click"
         placement="bottom-right"
-        overlay-class-name="umo-heading-container-popup"
+        overlay-class-name="pdoc-heading-container-popup"
         destroy-on-close
         :visible="popupVisible"
       >
@@ -41,7 +41,7 @@
           <icon name="arrow-down" />
         </div>
         <template #content>
-          <div ref="popupContentRef" class="umo-heading-container popup-content">
+          <div ref="popupContentRef" class="pdoc-heading-container popup-content">
             <div class="block-cards-list">
               <template v-for="item in allCards" :key="item.key">
                 <div
@@ -71,7 +71,7 @@
       </t-popup>
     </div>
   </div>
-  <div v-else class="umo-heading-classic-wrap">
+  <div v-else class="pdoc-heading-classic-wrap">
     <menus-button
       :text="t('base.heading.tip')"
       hide-text
@@ -85,7 +85,7 @@
       <t-option
         v-for="item in allCards"
         :key="item.key"
-        class="umo-heading-select-option"
+        class="pdoc-heading-select-option"
         :value="item.value"
         :label="item.name"
       >
@@ -113,7 +113,7 @@
       <icon name="list-ordered" />
       {{ t('references.numbering.manageProfiles') }}
     </template>
-    <div class="umo-profiles-manager">
+    <div class="pdoc-profiles-manager">
       <div class="profile-list-header">
         <div class="profile-title">{{ t('references.numbering.profilesList') }}</div>
         <t-button size="small" theme="primary" @click="openCreateProfile">
@@ -199,9 +199,9 @@
         <t-select v-model="activeEditingProfile.style" :options="styleOptions" :popup-props="{ overlayInnerStyle: { maxHeight: '220px', overflowY: 'auto' } }" />
       </t-form-item>
       <t-form-item :label="t('references.numbering.template')">
-        <div class="umo-profile-template-field">
+        <div class="pdoc-profile-template-field">
           <t-textarea v-model="activeEditingProfile.template" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="e.g. Figure {h1}.{number}&#10;or BAB {number}" />
-          <span class="umo-profile-template-help">{{ t('references.numbering.templateHelp') }}</span>
+          <span class="pdoc-profile-template-help">{{ t('references.numbering.templateHelp') }}</span>
         </div>
       </t-form-item>
       <t-form-item label="Font Family">
@@ -625,25 +625,25 @@ onClickOutside(
     popupVisible.value = false
   },
   {
-    ignore: ['.umo-popup'],
+    ignore: ['.pdoc-popup'],
   },
 )
 </script>
 
 <style lang="less" scoped>
-.umo-profile-template-field {
+.pdoc-profile-template-field {
   display: flex;
   flex-direction: column;
   width: 100%;
   gap: 4px;
 }
-.umo-profile-template-help {
+.pdoc-profile-template-help {
   font-size: 12px;
   line-height: 1.5;
-  color: var(--umo-text-color-light);
+  color: var(--pdoc-text-color-light);
 }
 
-.umo-toolbar-headding {
+.pdoc-toolbar-headding {
   width: 318px;
   height: 56px;
   position: relative;
@@ -658,21 +658,21 @@ onClickOutside(
   }
   &.unfold {
     overflow: visible;
-    .umo-heading-container {
-      border-color: var(--umo-border-color-light);
+    .pdoc-heading-container {
+      border-color: var(--pdoc-border-color-light);
       border-bottom: none;
       border-bottom-left-radius: 0;
       border-bottom-right-radius: 0;
     }
   }
 }
-.umo-heading-container {
+.pdoc-heading-container {
   display: flex;
-  background-color: var(--umo-button-hover-background);
+  background-color: var(--pdoc-button-hover-background);
   padding: 2px 5px;
   flex-flow: row nowrap;
   align-content: flex-start;
-  border-radius: var(--umo-radius);
+  border-radius: var(--pdoc-radius);
   box-sizing: border-box;
   border: solid 1px transparent;
   white-space: nowrap;
@@ -690,7 +690,7 @@ onClickOutside(
     height: 6px;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: var(--umo-border-color, #d9d9d9);
+    background-color: var(--pdoc-border-color, #d9d9d9);
     border-radius: 3px;
   }
   &::-webkit-scrollbar-track {
@@ -704,9 +704,9 @@ onClickOutside(
     width: auto;
   }
   .card {
-    background-color: var(--umo-color-white);
-    border: solid 1px var(--umo-border-color-light);
-    border-radius: var(--umo-radius);
+    background-color: var(--pdoc-color-white);
+    border: solid 1px var(--pdoc-border-color-light);
+    border-radius: var(--pdoc-radius);
     margin: 4px 2px;
     text-align: center;
     padding: 5px 6px;
@@ -719,7 +719,7 @@ onClickOutside(
     overflow: hidden;
     &:hover,
     &.active {
-      border-color: var(--umo-primary-color);
+      border-color: var(--pdoc-primary-color);
     }
     // Numbering off is dimmed no further than this. A profile that does not number its blocks is
     // perfectly usable - body text is the common case - and dimming it said "unusable" about
@@ -769,7 +769,7 @@ onClickOutside(
     }
     .subtitle {
       font-size: 8px;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
       text-transform: capitalize;
       margin-top: 3px;
       line-height: 1;
@@ -793,24 +793,24 @@ onClickOutside(
     cursor: pointer;
     z-index: 20;
     // The strip scrolls underneath, so the button needs a ground of its own or cards show through.
-    background-color: var(--umo-button-hover-background);
+    background-color: var(--pdoc-button-hover-background);
     &:hover {
       background-color: rgba(0, 0, 0, 0.05);
     }
-    .umo-icon {
+    .pdoc-icon {
       font-size: 12px;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
     }
   }
   .block-profiles-section {
     width: 100%;
     margin-top: 6px;
     padding-top: 6px;
-    border-top: solid 1px var(--umo-border-color-light);
+    border-top: solid 1px var(--pdoc-border-color-light);
     .section-title {
       font-size: 10px;
       font-weight: 600;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
       margin-bottom: 4px;
       padding-left: 4px;
       text-transform: uppercase;
@@ -824,27 +824,27 @@ onClickOutside(
     width: 100%;
     margin-top: 6px;
     padding: 6px 12px;
-    background-color: var(--umo-color-white);
-    border: dashed 1px var(--umo-primary-color);
-    border-radius: var(--umo-radius);
+    background-color: var(--pdoc-color-white);
+    border: dashed 1px var(--pdoc-primary-color);
+    border-radius: var(--pdoc-radius);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     cursor: pointer;
     font-size: 12px;
-    color: var(--umo-primary-color);
+    color: var(--pdoc-primary-color);
     &:hover {
       background-color: rgba(0, 0, 0, 0.02);
     }
   }
 }
-.umo-heading-classic-wrap {
+.pdoc-heading-classic-wrap {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-.umo-profiles-manager {
+.pdoc-profiles-manager {
   .profile-list-header {
     display: flex;
     align-items: center;
@@ -867,20 +867,20 @@ onClickOutside(
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px;
-    background-color: var(--umo-button-hover-background);
-    border-radius: var(--umo-radius);
-    border: solid 1px var(--umo-border-color-light);
+    background-color: var(--pdoc-button-hover-background);
+    border-radius: var(--pdoc-radius);
+    border: solid 1px var(--pdoc-border-color-light);
     .profile-name {
       font-weight: 600;
       font-size: 13px;
     }
     .profile-details {
       font-size: 11px;
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
       margin-top: 2px;
     }
     .profile-numbering-off {
-      color: var(--umo-text-color-light);
+      color: var(--pdoc-text-color-light);
     }
 
     .profile-actions {
@@ -890,7 +890,7 @@ onClickOutside(
 
       .profile-only-for {
         font-size: 11px;
-        color: var(--umo-text-color-light);
+        color: var(--pdoc-text-color-light);
         white-space: nowrap;
       }
     }
@@ -898,7 +898,7 @@ onClickOutside(
 }
 .off-badge {
   font-size: 10px;
-  color: var(--umo-text-color-light);
+  color: var(--pdoc-text-color-light);
   margin-left: 4px;
 }
 </style>

@@ -93,7 +93,7 @@ export const MARKDOWN_STYLE_TARGETS = [
 ]
 
 // The container every rule is scoped inside. A markdown block's rendered half, and nothing else.
-export const MARKDOWN_SCOPE = '.umo-markdown-rendered'
+export const MARKDOWN_SCOPE = '.pdoc-markdown-rendered'
 
 export const fieldsFor = (target) =>
   MARKDOWN_STYLE_FIELDS.filter((field) => !field.block || !target?.inline)

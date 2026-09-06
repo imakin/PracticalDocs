@@ -146,7 +146,7 @@ export default Node.create({
       'div',
       mergeAttributes(HTMLAttributes, {
         'data-markdown-block': '',
-        class: 'umo-markdown-block',
+        class: 'pdoc-markdown-block',
       }),
       // `pre` is a verbatim tag to `storage-server/format-html.js`, so every character in here is
       // copied out byte for byte and the formatter cannot reflow the markdown into something else.

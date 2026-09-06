@@ -77,7 +77,7 @@ await call('Emulation.setDeviceMetricsOverride', {
 }, sessionId).catch(() => {})
 await call('Page.bringToFront', {}, sessionId).catch(() => {})
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)
@@ -152,7 +152,7 @@ const settle = async (ms = 2600) => sleep(ms)
 const overflowing = async () => evaluate(`(() => {
   const storage = window.__ed.extensionStorage.pagination || window.__ed.storage.pagination
   const stride = storage.stride
-  const host = window.__ed.view.dom.closest('.umo-page-content')
+  const host = window.__ed.view.dom.closest('.pdoc-page-content')
   if (!(stride > 0) || !host) return { error: 'no geometry', stride, pages: (storage.pages || []).length }
   // Measured the way the engine measures them: a hidden ruler inside the page, sized from the custom
   // property. Reading the property off the document element returns nothing, because that is not
@@ -165,8 +165,8 @@ const overflowing = async () => evaluate(`(() => {
     return ruler.getBoundingClientRect().height
   }
   const originTop = host.getBoundingClientRect().top
-  const pageHeight = read('--umo-page-height', '29.7cm')
-  const marginBottom = read('--umo-page-margin-bottom', '0cm')
+  const pageHeight = read('--pdoc-page-height', '29.7cm')
+  const marginBottom = read('--pdoc-page-margin-bottom', '0cm')
   ruler.remove()
   const out = []
   const past = (rect, what) => {
@@ -182,7 +182,7 @@ const overflowing = async () => evaluate(`(() => {
   let node
   while ((node = walker.nextNode())) {
     if (!node.textContent || !node.textContent.trim()) continue
-    if (node.parentElement && node.parentElement.closest('.umo-page-spacer')) continue
+    if (node.parentElement && node.parentElement.closest('.pdoc-page-spacer')) continue
     const range = document.createRange()
     range.selectNodeContents(node)
     for (const rect of range.getClientRects()) past(rect, node.textContent.slice(0, 26))
@@ -211,11 +211,11 @@ check('no line runs past the bottom of its column',
 console.log('\nCase B: a page break on the second page of that list opens a third')
 const sheetsBefore = listOnly.sheets
 const placed = await evaluate(`(async () => {
-  const spacer = document.querySelector('.umo-page-spacer')
+  const spacer = document.querySelector('.pdoc-page-spacer')
   const y = spacer ? spacer.getBoundingClientRect().bottom : 0
   const li = [...document.querySelectorAll('.ProseMirror li')].find((l) => l.getBoundingClientRect().top > y + 40)
   if (!li) return null
-  const p = li.querySelector(':scope > .umo-list-item-content > p')
+  const p = li.querySelector(':scope > .pdoc-list-item-content > p')
   let pos = null
   window.__ed.state.doc.descendants((n, at) => {
     if (n.type.name === 'paragraph' && n.textContent === p.textContent && pos === null) pos = at + 1

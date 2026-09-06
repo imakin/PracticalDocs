@@ -2,31 +2,31 @@
   <node-view-wrapper
     :id="attrs.id"
     ref="containerRef"
-    class="umo-node-view"
+    class="pdoc-node-view"
     :style="nodeStyle"
     @click.capture="editor?.commands.setNodeSelection(getPos())"
   >
     <div
-      class="umo-node-container hover-shadow umo-select-outline umo-node-file"
+      class="pdoc-node-container hover-shadow pdoc-select-outline pdoc-node-file"
       :style="{
         width: attrs.fitWidth ? '100%' : supportPreview ? '260px' : '220px',
       }"
     >
-      <div class="umo-file-icon">
+      <div class="pdoc-file-icon">
         <img :src="fileIcon" class="icon-file" />
       </div>
-      <div class="umo-file-info">
-        <div class="umo-file-name" :title="attrs.name || t('file.unknownName')">
+      <div class="pdoc-file-info">
+        <div class="pdoc-file-name" :title="attrs.name || t('file.unknownName')">
           {{ attrs.name || t('file.unknownName') }}
         </div>
-        <div class="umo-file-meta">
+        <div class="pdoc-file-meta">
           {{ attrs.size ? prettyBytes(attrs.size) : t('file.unknownSize') }}
         </div>
       </div>
-      <div class="umo-file-action">
+      <div class="pdoc-file-action">
         <div
           v-if="!attrs.uploaded"
-          class="umo-action-item"
+          class="pdoc-action-item"
           :title="t('file.uploading')"
         >
           <icon class="loading" name="loading" />
@@ -34,7 +34,7 @@
         <template v-else>
           <div
             v-if="supportPreview"
-            class="umo-action-item"
+            class="pdoc-action-item"
             :title="t('file.preview')"
             :data-preview-url="previewURL"
             :data-file-icon="fileIcon"
@@ -47,7 +47,7 @@
             :href="attrs.url"
             :download="attrs.name"
             target="_blank"
-            class="umo-action-item"
+            class="pdoc-action-item"
             :title="t('file.download')"
           >
             <icon name="download" />
@@ -56,13 +56,13 @@
       </div>
     </div>
     <modal
-      dialog-class-name="umo-file-preview-modal"
+      dialog-class-name="pdoc-file-preview-modal"
       :visible="previewModal"
       :header="false"
       :footer="false"
       width="90vw"
     >
-      <div class="umo-file-preview-modal-header">
+      <div class="pdoc-file-preview-modal-header">
         <img :src="fileIcon" class="file-icon" />
         <h3>{{ attrs.name || t('file.unknownName') }}</h3>
         <t-button
@@ -75,7 +75,7 @@
           <icon name="close" size="18" />
         </t-button>
       </div>
-      <div v-if="previewModal" class="umo-file-preview-modal-body">
+      <div v-if="previewModal" class="pdoc-file-preview-modal-body">
         <iframe :src="previewURL"></iframe>
       </div>
     </modal>
@@ -208,22 +208,22 @@ const togglePreview = () => {
 </script>
 
 <style lang="less">
-.umo-node-view {
-  .umo-node-file {
+.pdoc-node-view {
+  .pdoc-node-file {
     display: inline-flex;
     align-items: center;
     padding: 12px;
-    outline: solid 1px var(--umo-content-node-border);
+    outline: solid 1px var(--pdoc-content-node-border);
     overflow: hidden;
     background-color: #fff;
-    border-radius: var(--umo-content-node-radius);
+    border-radius: var(--pdoc-content-node-radius);
 
-    .umo-file-info {
+    .pdoc-file-info {
       flex: 1;
       min-width: 0;
     }
 
-    .umo-file-icon {
+    .pdoc-file-icon {
       width: 32px;
       height: 32px;
       margin-right: 8px;
@@ -233,7 +233,7 @@ const togglePreview = () => {
       }
     }
 
-    .umo-file-name {
+    .pdoc-file-name {
       font-size: 12px;
       font-weight: 500;
       line-height: 1.2;
@@ -246,20 +246,20 @@ const togglePreview = () => {
       box-sizing: border-box;
     }
 
-    .umo-file-meta {
+    .pdoc-file-meta {
       font-size: 12px;
       color: #999;
       line-height: 1;
       margin-top: 6px;
     }
 
-    .umo-file-action {
+    .pdoc-file-action {
       display: flex;
       align-items: center;
       color: #999;
       gap: 5px;
 
-      .umo-action-item {
+      .pdoc-action-item {
         font-size: 18px;
         display: flex;
         align-items: center;
@@ -273,8 +273,8 @@ const togglePreview = () => {
         color: #999;
 
         &:hover {
-          border: solid 1px var(--umo-primary-color);
-          color: var(--umo-primary-color);
+          border: solid 1px var(--pdoc-primary-color);
+          color: var(--pdoc-primary-color);
         }
 
         .loading {
@@ -285,10 +285,10 @@ const togglePreview = () => {
   }
 }
 
-.umo-file-preview-modal {
+.pdoc-file-preview-modal {
   padding: 0 !important;
   overflow: hidden;
-  .umo-dialog,
+  .pdoc-dialog,
   .t-dialog {
     &__header {
       display: none !important;
@@ -327,7 +327,7 @@ const togglePreview = () => {
       display: block;
       width: 100%;
       height: calc(90vh - 164px);
-      border: solid 1px var(--umo-border-color-light);
+      border: solid 1px var(--pdoc-border-color-light);
       box-sizing: border-box;
     }
   }

@@ -19,7 +19,7 @@
       <icon name="link" />
       {{ t('references.crossReference.text') }}
     </template>
-    <div class="umo-cross-reference-form">
+    <div class="pdoc-cross-reference-form">
       <t-form label-align="top">
         <t-form-item :label="t('references.crossReference.target')">
           <t-select
@@ -33,7 +33,7 @@
           <t-select v-model="displayMode" :options="displayOptions" />
         </t-form-item>
       </t-form>
-      <p v-if="targets.length === 0" class="umo-cross-reference-empty">
+      <p v-if="targets.length === 0" class="pdoc-cross-reference-empty">
         {{ t('references.crossReference.empty') }}
       </p>
     </div>
@@ -95,13 +95,13 @@ const insertReference = () => {
 </script>
 
 <style lang="less" scoped>
-.umo-cross-reference-form {
+.pdoc-cross-reference-form {
   min-height: 148px;
 }
 
-.umo-cross-reference-empty {
+.pdoc-cross-reference-empty {
   margin: 4px 0 0;
-  color: var(--umo-text-color-secondary);
+  color: var(--pdoc-text-color-secondary);
   font-size: 12px;
 }
 </style>

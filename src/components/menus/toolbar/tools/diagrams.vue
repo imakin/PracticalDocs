@@ -9,7 +9,7 @@
       :visible="dialogVisible"
       :footer="false"
       destroy-on-close
-      class="umo-diagrams-dialog"
+      class="pdoc-diagrams-dialog"
       mode="full-screen"
       @close="dialogVisible = false"
     >
@@ -17,10 +17,10 @@
         <icon name="diagrams" />
         {{ content ? t('tools.diagrams.edit') : t('tools.diagrams.text') }}
       </template>
-      <div v-if="loading" class="umo-diagrams-loading">
+      <div v-if="loading" class="pdoc-diagrams-loading">
         <t-loading :text="t('tools.diagrams.loading')" size="small" />
       </div>
-      <div class="umo-diagrams-container"></div>
+      <div class="pdoc-diagrams-container"></div>
     </modal>
   </menus-button>
 </template>
@@ -46,7 +46,7 @@ let loading = $ref(false)
 const diagramEditor = new DiagramEditor({
   domain: options.value.diagrams?.domain || '',
   params: options.value.diagrams?.params || {},
-  container: `${container} .umo-diagrams-container`,
+  container: `${container} .pdoc-diagrams-container`,
 })
 
 let image = $ref(undefined)
@@ -103,11 +103,11 @@ watch(
 </script>
 
 <style lang="less">
-.umo-diagrams-dialog {
+.pdoc-diagrams-dialog {
   .t-dialog {
     padding: 0 !important;
     &__header {
-      background: var(--umo-color-white);
+      background: var(--pdoc-color-white);
       height: var(--td-comp-size-xxxl);
     }
     &__body {
@@ -115,7 +115,7 @@ watch(
     }
   }
 }
-.umo-diagrams-loading {
+.pdoc-diagrams-loading {
   width: 100%;
   height: calc(100% - var(--td-comp-size-xxxl));
   box-sizing: border-box;
@@ -123,11 +123,11 @@ watch(
   align-items: center;
   justify-content: center;
   position: absolute;
-  background-color: var(--umo-container-background);
+  background-color: var(--pdoc-container-background);
 }
-.umo-diagrams-container {
+.pdoc-diagrams-container {
   height: 100%;
-  .umo-diagrams-iframe {
+  .pdoc-diagrams-iframe {
     width: 100%;
     height: 100%;
     border: none;

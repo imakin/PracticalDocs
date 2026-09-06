@@ -44,11 +44,11 @@ If you plan to support both desktop and mobile, we recommend abstracting a unifi
 
 ## Screenshots
 
-![umo editor](https://s2.umodoc.com/images/umo-editor1-en@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs1-en@2x.png)
 
-![umo editor](https://s2.umodoc.com/images/umo-editor2-en@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs2-en@2x.png)
 
-![umo editor](https://s2.umodoc.com/images/umo-editor3-en@2x.png)
+![umo editor](https://s2.umodoc.com/images/practicaldocs3-en@2x.png)
 
 ## Online Experience
 
@@ -74,7 +74,7 @@ Umo Editor aims to simplify document editing in web applications by providing Mi
 
 ## Open Source Advantages
 
-- **Free to Use**: Umo Editor is free for all developers under the [MIT License](https://github.com/umo-editor/umo-editor/blob/main/LICENSE), with no copyright concerns.
+- **Free to Use**: Umo Editor is free for all developers under the [MIT License](https://github.com/practicaldocs/practicaldocs/blob/main/LICENSE), with no copyright concerns.
 - **Continuous Updates**: Umo Editor is continuously iterated to optimize features and enhance user experience.
 - **Custom Development**: Open source allows developers to customize Umo Editor to meet project-specific needs.
 

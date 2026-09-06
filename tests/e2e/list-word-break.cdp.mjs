@@ -5,11 +5,11 @@
  * coming out as `la` at one line end and `tensi` at the next start - while ordinary paragraphs of
  * the same prose were fine.
  *
- * The cause is one declaration: `.umo-list-item` carried `word-break: break-all`, which breaks
+ * The cause is one declaration: `.pdoc-list-item` carried `word-break: break-all`, which breaks
  * between any two characters rather than only when a word cannot fit a line by itself. It also made
  * the user's own Word Wrap setting unreachable for list text: the `wordWrap` extension emits nothing
  * for its `normal` default, so an inherited `break-all` could not be turned off from the toolbar at
- * all. Overflow was never the reason it was needed - `.umo-editor` already sets
+ * all. Overflow was never the reason it was needed - `.pdoc-editor` already sets
  * `overflow-wrap: anywhere`, which breaks a genuinely over-long token and nothing else.
  *
  * This measures the invariant rather than the declaration: for every word in the fixture, the
@@ -73,7 +73,7 @@ await call('Emulation.setDeviceMetricsOverride', {
 }, sessionId).catch(() => {})
 await call('Page.bringToFront', {}, sessionId).catch(() => {})
 
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 let persistedBefore = null
 const evaluate = async (expression) => {
   const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)

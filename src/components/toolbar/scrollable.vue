@@ -1,15 +1,15 @@
 <template>
-  <div ref="wraperRef" class="umo-scrollable-container">
+  <div ref="wraperRef" class="pdoc-scrollable-container">
     <div
       v-if="!hidePrev"
-      class="umo-scrollable-control scrollable-left"
+      class="pdoc-scrollable-control scrollable-left"
       @click="scrollLeft"
     >
       <icon name="arrow-down" />
     </div>
     <div
       ref="contentRef"
-      class="umo-scrollable-content"
+      class="pdoc-scrollable-content"
       @scroll.passive="checkScrollPosition"
       @wheel.passive="wheelScroll"
     >
@@ -17,7 +17,7 @@
     </div>
     <div
       v-if="!hideNext"
-      class="umo-scrollable-control scrollable-right"
+      class="pdoc-scrollable-control scrollable-right"
       @click="scrollRight"
     >
       <icon name="arrow-down" />
@@ -70,20 +70,20 @@ defineExpose({
 </script>
 
 <style lang="less" scoped>
-.umo-scrollable-container {
+.pdoc-scrollable-container {
   width: 100%;
   overflow: hidden;
   position: relative;
-  .umo-scrollable-control {
+  .pdoc-scrollable-control {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: solid 1px var(--umo-border-color);
-    border-radius: var(--umo-radius);
+    border: solid 1px var(--pdoc-border-color);
+    border-radius: var(--pdoc-radius);
     cursor: pointer;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     overflow: visible;
-    background-color: var(--umo-button-hover-background);
+    background-color: var(--pdoc-button-hover-background);
     z-index: 10;
     font-size: 20px;
     box-sizing: border-box;
@@ -91,15 +91,15 @@ defineExpose({
     top: 50%;
     transform: translateY(-50%);
     height: calc(100% - 20px);
-    outline: solid 10px var(--umo-color-white);
+    outline: solid 10px var(--pdoc-color-white);
     &:hover {
-      border-color: var(--umo-primary-color);
-      background-color: var(--umo-primary-color);
-      color: var(--umo-color-white);
+      border-color: var(--pdoc-primary-color);
+      background-color: var(--pdoc-primary-color);
+      color: var(--pdoc-color-white);
     }
     &.scrollable-left {
       left: 10px;
-      :deep(.umo-icon) {
+      :deep(.pdoc-icon) {
         transform: rotate(90deg);
       }
       &::before {
@@ -108,7 +108,7 @@ defineExpose({
         background: linear-gradient(
           to left,
           transparent,
-          var(--umo-color-white)
+          var(--pdoc-color-white)
         );
         position: absolute;
         left: 30px;
@@ -120,7 +120,7 @@ defineExpose({
     }
     &.scrollable-right {
       right: 10px;
-      :deep(.umo-icon) {
+      :deep(.pdoc-icon) {
         transform: rotate(-90deg);
       }
       &::before {
@@ -129,7 +129,7 @@ defineExpose({
         background: linear-gradient(
           to right,
           transparent,
-          var(--umo-color-white)
+          var(--pdoc-color-white)
         );
         position: absolute;
         right: 30px;
@@ -140,7 +140,7 @@ defineExpose({
       }
     }
   }
-  .umo-scrollable-content {
+  .pdoc-scrollable-content {
     overflow-x: auto;
     overflow-y: hidden;
     scroll-behavior: smooth;
@@ -153,28 +153,28 @@ defineExpose({
 </style>
 
 <style lang="less">
-.umo-skin-modern {
+.pdoc-skin-modern {
   &.toolbar-ribbon {
-    .umo-scrollable-container {
+    .pdoc-scrollable-container {
       padding: 10px 15px 2px 15px !important;
     }
-    .umo-scrollable-control {
+    .pdoc-scrollable-control {
       height: calc(100% - 32px) !important;
       margin-top: 4px;
     }
   }
   &.toolbar-classic {
-    .umo-scrollable-container {
+    .pdoc-scrollable-container {
       padding: 15px 15px 2px 15px !important;
     }
-    .umo-scrollable-control {
+    .pdoc-scrollable-control {
       height: calc(100% - 38px) !important;
       margin-top: 6px;
     }
   }
-  .umo-scrollable-content {
+  .pdoc-scrollable-content {
     border-radius: 6px;
-    background-color: var(--umo-color-white);
+    background-color: var(--pdoc-color-white);
     padding: 10px 0 10px 10px;
     box-shadow:
       0 0 0 1px hsla(0, 0%, 5%, 0.04),
@@ -185,7 +185,7 @@ defineExpose({
         0 2px 5px hsla(0, 0%, 5%, 0.1);
     }
   }
-  .umo-scrollable-control {
+  .pdoc-scrollable-control {
     border-radius: 5px !important;
     &.scrollable-left {
       left: 25px !important;
@@ -195,7 +195,7 @@ defineExpose({
     }
   }
 }
-[theme-mode='dark'] .umo-skin-modern .umo-scrollable-content {
-  outline: solid 1px var(--umo-border-color-light);
+[theme-mode='dark'] .pdoc-skin-modern .pdoc-scrollable-content {
+  outline: solid 1px var(--pdoc-border-color-light);
 }
 </style>

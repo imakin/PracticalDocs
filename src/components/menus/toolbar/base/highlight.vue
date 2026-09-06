@@ -5,13 +5,13 @@
     menu-type="dropdown"
     popup-handle="arrow"
     hide-text
-    overlay-class-name="umo-highlight-dropdown"
+    overlay-class-name="pdoc-highlight-dropdown"
     :disabled="!editor?.can().chain().focus().setBackgroundColor().run()"
     @menu-click="highlightChange(highlight)"
   >
     <icon
       name="highlight"
-      class="umo-icon-highlight"
+      class="pdoc-icon-highlight"
       :style="{ backgroundColor: highlight?.bgcolor, color: highlight?.color }"
     />
     <template #dropmenu>
@@ -19,7 +19,7 @@
         <t-dropdown-item
           v-for="item in options"
           :key="item.value"
-          class="umo-text-highlight-menu"
+          class="pdoc-text-highlight-menu"
           :value="item.value"
           :style="{ backgroundColor: item.bgcolor, color: item.color }"
           :divider="item.divider"
@@ -29,7 +29,7 @@
           <span>{{ item.label }}</span>
         </t-dropdown-item>
         <t-dropdown-item
-          class="umo-text-highlight-menu umo-clear-format-menu"
+          class="pdoc-text-highlight-menu pdoc-clear-format-menu"
           @click="clearFormat()"
         >
           <icon name="clear-format" />
@@ -84,36 +84,36 @@ const clearFormat = () => {
 </script>
 
 <style lang="less" scoped>
-.umo-icon-highlight {
+.pdoc-icon-highlight {
   border-radius: 2px;
 }
 </style>
 
 <style lang="less">
-.umo-text-highlight-dropdown {
-  .umo-popup__content {
-    .umo-divider {
+.pdoc-text-highlight-dropdown {
+  .pdoc-popup__content {
+    .pdoc-divider {
       margin-top: 8px;
       margin-bottom: 8px;
     }
   }
 }
-.umo-text-highlight-menu {
+.pdoc-text-highlight-menu {
   width: 140px;
   margin-bottom: 6px;
   border: solid 1px transparent;
-  &.umo-clear-format-menu {
+  &.pdoc-clear-format-menu {
     margin-bottom: 0;
   }
   &:hover {
-    border-color: var(--umo-primary-color);
+    border-color: var(--pdoc-primary-color);
     background-color: inherit;
   }
-  .umo-dropdown__item-text {
+  .pdoc-dropdown__item-text {
     display: flex;
     align-items: center;
     padding: 2px;
-    .umo-icon {
+    .pdoc-icon {
       font-size: 16px;
       margin-right: 5px;
     }

@@ -1,7 +1,7 @@
 <template>
   <drag-handle
     :editor="editor"
-    class="umo-block-menu-drag-handle"
+    class="pdoc-block-menu-drag-handle"
     :class="{
       'is-empty': editor?.isEmpty,
       'is-visible': selectedNodePos !== null,
@@ -9,7 +9,7 @@
     :node-type="selectedNode?.type?.name || 'unknown'"
     @node-change="nodeChange"
   >
-    <div class="umo-block-menu-hander">
+    <div class="pdoc-block-menu-hander">
       <!--
         Which mode this block is in, shown where its other controls are. Not in the page: a label
         inside the document occupies a line the writer did not write.
@@ -21,7 +21,7 @@
       <button
         v-if="isMarkdownBlock"
         type="button"
-        class="umo-block-menu-mode"
+        class="pdoc-block-menu-mode"
         :title="t('blockMenu.openMarkdownSource')"
         @click="openMarkdownSource"
       >
@@ -73,7 +73,7 @@ const dropdownVisible = (visible) => {
 </script>
 
 <style lang="less">
-.umo-block-menu-mode {
+.pdoc-block-menu-mode {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -81,22 +81,22 @@ const dropdownVisible = (visible) => {
   border: none;
   background: transparent;
   cursor: pointer;
-  color: var(--umo-text-color-light, #8c8c8c);
+  color: var(--pdoc-text-color-light, #8c8c8c);
   border-radius: 3px;
 
   &:hover {
-    background-color: var(--umo-color-hover, #f5f5f5);
-    color: var(--umo-text-color, #1f1f1f);
+    background-color: var(--pdoc-color-hover, #f5f5f5);
+    color: var(--pdoc-text-color, #1f1f1f);
   }
 }
 
-.umo-block-menu {
-  .umo-menu-button {
-    color: var(--umo-text-color-light) !important;
+.pdoc-block-menu {
+  .pdoc-menu-button {
+    color: var(--pdoc-text-color-light) !important;
   }
   &-drag-handle {
     z-index: 10;
-    outline: solid 1px var(--umo-border-color);
+    outline: solid 1px var(--pdoc-border-color);
     transform: translateX(-15px);
     padding: 2px;
     border-radius: 3px;
@@ -134,48 +134,48 @@ const dropdownVisible = (visible) => {
     @media print {
       display: none;
     }
-    .umo-menu-button {
+    .pdoc-menu-button {
       background-color: #fff;
       width: 20px;
       height: 20px;
       &-wrap {
         margin: 0 !important;
       }
-      .umo-button-content {
+      .pdoc-button-content {
         color: rgba(0, 0, 0, 0.5);
       }
       &:not(.active):hover {
-        background-color: var(--umo-content-node-selected-background);
-        .umo-button-content {
-          color: var(--umo-primary-color);
+        background-color: var(--pdoc-content-node-selected-background);
+        .pdoc-button-content {
+          color: var(--pdoc-primary-color);
         }
       }
       &.active {
         &:hover {
           opacity: 0.8;
         }
-        .umo-button-content {
-          color: var(--umo-text-color-light);
+        .pdoc-button-content {
+          color: var(--pdoc-text-color-light);
         }
       }
     }
   }
   &-dropdown {
-    .umo-block-menu-group-name {
+    .pdoc-block-menu-group-name {
       padding-left: 15px !important;
     }
-    .umo-dropdown__menu,
-    .umo-dropdown__submenu {
+    .pdoc-dropdown__menu,
+    .pdoc-dropdown__submenu {
       --td-radius-default: 0;
       padding: 8px 0 !important;
-      .umo-divider {
+      .pdoc-divider {
         margin: 4px 0 2px;
         opacity: 0.5;
       }
-      .umo-dropdown__item {
+      .pdoc-dropdown__item {
         padding: 2px 0;
         min-width: 140px !important;
-        .umo-menu-button {
+        .pdoc-menu-button {
           background-color: transparent;
           padding: 0 15px;
           box-sizing: border-box;
@@ -184,31 +184,31 @@ const dropdownVisible = (visible) => {
           &-wrap {
             display: block !important;
           }
-          .umo-button__text {
+          .pdoc-button__text {
             width: 100%;
           }
         }
-        .umo-button-content {
+        .pdoc-button-content {
           width: 100%;
           justify-content: flex-start;
-          .umo-button-text {
-            color: var(--umo-text-color);
+          .pdoc-button-text {
+            color: var(--pdoc-text-color);
           }
-          .umo-button-icon {
+          .pdoc-button-icon {
             margin-right: 3px;
             font-size: 16px;
             color: #666;
           }
-          .umo-button-kbd {
+          .pdoc-button-kbd {
             flex: 1;
             text-align: right;
-            color: var(--umo-text-color-light);
+            color: var(--pdoc-text-color-light);
             font-family: Arial, Helvetica, sans-serif;
             font-size: 9px;
           }
-          .umo-heading {
+          .pdoc-heading {
             display: flex;
-            color: var(--umo-text-color);
+            color: var(--pdoc-text-color);
             .icon-heading {
               font-size: 12px;
               display: inline-block;
@@ -217,7 +217,7 @@ const dropdownVisible = (visible) => {
           }
         }
         &--disabled {
-          .umo-button-content {
+          .pdoc-button-content {
             opacity: 0.6;
           }
         }
@@ -226,7 +226,7 @@ const dropdownVisible = (visible) => {
           font-size: 12px !important;
           margin-right: 8px;
         }
-        .umo-dropdown-item-label {
+        .pdoc-dropdown-item-label {
           padding: 1px 15px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -238,10 +238,10 @@ const dropdownVisible = (visible) => {
       }
     }
 
-    .umo-delete-node {
-      .umo-button {
+    .pdoc-delete-node {
+      .pdoc-button {
         * {
-          color: var(--umo-error-color) !important;
+          color: var(--pdoc-error-color) !important;
         }
       }
     }

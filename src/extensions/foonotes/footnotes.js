@@ -14,14 +14,14 @@ export default OrderedList.extend({
   addAttributes() {
     return {
       class: {
-        default: 'umo-node-footnotes',
+        default: 'pdoc-node-footnotes',
       },
     }
   },
   parseHTML() {
     return [
       {
-        tag: 'ol.umo-node-footnotes',
+        tag: 'ol.pdoc-node-footnotes',
         priority: 1000,
       },
     ]

@@ -21,9 +21,9 @@ import path from 'node:path'
 import WebSocket from 'ws'
 
 const CDP = (process.env.CDP_URL || 'http://127.0.0.1:9222').replace(/\/$/, '')
-const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:9000/umo-editor'
+const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:9000/practicaldocs'
 const DOCUMENT = process.env.PAGINATION_DOC || 'tesis4'
-const PERSISTED_KEYS = ['umo-editor:default:document', 'umo-editor:profiles']
+const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profiles']
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const normalise = (text) => String(text).replace(/[^a-z0-9]/gi, '').toLowerCase()
@@ -62,7 +62,7 @@ const call = (method, params = {}, sessionId) =>
     ws.send(JSON.stringify({ id: nextId, method, params, ...(sessionId ? { sessionId } : {}) }))
   })
 
-const workDir = await mkdtemp(path.join(tmpdir(), 'umo-pagination-parity-'))
+const workDir = await mkdtemp(path.join(tmpdir(), 'pdoc-pagination-parity-'))
 const editorTarget = await call('Target.createTarget', { url: EDITOR_URL })
 const editorSession = (await call('Target.attachToTarget', { targetId: editorTarget.targetId, flatten: true })).sessionId
 let persistedBefore = null
@@ -123,13 +123,13 @@ await sleep(7000)
 
 // first line of each on-screen sheet
 const screen = await evaluate(`(() => {
-  const pc = document.querySelector('.umo-page-content')
+  const pc = document.querySelector('.pdoc-page-content')
   const pm = document.querySelector('.ProseMirror')
   const ruler = document.createElement('div')
   ruler.style.cssText = 'position:absolute;visibility:hidden;width:1px'
   pc.appendChild(ruler)
   const m = (v, f) => { ruler.style.height = 'var(' + v + ', ' + f + ')'; return ruler.getBoundingClientRect().height }
-  const pageH = m('--umo-page-height', '29.7cm'), gap = m('--umo-page-sheet-gap', '16px')
+  const pageH = m('--pdoc-page-height', '29.7cm'), gap = m('--pdoc-page-sheet-gap', '16px')
   ruler.remove()
   const stride = pageH + gap, origin = pc.getBoundingClientRect().top
 
@@ -174,7 +174,7 @@ const srcdoc = await evaluate(`(async () => {
   if (!provides || !provides.exportFile) return ''
   provides.exportFile.value.pdf = true
   await new Promise(r => setTimeout(r, 2500))
-  const iframe = document.querySelector('.umo-print-iframe')
+  const iframe = document.querySelector('.pdoc-print-iframe')
   const code = iframe ? iframe.getAttribute('srcdoc') || '' : ''
   const dialog = [...document.querySelectorAll('.t-dialog')].find(d => d.offsetParent !== null)
   if (dialog) { const cancel = [...dialog.querySelectorAll('button')].find(b => /cancel|batal/i.test(b.textContent)); if (cancel) cancel.click() }

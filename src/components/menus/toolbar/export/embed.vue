@@ -16,10 +16,10 @@
       <icon name="embed" />
       {{ t('export.embed.title') }}
     </template>
-    <div class="umo-embed-container">
-      <div class="umo-embed-tip" v-text="t('export.embed.tip')"></div>
+    <div class="pdoc-embed-container">
+      <div class="pdoc-embed-tip" v-text="t('export.embed.tip')"></div>
       <t-textarea
-        class="umo-embed-textarea"
+        class="pdoc-embed-textarea"
         :value="embedValue"
         readonly
         autosize
@@ -44,15 +44,15 @@ const copyEmbed = () => {
 </script>
 
 <style lang="less" scoped>
-.umo-embed-container {
+.pdoc-embed-container {
   padding: 2px;
-  .umo-embed-tip {
+  .pdoc-embed-tip {
     font-size: 12px;
-    color: var(--umo-text-color-light);
+    color: var(--pdoc-text-color-light);
     margin-bottom: 6px;
     line-height: 1.4;
   }
-  .umo-embed-textarea {
+  .pdoc-embed-textarea {
     :deep(textarea) {
       word-break: break-all;
       word-wrap: break-word;
