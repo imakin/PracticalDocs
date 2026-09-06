@@ -10,12 +10,42 @@ PracticalDocs is based on [Umo Editor](https://www.umodoc.com) by Umodoc, MIT li
 engine, the numbering profiles, cross-references, the PDF bookmark tooling - follows the same
 licence.
 
-**Names that look like the old one and must stay that way.** They are identifiers written into files
-and browser storage, not product names, and changing them would break documents that already exist:
+---
 
-- the `pdoc-` CSS prefix, which is in every saved `document.html`
-- `format: "umodoc"` in every saved `settings.json`, which the reader checks before opening a file
-- the `practicaldocs:` localStorage keys holding the open document and the profile list
+## Usage
+
+```bash
+npm install @np_makin/practicaldocs
+```
+
+Register the plugin, then use the component. **The tag is `<practical-docs>`** - Vue derives it from
+the component's own name, `PracticalDocs`, so `<practicaldocs>` without the hyphen matches nothing
+and renders an empty element without an error.
+
+```js
+// main.js
+import { createApp } from 'vue'
+import { usePracticalDocs } from '@np_makin/practicaldocs'
+// The subpath, not the file: `exports` in package.json maps `./style` and blocks deep paths.
+import '@np_makin/practicaldocs/style'
+
+import App from './App.vue'
+
+createApp(App).use(usePracticalDocs, {}).mount('#app')
+```
+
+```vue
+<template>
+  <practical-docs ref="editorRef" v-bind="options" />
+</template>
+```
+
+`<PracticalDocs>` works too inside a single-file component. The other exports are
+`PdocMenuButton`, `PdocDialog` and `PdocTooltip`.
+
+**`pdoc-` is a CSS prefix, not the tag.** `pdoc-editor-container` and `--pdoc-primary-color` are
+class and custom-property names; the component is `<practical-docs>`. They look alike and are
+unrelated.
 
 ---
 
@@ -57,7 +87,8 @@ Add the following configuration to your `Caddyfile`:
 ```caddy
 doc.yourdomain.com {
     # Serve compiled frontend static assets
-    root * /var/www/practical-umodoc/dist
+    # Whatever directory you deploy to; the example below is a placeholder.
+    root * /var/www/practicaldocs/dist
     file_server
 
     # Reverse proxy API requests to practicaldocs-server
@@ -83,4 +114,4 @@ sudo caddy reload
 - **AES-256-GCM Encrypted Storage**: Documents saved to `storage-server/data/` are encrypted at rest.
 - **Save Target Selector**: Switch between `practicaldocs-server`, `Local Storage`, and `Google Drive`.
 - **Unified Block Style Profiles**: Unified Paragraph and Heading profiles with ON/OFF auto-numbering toggles.
-- **Portable JSON Snapshots**: Export/import `.umodoc.json` documents with full profile state persistence.
+- **Portable JSON Snapshots**: Export/import `.practicaldocs.json` documents with full profile state persistence.
