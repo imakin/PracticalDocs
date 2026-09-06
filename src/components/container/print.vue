@@ -20,11 +20,22 @@
       -->
       <t-input v-model="draftLanguage" :label="t('print.language')" />
       <p class="pdoc-print-dialog-hint">{{ t('print.languageHint') }}</p>
+      <!--
+        A document whose sections use different paper cannot yet be printed on that paper: the
+        canvas is as wide as the widest sheet, and a canvas wider than the page makes Chrome shrink
+        the whole document to fit. Saying so here beats letting it be discovered in the PDF.
+      -->
+      <p v-if="mixedPaperNotice" class="pdoc-print-dialog-hint">
+        {{ t('print.mixedPaperNote') }}
+      </p>
     </div>
   </modal>
 </template>
 
 <script setup>
+import { documentSections } from '@/extensions/page-break'
+import { sameGeometry, sheetSizeOf } from '@/utils/page-sections'
+
 const container = inject('container')
 const editor = inject('editor')
 const printing = inject('printing')
@@ -68,6 +79,40 @@ const CM_PER_PX = 2.54 / 96
 //
 //   [ leftover + bottom margin ]  break-after: page   <- the page number lives here
 //   [ top margin ]                                    <- opens the next page
+/**
+ * The geometry of each sheet, in cm, as the export needs it.
+ *
+ * The engine already solved which section each sheet belongs to, so this reads that answer rather
+ * than working out a second one - two answers to one question is the drift ADR 0002 exists to
+ * prevent. Before the engine has solved, or past the last sheet, everything falls back to the
+ * document settings, which is what the whole document was drawn at before sections existed.
+ */
+const sheetGeometry = () => {
+  const state = editor.value?.state
+  const sections = state ? documentSections(state.doc, page.value) : []
+  const storage =
+    editor.value?.extensionStorage?.pagination ||
+    editor.value?.storage?.pagination
+  const owners = (storage?.sheets || []).map((sheet) => sheet.section ?? 0)
+  const fallback = sections[0] ?? {
+    size: page.value?.size,
+    orientation: page.value?.orientation,
+    margin: page.value?.margin,
+  }
+  const at = (sheet) => sections[owners[sheet] ?? 0] ?? fallback
+  return {
+    count: owners.length,
+    mixed:
+      sections.length > 1 &&
+      sections.some((section) => !sameGeometry(section, sections[0])),
+    sections,
+    section: (sheet) => String(owners[sheet] ?? 0),
+    height: (sheet) => sheetSizeOf(at(sheet)).height,
+    marginTop: (sheet) => Number(at(sheet)?.margin?.top) || 0,
+    marginBottom: (sheet) => Number(at(sheet)?.margin?.bottom) || 0,
+  }
+}
+
 const convertSpacersToMarginBands = (root, numbersBySheet) => {
   // Only documents that actually carry page numbers take this path. Everything else exports the way
   // it always has, with Chrome paginating freely, so the PDF parity test keeps being an independent
@@ -82,9 +127,13 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
     }
     return
   }
-  const { margin } = page.value
-  const marginTopPx = (Number(margin?.top) || 0) / CM_PER_PX
-  const marginBottomPx = (Number(margin?.bottom) || 0) / CM_PER_PX
+  // Per sheet, because a section can be drawn on different paper: the band closing sheet n is that
+  // sheet's bottom margin plus whatever is left over, and the band opening sheet n+1 is sheet n+1's
+  // top margin. With one geometry throughout - nearly every document - every lookup returns the same
+  // number the document settings used to give.
+  const geometry = sheetGeometry()
+  const marginTopAt = (sheet) => geometry.marginTop(sheet) / CM_PER_PX
+  const marginBottomAt = (sheet) => geometry.marginBottom(sheet) / CM_PER_PX
   const gapPx = 16
 
   const addNumber = (host, entry, edge) => {
@@ -95,7 +144,9 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
     // Sit inside the margin strip rather than against the paper edge, mirroring what the engine does
     // on screen so the two agree.
     const inset =
-      edge === 'top' ? marginTopPx * 0.35 : marginBottomPx * 0.35
+      edge === 'top'
+        ? marginTopAt(entry.sheet) * 0.35
+        : marginBottomAt(entry.sheet) * 0.35
     label.style.cssText = [
       'position: absolute',
       'left: 0',
@@ -118,7 +169,10 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
   const spacers = [...root.querySelectorAll('.pdoc-page-spacer')]
   spacers.forEach((spacerSpan, index) => {
     const screenHeight = Number.parseFloat(spacerSpan.style.height) || 0
-    const closing = Math.max(marginBottomPx, screenHeight - gapPx - marginTopPx)
+    const closing = Math.max(
+      marginBottomAt(index),
+      screenHeight - gapPx - marginTopAt(index + 1),
+    )
     // The engine's spacer is a <span>. A <div> inside a <span> is invalid nesting, and the export
     // serialises and re-parses this HTML twice, at which point the parser hoists the number out of
     // the span again. Measured: the number then vanishes from some bands and not others. So the band
@@ -126,6 +180,10 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
     const spacer = document.createElement('div')
     spacerSpan.replaceWith(spacer)
     spacer.className = 'pdoc-page-band pdoc-page-band-closing'
+    // The band closes this sheet, so it prints on this sheet's paper. Named here rather than left to
+    // be carried from a neighbour: an element that names no page takes the canvas's name, and a page
+    // name that changes and changes back is two forced breaks and two blank sheets.
+    spacer.dataset.pdocSection = geometry.section(index)
     spacer.style.cssText = [
       `height: ${closing.toFixed(2)}px`,
       'box-sizing: border-box',
@@ -146,8 +204,10 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
 
     const opening = document.createElement('div')
     opening.className = 'pdoc-page-band'
+    // This one opens the next sheet, so it belongs to the next sheet's section.
+    opening.dataset.pdocSection = geometry.section(index + 1)
     opening.style.cssText = [
-      `height: ${marginTopPx.toFixed(2)}px`,
+      `height: ${marginTopAt(index + 1).toFixed(2)}px`,
       'box-sizing: border-box',
       'display: block',
       'position: relative',
@@ -178,8 +238,9 @@ const convertSpacersToMarginBands = (root, numbersBySheet) => {
     const band = document.createElement('div')
     band.className = 'pdoc-page-band pdoc-page-band-closing'
     band.dataset.last = 'true'
+    band.dataset.pdocSection = geometry.section(spacers.length)
     band.style.cssText = [
-      `height: ${marginBottomPx.toFixed(2)}px`,
+      `height: ${marginBottomAt(spacers.length).toFixed(2)}px`,
       'box-sizing: border-box',
       'display: block',
       'position: relative',
@@ -211,6 +272,7 @@ const stripScreenPagination = (htmlContent) => {
     const sheet = Number(element.dataset.sheet)
     if (Number.isFinite(sheet)) {
       numbersBySheet.set(sheet, {
+        sheet,
         text: element.textContent || '',
         align: element.dataset.align || 'center',
         edge: element.dataset.edge || 'bottom',
@@ -222,8 +284,44 @@ const stripScreenPagination = (htmlContent) => {
   for (const sheet of tempDiv.querySelectorAll('.pdoc-page-content')) {
     sheet.style.removeProperty('--pdoc-page-total-height')
   }
+  // The drawn sheets are screen decoration, placed in screen coordinates. Print draws its own paper.
+  for (const sheet of tempDiv.querySelectorAll('.pdoc-page-sheet')) {
+    sheet.remove()
+  }
   convertSpacersToMarginBands(tempDiv, numbersBySheet)
+  carrySectionNames(tempDiv)
   return tempDiv.innerHTML
+}
+
+/**
+ * Give every element in the flow the section it prints in.
+ *
+ * A named page is not inherited the way a colour is, but an element that names none takes the name
+ * of the box that holds it - so the header and footer blocks took the canvas's name. After the last
+ * block that is a change of page name, which is a forced break, and the export grew a blank sheet at
+ * the end.
+ *
+ * Nothing is guessed: an element with no name of its own takes the name of the last element before
+ * it that had one, which is the section it is sitting in.
+ */
+const carrySectionNames = (root) => {
+  const canvas = root.querySelector('.pdoc-page-content')
+  if (!canvas?.querySelector('[data-pdoc-section]')) {
+    return
+  }
+  let current = null
+  const visit = (element) => {
+    for (const child of [...element.children]) {
+      if (child.hasAttribute('data-pdoc-section')) {
+        current = child.getAttribute('data-pdoc-section')
+      } else if (child.querySelector('[data-pdoc-section]')) {
+        visit(child)
+      } else if (current !== null) {
+        child.setAttribute('data-pdoc-section', current)
+      }
+    }
+  }
+  visit(canvas)
 }
 
 const getContentHtml = () => {
@@ -267,11 +365,74 @@ const defaultLineHeight = $computed(
   () => options.value.dicts?.lineHeights.find((item) => item.default)?.value,
 )
 
+/**
+ * What the export has to undo when a document's sections are not all drawn the same way.
+ *
+ * **The paper does not change in the PDF yet.** Chrome can do it - a named `@page` rule per section
+ * and a `page` property on its blocks, measured working - but the canvas cannot. On screen every
+ * sheet is drawn on one canvas as wide as the widest, and Chrome's print scales a document down to
+ * fit its narrowest page: with a landscape section in a portrait document that is 21/29.7, and
+ * **everything** comes out at 70 per cent - the text column included. Measured on a real thesis: a
+ * 14.6 cm column printed at 10.3 cm, on a page that then held half again as much text as the screen
+ * did. The page count and the page sizes were both right, which is why this went unnoticed for a
+ * while; nothing was checking the scale.
+ *
+ * Until the canvas can be the width of each page rather than of the widest, a mixed document prints
+ * on the first section's paper - at full size and in the right column. Laying it out at one paper
+ * also means the screen's page boundaries are not the export's, so where the page numbers land does
+ * not match the screen either. The export dialog says both rather than leaving them to be found in
+ * the PDF.
+ *
+ * So this returns the two things that have to be undone: the canvas back to one page wide, and the
+ * blocks back to no inset. Both exist only on screen, and both are wrong on paper.
+ */
+const getSectionPageRules = () => {
+  const geometry = sheetGeometry()
+  if (!geometry.mixed) {
+    return ''
+  }
+  const [first] = geometry.sections
+  const paper = sheetSizeOf(first)
+  return `
+      /* The canvas is as wide as the widest sheet on screen, and a canvas wider than the page is
+         what makes Chrome shrink the whole document to fit. One paper, one width. */
+      .pdoc-page-content { width: ${paper.width}cm !important; }
+      /* On screen a narrower sheet is centred on that canvas and its blocks carry the gutter as an
+         inline margin. Printed on one paper the gutter is a margin nobody asked for. */
+      [data-pdoc-section] {
+        --pdoc-section-left: 0px;
+        --pdoc-section-right: 0px;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }`
+}
+
+/**
+ * Where each printed page ends, in pixels down the flow.
+ *
+ * The running total of the sheet heights the engine solved. A constant page height was enough while
+ * every sheet was the same; a section can now be drawn on different paper. Empty when the engine has
+ * not solved, in which case the script falls back to the constant.
+ */
+const printPageBottoms = () => {
+  const geometry = sheetGeometry()
+  const bottoms = []
+  let total = 0
+  for (let sheet = 0; sheet < geometry.count; sheet += 1) {
+    total += geometry.height(sheet) / CM_PER_PX
+    bottoms.push(Math.round(total * 100) / 100)
+  }
+  return bottoms
+}
+
 const getIframeCode = () => {
   const { orientation, size, margin, background } = page.value
   const hasPageNumbers =
     page.value.pageNumber?.enabled === true &&
-    document.querySelector(`${container} .pdoc-page-content > .pdoc-page-number`) !== null
+    document.querySelector(
+      `${container} .pdoc-page-content > .pdoc-page-number`,
+    ) !== null
+  const sectionRules = getSectionPageRules()
   /* eslint-disable */
   return `
     <!DOCTYPE html>
@@ -311,6 +472,7 @@ const getIframeCode = () => {
         margin: 0;
         background-color: ${background};
       }
+      ${sectionRules}
       ${hasPageNumbers ? '' : '@page:first { padding-top: 0; }'}
       @page:last {
         ${hasPageNumbers ? '' : 'padding-bottom: 0;'}
@@ -339,6 +501,11 @@ const getIframeCode = () => {
         // out and snaps to the boundary. Bands are adjusted in order, because moving one moves the
         // rest.
         const snapPageBands = () => {
+          // Where each page ends, in pixels down the flow. A constant page height was enough while
+          // every sheet was the same; a section can now be drawn on different paper, so the
+          // boundaries are the running total of the real heights. With one geometry throughout this
+          // is still (index + 1) * pageHeight, exactly as before.
+          const pageBottoms = ${JSON.stringify(printPageBottoms())}
           const pageHeight = ${orientation === 'portrait' ? size?.height : size?.width} / 2.54 * 96
           if (!(pageHeight > 0)) return
           const bands = Array.from(document.querySelectorAll('.pdoc-page-band-closing'))
@@ -350,7 +517,9 @@ const getIframeCode = () => {
             // the boundary lets a fraction of a pixel spill it onto a page of its own. One pixel
             // short is invisible and cannot overflow. (No backticks in here: this whole script sits
             // inside a template literal, and a backtick would end it.)
-            const target = (index + 1) * pageHeight - (band.dataset.last ? 1 : 0)
+            const target =
+              (pageBottoms[index] ?? (index + 1) * pageHeight) -
+              (band.dataset.last ? 1 : 0)
             // No minimum height. Measured: clamping to the bottom margin was what broke this - where
             // the text ran 4.48px long, the clamp pushed the band past the page boundary and Chrome
             // moved the whole band, and its page number, onto the next page. Landing exactly on the
@@ -390,6 +559,9 @@ const getIframeCode = () => {
 
 let askVisible = $ref(false)
 let draftLanguage = $ref('en-US')
+// Whether this export will print every page on one paper although the document does not use one.
+// Worked out when the dialog opens, because that is when the geometry is read.
+let mixedPaperNotice = $ref(false)
 
 /**
  * Ask before printing, and let the writer say what the document is written in.
@@ -401,6 +573,7 @@ let draftLanguage = $ref('en-US')
 const printPage = () => {
   editor.value?.commands.blur()
   draftLanguage = page.value.language || 'en-US'
+  mixedPaperNotice = sheetGeometry().mixed
   // Built when the dialog opens, not only when it is confirmed. The export document is what the
   // pagination and bookmark tests read to see what would be printed, and they must not have to press
   // a button that opens Chrome's print preview to get it. It is built again on confirm, because by

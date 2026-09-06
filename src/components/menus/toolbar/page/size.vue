@@ -7,17 +7,22 @@
   >
     <template #dropmenu>
       <t-dropdown-menu>
+        <!-- A dropdown menu drops any child that is not an item, so the line saying which pages this
+             covers has to be one. It is not clickable and says so. -->
+        <t-dropdown-item class="pdoc-page-section-note" :divider="true">
+          <div class="note" v-text="label"></div>
+        </t-dropdown-item>
         <t-dropdown-item
           v-for="(item, index) in options.dicts?.pageSizes"
           :key="index"
           :value="index"
-          :active="page.size?.width === item.width"
+          :active="current?.section?.size?.width === item.width"
           :divider="
             options.dicts?.pageSizes &&
             options.dicts.pageSizes.length - 1 === index
           "
           :min-column-width="150"
-          @click="page.size = item"
+          @click="applyToSection({ size: { ...item } })"
         >
           <div class="label" v-text="l(item.label)"></div>
           <div class="desc">
@@ -35,8 +40,8 @@
 </template>
 
 <script setup>
-const page = inject('page')
 const options = inject('options')
+const { current, label, applyToSection } = usePageSection()
 const dialogVisible = $ref(false)
 </script>
 

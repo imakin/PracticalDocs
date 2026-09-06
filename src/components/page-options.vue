@@ -12,6 +12,7 @@
       {{ t('pageOptions.title') }}
     </template>
     <div class="pdoc-page-options-container">
+      <div class="pdoc-page-section-scope" v-text="label"></div>
       <t-form label-align="left">
         <t-form-item
           v-if="page.layout === 'page'"
@@ -33,7 +34,9 @@
         </t-form-item>
         <t-form-item v-if="page.layout === 'page'" :label="t('page.size.text')">
           <t-select
-            :value="selectedPageSizeIndex >= 0 ? selectedPageSizeIndex : undefined"
+            :value="
+              selectedPageSizeIndex >= 0 ? selectedPageSizeIndex : undefined
+            "
             :popup-props="{
               overlayClassName: 'pdoc-page-size-select',
               destroyOnClose: true,
@@ -236,13 +239,29 @@ const emits = defineEmits(['close'])
 const container = inject('container')
 const page = inject('page')
 const options = inject('options')
+const { current, label, applyToSection } = usePageSection()
 
 let pageOptions = $ref({})
 watch(
   () => props.visible,
   (visible) => {
     if (visible) {
-      pageOptions = JSON.parse(JSON.stringify(page.value))
+      // The document settings for everything, then the section's own geometry over the top: the
+      // three fields this dialog edits belong to the run of pages the cursor is in, and for the
+      // first section those are the document settings anyway.
+      const section = current.value?.section
+      pageOptions = JSON.parse(
+        JSON.stringify({
+          ...page.value,
+          ...(section
+            ? {
+                size: section.size,
+                orientation: section.orientation,
+                margin: section.margin,
+              }
+            : {}),
+        }),
+      )
     }
   },
   { immediate: true },
@@ -251,7 +270,9 @@ watch(
 const selectedPageSizeIndex = computed(() => {
   if (!pageOptions.size || !options.value?.dicts?.pageSizes) return -1
   return options.value.dicts.pageSizes.findIndex(
-    (item) => Number(item.width) === Number(pageOptions.size?.width) && Number(item.height) === Number(pageOptions.size?.height)
+    (item) =>
+      Number(item.width) === Number(pageOptions.size?.width) &&
+      Number(item.height) === Number(pageOptions.size?.height),
   )
 })
 
@@ -275,7 +296,9 @@ const inputPageSize = (value, field) => {
   }
   const dicts = options.value?.dicts?.pageSizes || []
   const matchedPreset = dicts.find(
-    (p) => Number(p.width) === Number(nextSize.width) && Number(p.height) === Number(nextSize.height)
+    (p) =>
+      Number(p.width) === Number(nextSize.width) &&
+      Number(p.height) === Number(nextSize.height),
   )
   if (matchedPreset) {
     pageOptions.size = { ...matchedPreset }
@@ -305,12 +328,23 @@ const inputPageMargin = (value, field) => {
 }
 
 const onConfirm = () => {
-  page.value = pageOptions
+  applyToSection({
+    size: pageOptions.size,
+    orientation: pageOptions.orientation,
+    margin: pageOptions.margin,
+  })
   emits('close')
 }
 </script>
 
 <style lang="less" scoped>
+.pdoc-page-section-scope {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--pdoc-text-color-light);
+  margin-top: 15px;
+}
+
 .pdoc-page-options-container {
   width: 400px;
   margin-top: 15px;

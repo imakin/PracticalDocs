@@ -339,3 +339,25 @@ body {
     }
   }
 }
+/* The line at the head of the page geometry menus that says which run of pages a change covers.
+   It is a dropdown item because a dropdown menu drops any child that is not one, so it has to be
+   told it is not a choice. */
+.pdoc-page-section-note {
+  cursor: default !important;
+  pointer-events: none;
+  .note {
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: normal;
+    /* The editor breaks words anywhere so that a long URL cannot widen a page; a sentence in a menu
+       is not that, and breaking it mid-word made it unreadable. */
+    overflow-wrap: break-word;
+    word-break: normal;
+    max-width: 240px;
+    color: var(--pdoc-text-color-light);
+    padding: 2px 0;
+  }
+  &:hover {
+    background-color: transparent !important;
+  }
+}

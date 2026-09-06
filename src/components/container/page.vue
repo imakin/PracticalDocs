@@ -25,15 +25,14 @@
             '--pdoc-page-margin-right': pageOptions.margin?.right + 'cm',
             '--pdoc-page-sheet-gap': sheetGap + 'px',
             '--pdoc-page-width':
-              pageOptions.layout === 'page' ? pageSize.width + 'cm' : 'auto',
+              pageOptions.layout === 'page' ? canvasWidth + 'cm' : 'auto',
             '--pdoc-page-height':
               pageOptions.layout === 'page' ? pageSize.height + 'cm' : '100%',
             '--pdoc-page-content-height':
               pageOptions.layout === 'page'
                 ? `calc(${pageSize.height}cm - ${pageOptions.margin?.top || 0}cm - ${pageOptions.margin?.bottom || 0}cm)`
                 : 'auto',
-            width:
-              pageOptions.layout === 'page' ? pageSize.width + 'cm' : '100%',
+            width: pageOptions.layout === 'page' ? canvasWidth + 'cm' : '100%',
             transform: `scale(${pageOptions.zoomLevel ? pageOptions.zoomLevel / 100 : 1})`,
           }"
           :alpha="pageOptions.watermark.alpha"
@@ -95,6 +94,9 @@
 </template>
 
 <script setup>
+import { documentSections } from '@/extensions/page-break'
+import { widestSheet } from '@/utils/page-sections'
+
 const container = inject('container')
 const imageViewer = inject('imageViewer')
 const pageOptions = inject('page')
@@ -104,6 +106,21 @@ const editorRef = inject('editor')
 // --pdoc-page-sheet-gap so the painted gap and the enforced gap can never drift apart.
 const sheetGap = 16
 
+/**
+ * The sections of the document, which is what the canvas has to be wide enough to hold.
+ *
+ * A section's geometry lives on the page break that opens it, so it changes with the document rather
+ * than with the page options - which Vue cannot see on its own. The editor's own update event is the
+ * signal.
+ */
+let docSections = $ref([])
+const refreshSections = () => {
+  const instance = editorRef.value
+  docSections = instance?.state
+    ? documentSections(instance.state.doc, pageOptions.value)
+    : []
+}
+
 // 页面大小
 const pageSize = $computed(() => {
   const { width, height } = pageOptions.value.size || { width: 0, height: 0 }
@@ -112,12 +129,20 @@ const pageSize = $computed(() => {
     height: pageOptions.value.orientation === 'portrait' ? height : width,
   }
 })
+/**
+ * How wide the canvas is: the widest sheet in the document.
+ *
+ * A landscape section in a portrait document needs room, and the sheets are then centred on each
+ * other inside it. With one geometry this is the page width, exactly as it was.
+ */
+const canvasWidth = $computed(() => widestSheet(docSections) || pageSize.width)
+
 // 页面缩放后的大小
 const pageZoomWidth = $computed(() => {
   if (pageOptions.value.layout === 'web') {
     return '100%'
   }
-  return `calc(${pageSize.width}cm * ${pageOptions.value.zoomLevel ? pageOptions.value.zoomLevel / 100 : 1})`
+  return `calc(${canvasWidth}cm * ${pageOptions.value.zoomLevel ? pageOptions.value.zoomLevel / 100 : 1})`
 })
 
 // 页面内容变化后更新页面高度
@@ -204,7 +229,13 @@ watch(
     schedulePageZoomHeight()
     // The engine draws the page numbers, so it needs the settings; they are not derivable from the
     // document or from the geometry.
-    editorRef.value?.commands.setPageNumberSettings?.(pageOptions.value.pageNumber)
+    editorRef.value?.commands.setPageNumberSettings?.(
+      pageOptions.value.pageNumber,
+    )
+    // The first section is drawn at the document settings and every later one falls back to them, so
+    // the engine has to be told when they change.
+    editorRef.value?.commands.setPageGeometry?.(pageOptions.value)
+    refreshSections()
     // Page geometry changed without the document changing, which the engine cannot detect on its own.
     editorRef.value?.commands.refreshPagination?.()
   },
@@ -215,7 +246,13 @@ watch(
 watch(
   () => editorRef.value,
   (instance) => {
-    instance?.commands.setPageNumberSettings?.(pageOptions.value.pageNumber)
+    if (!instance) {
+      return
+    }
+    instance.commands.setPageNumberSettings?.(pageOptions.value.pageNumber)
+    instance.commands.setPageGeometry?.(pageOptions.value)
+    instance.on('update', refreshSections)
+    refreshSections()
   },
   { immediate: true },
 )
@@ -285,48 +322,25 @@ watch(
     padding: 20px 50px;
     box-sizing: border-box;
     .pdoc-zoomable-content {
+      /* The shadow moved on to each sheet: with sections the canvas is no longer one sheet's shape,
+         so a shadow around it would outline a rectangle that is not any page. */
       margin: 0 auto;
-      box-shadow:
-        rgba(0, 0, 0, 0.06) 0px 0px 10px 0px,
-        rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
     }
     .pdoc-page-content {
-      /* Visual Page Sheets: Header boundary, Footer & Page Numbering zone, and Sheet Separation Gap */
-      /* One period is a sheet plus the gap the pagination engine keeps empty. */
-      background-image:
-        /* Footer & Page Numbering boundary line (dashed/subtle line at top of footer margin) */
-        repeating-linear-gradient(
-          to bottom,
-          transparent 0,
-          transparent calc(var(--pdoc-page-height) - var(--pdoc-page-margin-bottom) - 1px),
-          rgba(0, 0, 0, 0.15) calc(var(--pdoc-page-height) - var(--pdoc-page-margin-bottom) - 1px),
-          rgba(0, 0, 0, 0.15) calc(var(--pdoc-page-height) - var(--pdoc-page-margin-bottom)),
-          transparent calc(var(--pdoc-page-height) - var(--pdoc-page-margin-bottom)),
-          transparent calc(var(--pdoc-page-height) + var(--pdoc-page-sheet-gap, 16px))
-        ),
-        /* Sheet Separation Gap (16px grey band + sheet edge shadow at bottom of each page sheet) */
-        repeating-linear-gradient(
-          to bottom,
-          transparent 0,
-          transparent var(--pdoc-page-height),
-          #cbd5e1 var(--pdoc-page-height),
-          #e2e8f0 calc(var(--pdoc-page-height) + var(--pdoc-page-sheet-gap, 16px) / 2),
-          #cbd5e1 calc(var(--pdoc-page-height) + var(--pdoc-page-sheet-gap, 16px))
-        ),
-        /* Header margin boundary line (subtle line at bottom of top margin) */
-        repeating-linear-gradient(
-          to bottom,
-          transparent 0,
-          transparent calc(var(--pdoc-page-margin-top) - 1px),
-          rgba(0, 0, 0, 0.15) calc(var(--pdoc-page-margin-top) - 1px),
-          rgba(0, 0, 0, 0.15) var(--pdoc-page-margin-top),
-          transparent var(--pdoc-page-margin-top),
-          transparent calc(var(--pdoc-page-height) + var(--pdoc-page-sheet-gap, 16px))
-        );
+      /* The sheets themselves are drawn by the pagination engine as .pdoc-page-sheet elements, one
+         per sheet, because a repeating gradient can only repeat one geometry and a section can now
+         change the paper. The canvas behind them is the grey the gap used to be painted in - and it
+         now also shows beside a sheet narrower than the widest one, which is what a reader expects
+         of a portrait page sitting in a document that also holds a landscape one. */
+      background-color: #e2e8f0;
     }
   }
   &.pdoc-web-container {
     display: flex;
+    .pdoc-page-content {
+      /* Web layout has no sheets to draw, so the canvas is the paper. */
+      background-color: var(--pdoc-page-background);
+    }
     .pdoc-zoomable-content {
       flex: 1;
       .pdoc-page-corner {
@@ -346,7 +360,6 @@ watch(
     display: flex;
     position: relative;
     box-sizing: border-box;
-    background-color: var(--pdoc-page-background);
     width: var(--pdoc-page-width);
     /* The engine sets --pdoc-page-total-height to a whole number of sheets, so the last sheet is drawn
        complete instead of being cut off wherever the text happens to end. */
@@ -358,6 +371,31 @@ watch(
       outline: none;
     }
   }
+}
+
+/* One drawn sheet. Behind the text, which is why it is out of the flow and at a negative z-index:
+   the canvas above it is transparent, so nothing of the sheet is hidden. */
+.pdoc-page-sheet {
+  position: absolute;
+  z-index: -1;
+  box-sizing: border-box;
+  background-color: var(--pdoc-page-background);
+  box-shadow:
+    rgba(0, 0, 0, 0.06) 0px 0px 10px 0px,
+    rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
+
+  @media print {
+    display: none;
+  }
+}
+
+/* The margin boundary lines, which the repeating gradient used to paint. */
+.pdoc-page-sheet-guide {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .pdoc-page-node-header {

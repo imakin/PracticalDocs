@@ -7,12 +7,17 @@
   >
     <template #dropmenu>
       <t-dropdown-menu>
+        <!-- A dropdown menu drops any child that is not an item, so the line saying which pages this
+             covers has to be one. It is not clickable and says so. -->
+        <t-dropdown-item class="pdoc-page-section-note" :divider="true">
+          <div class="note" v-text="label"></div>
+        </t-dropdown-item>
         <t-dropdown-item
           v-for="(item, index) in orientations"
           :key="index"
           :value="item.value"
-          :active="page.orientation === item.value"
-          @click="page.orientation = item.value"
+          :active="current?.section?.orientation === item.value"
+          @click="applyToSection({ orientation: item.value })"
         >
           <div
             class="icon-orientation"
@@ -28,7 +33,7 @@
 </template>
 
 <script setup>
-const page = inject('page')
+const { current, label, applyToSection } = usePageSection()
 
 const orientations = [
   { label: t('page.orientation.landscape'), value: 'landscape' },

@@ -327,7 +327,13 @@
   table {
     border-collapse: collapse;
     table-layout: fixed;
-    width: 100%;
+    /* A section drawn on different paper insets its blocks by the difference, and a table is the one
+       block that states its own width, so the inset has to come off that width or the table would
+       hang off the right of the column. --pdoc-section-left and --pdoc-section-right are set on the
+       block by the pagination engine and are 0 unless the sections actually differ. */
+    width: calc(
+      100% - var(--pdoc-section-left, 0px) - var(--pdoc-section-right, 0px)
+    );
     margin: 0;
     overflow: hidden;
     page-break-inside: auto;
