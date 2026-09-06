@@ -1,6 +1,21 @@
-# Practical UmoDoc & Storage Server
+# UmoPractical & Storage Server
 
-A document editor application based on Vue 3 and Tiptap with an integrated AES-256-GCM encrypted storage backend (`practical-umodoc-server`).
+A document editor for long, page-accurate documents - theses and reports - built on Vue 3 and
+Tiptap, with an integrated AES-256-GCM encrypted storage backend (`practical-umodoc-server`).
+
+Package: `@np_makin/umopractical`.
+
+UmoPractical is based on [Umo Editor](https://www.umodoc.com) by Umodoc, MIT licensed. The
+`LICENSE` file carries that copyright and stays as it is. Everything added here - the pagination
+engine, the numbering profiles, cross-references, the PDF bookmark tooling - follows the same
+licence.
+
+**Names that look like the old one and must stay that way.** They are identifiers written into files
+and browser storage, not product names, and changing them would break documents that already exist:
+
+- the `umo-` CSS prefix, which is in every saved `document.html`
+- `format: "umodoc"` in every saved `settings.json`, which the reader checks before opening a file
+- the `umo-editor:` localStorage keys holding the open document and the profile list
 
 ---
 

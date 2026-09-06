@@ -405,7 +405,7 @@ watch(
   { immediate: true },
 )
 
-// 关于 Umo Editor
+// About UmoPractical
 const about = $ref(false)
 
 // 页面布局

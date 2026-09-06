@@ -92,7 +92,7 @@ const options = $ref({
   },
   user: {
     id: 'umoeditor',
-    label: 'Umo Editor',
+    label: 'UmoPractical',
     avatar: 'https://tdesign.gtimg.com/site/avatar.jpg',
   },
   users: [

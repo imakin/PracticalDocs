@@ -205,7 +205,7 @@ const validatePage = (value) => {
 export const validateDocumentSnapshot = (value) => {
   const snapshot = requireRecord(value, 'root')
   if (snapshot.format !== DOCUMENT_FILE_FORMAT) {
-    fail('unknownFormat', 'This is not a Umo Editor document.')
+    fail('unknownFormat', 'This is not a UmoPractical document.')
   }
   if (
     !Number.isInteger(snapshot.formatVersion) ||

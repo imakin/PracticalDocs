@@ -1,7 +1,7 @@
 {
-  "name": "@umoteam/editor",
+  "name": "@np_makin/umopractical",
   "version": "11.0.4",
-  "description": "Umo Editor is open-source document editor based on Vue3 and Tiptap3. Umo Editor provides comprehensive document editing capabilities and AI creation features, supports pagination, supports Markdown syntax, offers basic rich text editing functions, allows for the insertion of various node types in multiple formats, provides a variety of practical tools, and supports setting page styles. It also supports exporting in various formats, printing and print preview, block-level document editing, adding custom extensions, multi-language settings, and a dark theme.",
+  "description": "UmoPractical is a document editor for long, page-accurate documents - theses and reports - built on Vue 3 and Tiptap. It is based on Umo Editor by Umodoc (MIT), with its own pagination engine, numbering profiles and PDF tooling.",
   "keywords": [
     "docs editor",
     "document editor",
@@ -20,20 +20,14 @@
     "word editor",
     "wysiwyg editor"
   ],
-  "homepage": "https://www.umodoc.com",
   "bugs": {
     "url": "https://github.com/umodoc/editor/issues",
     "email": "contact@umodoc.com"
   },
   "license": "MIT",
   "author": {
-    "name": "umodoc",
-    "email": "contact@umodoc.com",
-    "url": "https://www.umodoc.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/umodoc/editor.git"
+    "name": "makin",
+    "email": "info@brambleco.com"
   },
   "files": [
     "dist"

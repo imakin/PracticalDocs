@@ -43,7 +43,7 @@ const buildConfig = {
   lib: {
     entry: `${process.cwd()}/src/components/index.js`,
     name: pkg.name,
-    fileName: 'umo-editor',
+    fileName: 'umopractical',
   },
   outDir: 'dist',
   copyPublicDir: false,
@@ -53,7 +53,7 @@ const buildConfig = {
     output: [
       {
         banner: copyright,
-        intro: `import './umo-editor.css'`,
+        intro: `import './umopractical.css'`,
         format: 'es',
       },
     ],
