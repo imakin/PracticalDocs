@@ -1,5 +1,5 @@
 {
-  "welcome": "%cСпасибо за использование UmoPractical%cТекущая версия: v{version}",
+  "welcome": "%cСпасибо за использование UmoPractical%cТекущая версия: v{version}, Подробнее: {homepage}",
   "toolbar": {
     "ribbon": "Профессиональный",
     "classic": "Классический",

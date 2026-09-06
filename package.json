@@ -21,13 +21,12 @@
     "wysiwyg editor"
   ],
   "bugs": {
-    "url": "https://github.com/umodoc/editor/issues",
-    "email": "contact@umodoc.com"
+    "url": "https://github.com/imakin/umodoc-practical/issues"
   },
   "license": "MIT",
   "author": {
     "name": "makin",
-    "email": "info@brambleco.com"
+    "email": "makin.public@gmail.com"
   },
   "files": [
     "dist"
@@ -177,5 +176,10 @@
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
+  },
+  "homepage": "https://github.com/imakin/umodoc-practical",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imakin/umodoc-practical.git"
   }
 }

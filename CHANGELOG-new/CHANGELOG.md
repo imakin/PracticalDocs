@@ -4,7 +4,7 @@
 - `Three Identifiers Deliberately Left Alone`: the `umo-` CSS prefix is in every saved `document.html`, `format: "umodoc"` is in every saved `settings.json` and is checked before a file is opened, and the `umo-editor:` localStorage keys hold the open document and the profile list. Renaming any of them would break documents that already exist, for no gain the reader could see - they are identifiers, and nobody reads them. If they are ever to change it is a job of its own, with a migration.
 - `And One More`: the dev server is still served at `/umo-editor`. That is a URL, and changing it changes the address every test and bookmark points at. A separate decision, not a side effect of a rename.
 - `The Credit Is Now Accurate`: the About panel said "Powered by Umodoc". This is a fork, so it says what it is - "Based on Umo Editor by Umodoc, MIT licensed". `LICENSE` still carries Umodoc's copyright and is untouched.
-- `A Banner That Stops Inventing Facts`: `copyright.js` interpolated `pkg.author.url` and `pkg.homepage` straight into the build header, so dropping either would have printed the word `undefined` into every built file. A field that is not there now says nothing, and the welcome message no longer promises a homepage this package does not claim.
+- `A Banner That Stops Inventing Facts`: `copyright.js` interpolated `pkg.author.url` and `pkg.homepage` straight into the build header, so a missing field would have printed the word `undefined` into every built file. An absent field now says nothing. `homepage`, `repository` and `bugs` point at `github.com/imakin/umodoc-practical`, which is where this code actually lives - the fields were never the problem, the old values were.
 
 ### An Exported Document Says What Language It Is In
 
