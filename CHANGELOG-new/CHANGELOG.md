@@ -1,3 +1,16 @@
+### A Test Types Into Its Own Tab
+
+- `One Test Attached To The Writer's Tab`: `test-keystroke-typing` searched the browser for a page with `9000` in its URL and typed into whatever it found - the writer's editor, holding the writer's document. It creates a tab of its own now and closes it on every way out, waits for the editor to mount rather than assuming it has, and takes its endpoints from `CDP_URL` and `EDITOR_URL` with no fallback. It was never wired to an npm script, which is probably why nobody noticed.
+- `Three More Would Have Exited 127 Eventually`: `page-numbers-export`, `pagination-pdf-parity` and `pdf-bookmarks` read the CDP endpoint with `fetch` and then called `process.exit`, which is what made `page-sections-export` report every check passed and exit non-zero on Windows. None of the three has crashed - the assertion needs a payload large enough to still be in flight - so this is prevention rather than repair. They read that endpoint with `node:http` and `agent: false` like the fourth.
+- `And What Was Deliberately Left Alone`: 21 files carry the same teardown without ever printing a PDF, and the fault only surfaces with a large payload. 21 do not pin their viewport and do not need to - they type with `Input.insertText` and click with `element.click()` inside the page, and neither hit-tests, which is the only thing the viewport rule protects against. Both counts were measured before deciding, because the first reading of how much was broken was too wide twice over. No shared test harness: a change to one would move the verdict of 25 tests at once, and the real problem was four files.
+- `Test scripts`: no check was added or changed. Measured here, each exiting 0 with the browser's tab count back at its starting value: `pdf-bookmarks` 21 checks, `page-numbers-export` 9, `test-keystroke-typing` 1 assertion. `pagination-pdf-parity` opens a stored document instead of building its own fixture, so it still stops at `DOCUMENT_NOT_ON_SERVER` on a clone without that document.
+
+  ```bash
+  npm run test:e2e:pdf-bookmarks
+  npm run test:e2e:page-numbers-export
+  node tests/e2e/test-keystroke-typing.cdp.mjs
+  ```
+
 ### The PDF Export Tests Run On Any Machine
 
 - `A Run That Passed Every Check Exited 127`: the CDP HTTP endpoints were read with `fetch`, which keeps its sockets alive after the body is read, and `process.exit` over a handle that is still closing trips a libuv assertion on Windows - `UV_HANDLE_CLOSING` in `src/win/async.c`. `page-sections-export` printed `RESULT: PASSED` and then died, so anything reading the exit code saw a failure. It reads those three endpoints with `node:http` and `agent: false` instead, which leaves nothing behind to close. The assertion is loud on Windows and silent elsewhere, but exiting over a closing handle was always wrong.

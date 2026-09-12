@@ -15,6 +15,7 @@
  */
 import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import http from 'node:http'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -50,12 +51,41 @@ for (const tool of ['pdfinfo', 'pdftotext']) {
   }
 }
 
-const probe = await fetch(`${CDP}/json/version`).catch(() => null)
-if (!probe || !probe.ok) {
+// CDP's HTTP endpoints are read with `node:http` rather than `fetch`. fetch keeps its sockets
+// alive after the body has been read, and on Windows `process.exit` over a handle that is still
+// closing trips a libuv assertion -- UV_HANDLE_CLOSING in src/win/async.c -- so a run that passed
+// every check exited 127 and read as a failure to anything looking at the code. `agent: false`
+// leaves nothing behind to close.
+const getJson = (url) =>
+  new Promise((resolve, reject) => {
+    http
+      .get(url, { agent: false }, (res) => {
+        let body = ''
+        res.setEncoding('utf8')
+        res.on('data', (chunk) => {
+          body += chunk
+        })
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`${url} answered ${res.statusCode}`))
+            return
+          }
+          try {
+            resolve(JSON.parse(body))
+          } catch (err) {
+            reject(err)
+          }
+        })
+      })
+      .on('error', reject)
+  })
+
+const probe = await getJson(`${CDP}/json/version`).catch(() => null)
+if (!probe) {
   console.error(`FAIL: no CDP endpoint at ${CDP}. Start Chrome with --remote-debugging-port=9222.`)
   process.exit(1)
 }
-const { webSocketDebuggerUrl } = await probe.json()
+const { webSocketDebuggerUrl } = probe
 const ws = new WebSocket(webSocketDebuggerUrl, { maxPayload: 512 * 1024 * 1024 })
 const pending = new Map()
 await new Promise((res, rej) => { ws.once('open', res); ws.once('error', rej) })
