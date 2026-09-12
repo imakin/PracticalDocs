@@ -1,3 +1,16 @@
+### The PDF Export Tests Run On Any Machine
+
+- `A Run That Passed Every Check Exited 127`: the CDP HTTP endpoints were read with `fetch`, which keeps its sockets alive after the body is read, and `process.exit` over a handle that is still closing trips a libuv assertion on Windows - `UV_HANDLE_CLOSING` in `src/win/async.c`. `page-sections-export` printed `RESULT: PASSED` and then died, so anything reading the exit code saw a failure. It reads those three endpoints with `node:http` and `agent: false` instead, which leaves nothing behind to close. The assertion is loud on Windows and silent elsewhere, but exiting over a closing handle was always wrong.
+- `Two Other Ways Out Were Tried And Discarded`: awaiting the WebSocket's own close changed nothing - the sockets were `fetch`'s, not its. Setting `process.exitCode` instead of calling `process.exit` exited cleanly **and broke the failure path**: `finish` no longer halted the file, so a failing run printed `RESULT: FAILED`, carried on to `RESULT: PASSED`, and exited 0. Caught only by forcing a check to fail; a fix verified on the passing path alone would have shipped a suite that could not report a failure.
+- `A Preflight That Asked The Wrong Question`: `page-sections-export` checked its tooling with `which`, which is not a question a non-POSIX shell can answer, and which only says a file of that name exists. On a machine carrying poppler's `pdfinfo` and xpdf's `pdftotext` it passed, then fell over three checks in with a usage dump - xpdf 4.00 has no `-bbox`. All three PDF tests now run the tool itself and require `poppler` in its version banner, reading the banner rather than the exit status because the two builds disagree about that too: poppler exits 0, xpdf 99.
+- `Test scripts`: no check was added or changed. Measured here: `page-sections-export` 13 checks, `page-numbers-export` 9. `pagination-pdf-parity` still opens a stored document rather than building its own fixture, so it stops at `DOCUMENT_NOT_ON_SERVER` on a clone that does not have that document - unchanged by this, and still the debt it always was.
+
+  ```bash
+  npm run test:e2e:page-sections-export
+  npm run test:e2e:page-numbers-export
+  npm run test:e2e:pagination-pdf
+  ```
+
 ### Page Size, Margins And Orientation Belong To A Section
 
 - `A Section Is The Run Of Pages Between Two Page Breaks`: the first one is opened by the document itself and keeps its geometry in the document settings, exactly where it always was. Every later one keeps its geometry on the page break that opened it, so it travels with the content. A field left unset carries on from the section before it, which is what every page break in every document written so far says - so a document that sets nothing is laid out, saved and exported exactly as it was.

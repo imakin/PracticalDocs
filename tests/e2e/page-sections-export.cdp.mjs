@@ -11,8 +11,9 @@
  * Needs poppler-utils (pdfinfo, pdftotext). Endpoints come from EDITOR_URL and CDP_URL; per adr/0006
  * there is no built-in fallback.
  */
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtemp, writeFile } from 'node:fs/promises'
+import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -32,23 +33,63 @@ const CDP = required('CDP_URL').replace(/\/$/, '')
 const EDITOR_URL = required('EDITOR_URL')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+// Both tools have to be poppler's. `which` only says a file of that name exists, not which
+// build it is, and another one can sit ahead of poppler on PATH -- measured with xpdf's
+// pdftotext, which has no `-bbox` and brought the run down with a usage dump three checks in.
+// The version banner is what tells them apart, and it is read rather than the exit status
+// because the two builds disagree about that too.
 for (const tool of ['pdfinfo', 'pdftotext']) {
-  try {
-    execFileSync('which', [tool])
-  } catch {
+  const probe = spawnSync(tool, ['-v'], { encoding: 'utf8' })
+  if (probe.error) {
     console.error(
       `FAIL: ${tool} is not installed. This test reads the exported PDF rather than trusting it.`,
     )
     process.exit(1)
   }
+  const banner = `${probe.stdout ?? ''}${probe.stderr ?? ''}`
+  if (!/poppler/i.test(banner)) {
+    console.error(
+      `FAIL: ${tool} is not poppler's -- "${/^.*/.exec(banner.trim())[0] || 'no version banner'}". Put poppler ahead of it on PATH.`,
+    )
+    process.exit(1)
+  }
 }
 
-const version = await fetch(`${CDP}/json/version`).catch(() => null)
-if (!version?.ok) {
+// CDP's HTTP endpoints are read with `node:http` rather than `fetch`. fetch keeps its sockets
+// alive after the body has been read, and on Windows `process.exit` over a handle that is still
+// closing trips a libuv assertion -- UV_HANDLE_CLOSING in src/win/async.c -- so a run that passed
+// every check exited 127 and read as a failure to anything looking at the code. `agent: false`
+// leaves nothing behind to close.
+const getJson = (url) =>
+  new Promise((resolve, reject) => {
+    http
+      .get(url, { agent: false }, (res) => {
+        let body = ''
+        res.setEncoding('utf8')
+        res.on('data', (chunk) => {
+          body += chunk
+        })
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`${url} answered ${res.statusCode}`))
+            return
+          }
+          try {
+            resolve(JSON.parse(body))
+          } catch (err) {
+            reject(err)
+          }
+        })
+      })
+      .on('error', reject)
+  })
+
+const version = await getJson(`${CDP}/json/version`).catch(() => null)
+if (!version) {
   console.error(`FAIL: no CDP endpoint at ${CDP}.`)
   process.exit(1)
 }
-const { webSocketDebuggerUrl } = await version.json()
+const { webSocketDebuggerUrl } = version
 const ws = new WebSocket(webSocketDebuggerUrl, {
   maxPayload: 128 * 1024 * 1024,
 })
@@ -81,7 +122,7 @@ const call = (method, params = {}, sessionId) =>
     )
   })
 
-const tabsAtStart = (await (await fetch(`${CDP}/json/list`)).json()).filter(
+const tabsAtStart = (await getJson(`${CDP}/json/list`)).filter(
   (t) => t.type === 'page',
 ).length
 const { targetId } = await call('Target.createTarget', { url: EDITOR_URL })
@@ -105,7 +146,7 @@ let persistedBefore = null
 // Every tab this test opens is closed the moment it is finished with, and the count is checked.
 const printTargets = new Set()
 const tabCount = async () =>
-  (await (await fetch(`${CDP}/json/list`)).json().catch(() => [])).filter?.(
+  (await getJson(`${CDP}/json/list`).catch(() => [])).filter?.(
     (t) => t.type === 'page',
   ).length
 // Counted before this test's own tab exists, so the check at the end is against the browser as it

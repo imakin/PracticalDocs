@@ -13,7 +13,7 @@
  * Requires Chrome with --remote-debugging-port=9222, the dev server on :9000, and poppler-utils
  * (pdfinfo, pdftotext).
  */
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -28,11 +28,24 @@ const PERSISTED_KEYS = ['practicaldocs:default:document', 'practicaldocs:profile
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const normalise = (text) => String(text).replace(/[^a-z0-9]/gi, '').toLowerCase()
 
+// Both tools have to be poppler's. `which` only says a file of that name exists, not which
+// build it is, and another one can sit ahead of poppler on PATH -- measured with xpdf's
+// pdftotext, which has no `-bbox` and brought the run down with a usage dump three checks in.
+// The version banner is what tells them apart, and it is read rather than the exit status
+// because the two builds disagree about that too.
 for (const tool of ['pdfinfo', 'pdftotext']) {
-  try {
-    execFileSync(tool, ['-v'], { stdio: 'ignore' })
-  } catch {
-    console.error(`FAIL: ${tool} not found. Install poppler-utils to run this test.`)
+  const probe = spawnSync(tool, ['-v'], { encoding: 'utf8' })
+  if (probe.error) {
+    console.error(
+      `FAIL: ${tool} not found. Install poppler-utils to run this test.`,
+    )
+    process.exit(1)
+  }
+  const banner = `${probe.stdout ?? ''}${probe.stderr ?? ''}`
+  if (!/poppler/i.test(banner)) {
+    console.error(
+      `FAIL: ${tool} is not poppler's -- "${/^.*/.exec(banner.trim())[0] || 'no version banner'}". Put poppler ahead of it on PATH.`,
+    )
     process.exit(1)
   }
 }
