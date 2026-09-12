@@ -79,6 +79,7 @@ import {
   serializeDocumentSnapshot,
   validateDocumentSnapshot,
 } from '@/utils/document-file'
+import { sectionHeadings } from '@/utils/heading-scope'
 import {
   addHistory,
   redoHistoryRecord,
@@ -1654,7 +1655,7 @@ defineExpose({
   getContentExcerpt,
   getEditor: () => editor,
   useEditor: () => editor.value,
-  getTableOfContents: () => editor.value?.storage.tableOfContents.content,
+  getTableOfContents: () => sectionHeadings(editor.value),
   getSelectionText: () => (editor.value ? getSelectionText(editor.value) : ''),
   getSelectionNode: () =>
     editor.value ? getSelectionNode(editor.value) : null,

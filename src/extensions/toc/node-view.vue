@@ -30,6 +30,7 @@ import { nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3'
 
 import { getNumberingProfileList } from '@/extensions/document-references'
 import { pageOfElement } from '@/extensions/pagination'
+import { sectionHeadings } from '@/utils/heading-scope'
 import { profileClassName } from '@/utils/profile-stylesheet'
 import { resolveTocProfile, tocIndentOf } from '@/utils/toc-indent'
 
@@ -91,8 +92,14 @@ const tocProfile = () =>
 let profileClass = $ref('')
 
 const build = () => {
-  const toc = editor.value?.storage?.tableOfContents?.content
-  if (!toc) return
+  const all = editor.value?.storage?.tableOfContents?.content
+  if (!all) return
+  // A heading inside a table is a styled cell, not a section, so it is not an entry here. The
+  // heading store collects every heading in the document, and a writer styling the cells of a
+  // review table with a profile that carries a heading level had every cell listed: the row
+  // numbers, the citations, the summary sentences. `heading-scope.js` owns that rule, and the
+  // numbering reads the same one, so the two cannot disagree about what a section is.
+  const toc = sectionHeadings(editor.value)
   const profile = tocProfile()
   // The class is how the profile's font, size and spacing reach the map, through the same generated
   // stylesheet as every other profile.

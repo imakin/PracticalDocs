@@ -29,6 +29,8 @@
 <script setup>
 import { TextSelection } from '@tiptap/pm/state'
 
+import { sectionHeadings } from '@/utils/heading-scope'
+
 const container = inject('container')
 const editor = inject('editor')
 const page = inject('page')
@@ -76,8 +78,10 @@ const tocDebounceFn = useDebounceFn((toc) => {
 
 watch(
   () => editor.value?.storage.tableOfContents.content,
-  (toc) => {
-    tocDebounceFn(toc)
+  () => {
+    // The store holds every heading in the document; the map shows the sections. A heading inside a
+    // table is a styled cell, and this panel listed those too.
+    tocDebounceFn(sectionHeadings(editor.value))
   },
   { immediate: true },
 )

@@ -7,6 +7,7 @@
  * the page.
  */
 import { pageOfElement } from '@/extensions/pagination'
+import { sectionHeadings } from '@/utils/heading-scope'
 
 const headingElement = (editor, id) => {
   if (!id || typeof document === 'undefined') return null
@@ -46,8 +47,10 @@ const headingTitle = (item, number) => {
  * both come from `pageOfElement` so they cannot drift apart.
  */
 export const collectOutlineEntries = (editor) => {
-  const items = editor?.storage?.tableOfContents?.content
-  if (!Array.isArray(items) || items.length === 0) return []
+  // Sections only: a heading inside a table is a styled cell, and a bookmark pointing at one is
+  // no more use to a reader of the PDF than an entry in the contents was.
+  const items = sectionHeadings(editor)
+  if (items.length === 0) return []
   const entries = []
   for (const item of items) {
     const element = headingElement(editor, item.id)

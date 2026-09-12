@@ -481,3 +481,46 @@ test('a block with no profile still follows the default for its type', () => {
   assert.deepEqual(targets.map((t) => t.numberingProfileId), ['h1', 'p'])
   assert.deepEqual(targets.map((t) => t.label), ['BAB 1', ''])
 })
+
+test('a heading inside a table takes no number and consumes none', () => {
+  // The writer styles the cells of a literature review with a profile of their own. A profile
+  // carrying a heading level turns the block into a heading, so the cells arrived here as headings
+  // and spent a section number each - the chapter after a three column table came out as 2.10
+  // rather than 3. A heading in a table is a styled cell, not a section.
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1, title: 'Pendahuluan' },
+      { pos: 10, targetType: 'heading', level: 1, title: 'Tinjauan Pustaka' },
+      { pos: 20, targetType: 'heading', level: 3, title: 'No', inTable: true },
+      { pos: 24, targetType: 'heading', level: 3, title: 'Penulis', inTable: true },
+      { pos: 28, targetType: 'heading', level: 3, title: 'Kontribusi', inTable: true },
+      { pos: 40, targetType: 'heading', level: 1, title: 'Metodologi' },
+    ],
+    {},
+  )
+
+  assert.deepEqual(
+    targets.map((target) => target.number),
+    ['1', '2', '', '', '', '3'],
+  )
+})
+
+test('a heading in a table leaves the deeper levels of the count alone', () => {
+  // Not just "no number of its own": a level 3 cell must not open a sub-section either, or the
+  // first real sub-heading after the table carries on from the cells.
+  const { targets } = buildReferencePlan(
+    [
+      { pos: 0, targetType: 'heading', level: 1, title: 'Tinjauan' },
+      { pos: 10, targetType: 'heading', level: 2, title: 'Kajian Terdahulu' },
+      { pos: 20, targetType: 'heading', level: 3, title: 'No', inTable: true },
+      { pos: 24, targetType: 'heading', level: 3, title: 'Penulis', inTable: true },
+      { pos: 30, targetType: 'heading', level: 3, title: 'Sintesis' },
+    ],
+    {},
+  )
+
+  assert.deepEqual(
+    targets.map((target) => target.number),
+    ['1', '1.1', '', '', '1.1.1'],
+  )
+})

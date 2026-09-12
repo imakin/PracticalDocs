@@ -9,6 +9,7 @@ import {
   getCrossReferenceText,
   getReferenceTargetOptionLabel,
 } from '@/utils/document-references'
+import { isInsideTable } from '@/utils/heading-scope'
 import {
   buildProfileStylesheet,
   classCarriesProfileId,
@@ -338,6 +339,10 @@ const collectTargetDescriptors = (doc) => {
     descriptors.push({
       pos,
       targetType,
+      // A heading inside a table is a styled cell, not a section: it takes no number and consumes
+      // none. The table itself is still numbered, and so is a figure in one of its cells - only the
+      // heading's claim to be a section is refused. See `src/utils/heading-scope.js`.
+      inTable: targetType === 'heading' && isInsideTable(doc, pos),
       targetId: getTargetId(node, targetType),
       number: node.attrs.referenceNumber,
       label: node.attrs.referenceLabel,

@@ -286,7 +286,11 @@ export const buildReferencePlan = (
       // A heading whose profile does not number it takes no number and does not consume one, so the
       // next numbered heading at that level carries on where the last numbered one left off. It also
       // leaves the deeper levels alone, since it opens no section as far as the count is concerned.
-      if (!profileEnabled) {
+      //
+      // A heading inside a table is the same case arrived at differently: it is a styled cell rather
+      // than a section, so it opens nothing and must not take the number belonging to the chapter
+      // after it. Before this, a three column review table spent a section number on every cell.
+      if (descriptor.inTable || !profileEnabled) {
         number = ''
       } else {
         const headingStyle =

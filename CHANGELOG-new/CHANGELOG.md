@@ -1,3 +1,17 @@
+### A Heading Inside A Table Is A Styled Cell, Not A Section
+
+- `Reported By The User`: they write a literature review as a table and style its cells with a profile of their own, and the contents filled up with it - the row numbers, the citations, the summary sentences, one entry each. Their own screenshot shows nine table rows between *BAB II Tinjauan Pustaka* and *BAB III Metodologi Penelitian*.
+- `Why A Cell Is A Heading At All`: a profile carrying a heading level turns the block it is applied to into a `heading` node - that is how profiles work (adr/0007) - and a profile reaches every block a selection covers, cells included (adr/0013). Nothing was wrong with either decision. What was missing is that being a heading node and being a section of the document are not the same thing.
+- `The Numbering Was The Worse Half`: the cells did not only appear in the contents, they **took section numbers**. Measured on a three column table of three rows: the chapter after it came out as the tenth sub-section of the chapter before, and every cross-reference to it moved with it. A cell now takes no number and consumes none, and it opens no sub-section either, so the first real sub-heading after a table carries on where the last real one left off.
+- `One Rule, Read By Everything`: `src/utils/heading-scope.js` is the only place that decides what a section is. Four things read the heading store and every one of them was listing cells - the contents block, the **document map panel**, the editor's `getTableOfContents()`, and `collectOutlineEntries`, which is what the **PDF bookmarks** are written from. Fixing only the visible one would have left a reader of the exported PDF with a bookmark for every cell. They all read one function now, because the alternative is four copies of the same rule drifting apart.
+- `What A Cell Keeps`: its profile and its whole appearance. Only its claim to be a section is refused. The table itself is still numbered, and so is a figure in one of its cells.
+- `Test scripts`: `document-references.test.mjs` gains two unit checks - a cell takes no number, and a cell does not open a sub-section - both seen **failing** before the fix. `toc-boundaries.cdp.mjs` builds a document with a three row review table and asserts on all four readers of the heading store at once.
+
+  ```bash
+  npm run test:unit:document-references
+  npm run test:e2e:toc
+  ```
+
 ### One Control For Opening, Saving And Starting A Document
 
 - `Four Buttons Said Three Things`: **Open JSON**, **Save to JSON**, **Buka / Load** and the status control sat within a few centimetres of each other, and the status control's own panel already offered *Save*, *Open Document* and *New Document*. Only the status control is left, and it is the way in to all three.
