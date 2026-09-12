@@ -47,7 +47,6 @@
     "server:dev": "npm --prefix storage-server run dev",
     "test:e2e:full-cdp-audit": "node tests/e2e/test-comprehensive-e2e.cdp.mjs",
     "test:e2e:render-markdown": "node tests/e2e/render-markdown.cdp.mjs",
-    "test:e2e:save-file": "node tests/e2e/save-file.cdp.mjs",
     "test:e2e:document-references": "node tests/e2e/document-references.cdp.mjs",
     "test:e2e:autosave-blank-guard": "node tests/e2e/autosave-blank-guard.cdp.mjs",
     "test:e2e:pagination": "node tests/e2e/pagination-geometry.cdp.mjs",

@@ -240,7 +240,27 @@ const newTab = async () => {
 
 // Opening a stored document through the real Open dialog, the way a writer does.
 const openStored = async (tab, name) => {
-  await tab.run(`document.querySelector('[data-testid="open-json"]').click()`)
+  // The Open dialog has no button of its own any more; it is reached through the status control at
+  // the top right, which is the only way in now.
+  const statusClicked = await tab.run(`(() => {
+    const status = document.querySelector('[data-testid="document-status"]')
+    if (!status) return 'NO_STATUS_BUTTON'
+    status.click()
+    return 'CLICKED'
+  })()`)
+  if (statusClicked !== 'CLICKED') {
+    throw new Error(`could not reach the status control: ${statusClicked}`)
+  }
+  await sleep(700)
+  const openEntry = await tab.run(`(() => {
+    const btn = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Open Document...')
+    if (!btn) return 'NO_OPEN_ENTRY'
+    btn.click()
+    return 'CLICKED'
+  })()`)
+  if (openEntry !== 'CLICKED') {
+    throw new Error(`could not reach Open Document: ${openEntry}`)
+  }
   await sleep(2000)
   const opened = await tab.run(`(() => {
     const modal = [...document.querySelectorAll('.t-dialog')].find(d => d.textContent.includes('Open & Load Document'))

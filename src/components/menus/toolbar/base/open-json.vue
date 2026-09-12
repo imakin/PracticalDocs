@@ -1,22 +1,19 @@
 <template>
-  <menus-button
-    :text="t('documentFile.open')"
-    :tooltip="t('documentFile.openTip')"
-    ico="file-view"
-    data-testid="open-json"
-    force-enabled
-    huge
-    @menu-click="openLoadModal"
-  />
-
+  <!--
+    This component carries the Open & Load dialog and nothing else. It had a toolbar button of its
+    own, next to Save to JSON, and both were dropped: opening and saving are reached from the one
+    status control at the top right, which already offered Open Document and New Document. The
+    dialog is teleported to the editor container, so a component that renders only this leaves no
+    gap in the toolbar.
+  -->
   <modal
-    :visible="modalVisible"
+    :visible="loadDialogVisible"
     header="Open & Load Document"
     width="680px"
     :confirm-btn="null"
     cancel-btn="Close"
-    @confirm="modalVisible = false"
-    @close="modalVisible = false"
+    @confirm="closeLoadDialog"
+    @close="closeLoadDialog"
   >
     <t-tabs v-model="activeTab">
       <t-tab-panel value="server" label="From Server (practicaldocs-server)">
@@ -85,6 +82,7 @@
 </template>
 
 <script setup>
+import { useDocumentDialogs } from '@/composables/document-dialogs'
 import { resolveAssets } from '@/utils/document-assets'
 import { extractDocumentHtml } from '@/utils/profile-stylesheet'
 
@@ -93,7 +91,7 @@ const pageOptions = inject('page')
 const container = inject('container')
 const fileInput = ref(null)
 
-let modalVisible = $ref(false)
+const { loadDialogVisible, closeLoadDialog } = useDocumentDialogs()
 let activeTab = $ref('server')
 let searchQuery = $ref('')
 let loadingServerDocs = $ref(false)
@@ -146,10 +144,13 @@ const fetchServerDocuments = async () => {
   }
 }
 
-const openLoadModal = () => {
-  modalVisible = true
-  fetchServerDocuments()
-}
+// The list is fetched when the dialog opens rather than by whoever opens it, so every caller
+// gets a current list without having to know to ask for one.
+watch(loadDialogVisible, (visible) => {
+  if (visible) {
+    fetchServerDocuments()
+  }
+})
 
 const loadDocumentFromServer = async (doc) => {
   try {
@@ -202,7 +203,7 @@ const loadDocumentFromServer = async (doc) => {
     snapshot = resolveAssets(snapshot, baseUrl, payload.filename || name)
 
     await openDocumentFile(snapshot)
-    modalVisible = false
+    closeLoadDialog()
   } catch (err) {
     console.error('Failed to load document from server:', err)
     useMessage('error', {
@@ -231,7 +232,7 @@ const openSelectedFile = async (event) => {
   const file = input.files?.[0]
   if (file) {
     await openDocumentFile(file)
-    modalVisible = false
+    closeLoadDialog()
   }
   input.value = ''
 }

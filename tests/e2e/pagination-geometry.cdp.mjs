@@ -112,7 +112,22 @@ persistedBefore = await evaluate(`(() => { const o = {}; for (const k of ${JSON.
 await evaluate(`(() => { window.__raf = 0; const o = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = (cb) => { window.__raf++; return o(cb) }; return 1 })()`)
 
 // open the document under test
-await evaluate(`document.querySelector('[data-testid="open-json"]').click()`)
+// The Open dialog has no button of its own any more; it is reached through the status control.
+const statusClicked = await evaluate(`(() => {
+    const status = document.querySelector('[data-testid="document-status"]')
+    if (!status) return 'NO_STATUS_BUTTON'
+    status.click()
+    return 'CLICKED'
+  })()`)
+if (statusClicked !== 'CLICKED') throw new Error(`could not reach the status control: ${statusClicked}`)
+await sleep(700)
+const openEntry = await evaluate(`(() => {
+    const btn = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Open Document...')
+    if (!btn) return 'NO_OPEN_ENTRY'
+    btn.click()
+    return 'CLICKED'
+  })()`)
+if (openEntry !== 'CLICKED') throw new Error(`could not reach Open Document: ${openEntry}`)
 await sleep(2000)
 const opened = await evaluate(`(() => {
   const modal = [...document.querySelectorAll('.t-dialog')].find(d => d.textContent.includes('Open & Load Document'))

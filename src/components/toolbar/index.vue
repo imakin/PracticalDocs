@@ -32,15 +32,12 @@
       class="pdoc-toolbar-actions"
       :class="`pdoc-toolbar-actions-${$toolbar.mode}`"
     >
-      <t-button
-        class="pdoc-toolbar-actions-button"
-        variant="text"
-        size="small"
-        @click="triggerLoadModal"
-      >
-        <icon name="file-view" />
-        <span class="button-text">Buka / Load</span>
-      </t-button>
+      <!--
+        One control, not four. Open JSON and Save to JSON were dropped from the toolbar - a saved
+        `.json` carried urls to the images rather than the images, so it was never the full file it
+        looked like - and the separate Buka / Load button said the same thing this one's panel
+        already offers.
+      -->
       <t-popup
         v-if="
           options.toolbar.showSaveLabel && options.document.readOnly !== true
@@ -54,7 +51,8 @@
         <t-button
           class="pdoc-toolbar-actions-button"
           variant="text"
-          size="small"
+          size="medium"
+          data-testid="document-status"
           :class="{ active: statusPopup }"
         >
           <span class="pdoc-status">
@@ -202,14 +200,18 @@ const documentTitle = computed({
 })
 
 import { useConfirm, useMessage } from '@/composables/dialog'
+import { useDocumentDialogs } from '@/composables/document-dialogs'
+
+const { openLoadDialog } = useDocumentDialogs()
 
 const saveTarget = useStorage('practicaldocs:save-target', 'practicaldocs-server')
 const serverUrl = useStorage('practicaldocs:server-url', 'http://localhost:3001/api/documents/save')
 
+// Asks the dialog to open rather than hunting for a button to click. The button it used to click is
+// gone, and the old `if (btn)` guard would have made this quietly do nothing.
 const triggerLoadModal = () => {
   statusPopup = false
-  const btn = document.querySelector('[data-testid="open-json"]')
-  if (btn) btn.click()
+  openLoadDialog()
 }
 
 const confirmNewDocument = () => {
@@ -342,6 +344,17 @@ const setContentFromCache = () => {
     top: 1px;
   }
   &-button {
+    // This is now the only way in to opening, saving and starting a document - four buttons became
+    // one - so it is sized as a target rather than as a line of status text.
+    min-height: 34px;
+    padding: 0 12px;
+    .pdoc-status {
+      font-size: 14px;
+    }
+    .pdoc-status-online {
+      width: 11px;
+      height: 11px;
+    }
     &.active {
       background-color: var(--pdoc-button-hover-background);
     }

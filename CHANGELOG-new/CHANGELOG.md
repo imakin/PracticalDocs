@@ -1,3 +1,19 @@
+### One Control For Opening, Saving And Starting A Document
+
+- `Four Buttons Said Three Things`: **Open JSON**, **Save to JSON**, **Buka / Load** and the status control sat within a few centimetres of each other, and the status control's own panel already offered *Save*, *Open Document* and *New Document*. Only the status control is left, and it is the way in to all three.
+- `A Saved .json Was Never The Full File It Looked Like`: it carries the document's html, and after the document has been loaded from the server that html holds **urls** to the images rather than the images. Take the file to another machine and the pictures are gone. Dropping the button is not a loss of a working export; it is the removal of one that looked like it worked. `saveDocumentFile` is still part of the component API for an embedder that wants it.
+- `The Green Button Is A Button Now`: 34px tall with 14px text, from 24px and 12px, because it is the only control in that corner rather than the last of four.
+- `The Open Dialog Stopped Being Opened By Clicking A Button In The DOM`: `triggerLoadModal` found `[data-testid="open-json"]` and clicked it, behind an `if (btn)` guard - so the moment that button came off the toolbar, both the old Buka / Load and the panel's Open Document would have silently done nothing at all. The dialog's open state is a small shared composable, `src/composables/document-dialogs.js`, and the dialog is asked to open. `open-json.vue` now carries the dialog and no button; the dialog is teleported to the editor container, so it leaves no gap where the buttons were.
+- `And The Dialog Fetches Its Own List`: it used to be refreshed by whoever clicked the button. It watches its own visibility instead, so every caller gets a current list without having to know to ask.
+- `What Is Still Missing, And Was Missing Before`: there is no way to write a document out as one self-contained file with its images inside. A document **is** a folder on the server, so serving it as an archive is the natural answer, and it is not built.
+- `And One Test Went With Them`: `save-file.cdp.mjs` asserted on the Open JSON and Save to JSON buttons and clicked Save to JSON three times, so nothing in it survives their removal. It was already failing before this - it waits for a download named from a document title the application deliberately rewrites - so what is lost is a red test for a button that is gone. `document-file.test.mjs` still holds the file contract.
+- `Test scripts`: no check was added. Four tests reached the dialog by clicking the button that is gone; they go through the status control now, which is the path a writer takes. `document-assets` (17 checks) and `document-assets-saveas` (15) were run and pass, which is also what proves the panel's Open Document works. `pagination-geometry` and `pagination-pdf-parity` were driven against a throwaway fixture to see the dialog open and the document load, because both of them still open a stored document rather than building one.
+
+  ```bash
+  npm run test:e2e:document-assets
+  npm run test:e2e:document-assets-saveas
+  ```
+
 ### An Image Survives Being Saved Under A Second Name
 
 - `Reported By The User`: make a document with an image, save it as A, reload the page, open A, save it as B, reload, open B - and the image is gone. B's folder held no image at all, and the document pointed into it, so every reader got a 404.
@@ -482,7 +498,7 @@
 - `Unsaved state`: Treats content, title, and saved page-setting changes as unsaved work until a save succeeds.
 - `Media safety`: Warns before saving temporary `blob:` media URLs that cannot survive the browser session.
 - `Public API`: Adds `getDocumentSnapshot()`, `openDocumentFile()`, and `saveDocumentFile()` to the editor instance.
-- `Test scripts`: `document-file.test.mjs` verifies the file contract, and `save-file.cdp.mjs` verifies the complete browser workflow.
+- `Test scripts`: `document-file.test.mjs` verifies the file contract. `save-file.cdp.mjs` drove the browser workflow and was **removed** when the two toolbar buttons were, since it asserted on controls that no longer exist; it had also been failing on its own, expecting a download named from a title the application now rewrites.
 - `Details`: See [JSON Document File Contract and Desktop Commands](./details/save-file.md).
 
 ### Automatic Numbering and Document Reference Changes

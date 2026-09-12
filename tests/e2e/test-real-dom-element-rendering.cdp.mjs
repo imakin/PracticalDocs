@@ -164,11 +164,9 @@ async function run() {
             ]
           };
 
-          const openBtn = document.querySelector('[data-testid="open-json"]');
-          if (openBtn) {
-            // Put profiles into localStorage & window for test
-            localStorage.setItem('practicaldocs:profiles', JSON.stringify(testProfiles));
-          }
+          // Seeding the profiles used to be gated on the Open JSON button being present, which had
+          // nothing to do with it and silently skipped the seeding once that button was removed.
+          localStorage.setItem('practicaldocs:profiles', JSON.stringify(testProfiles));
           return { success: true };
         })()
       `,

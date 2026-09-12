@@ -26,10 +26,8 @@
         </t-select>
       </div>
       <template v-if="currentMenu === 'base'">
-        <div class="pdoc-virtual-group">
-          <menus-toolbar-base-open-json v-if="!disableMenu('open-json')" />
-          <menus-toolbar-base-save-json v-if="!disableMenu('save-json')" />
-        </div>
+        <!-- Renders the Open & Load dialog only; its button, and Save to JSON, were dropped. -->
+        <menus-toolbar-base-open-json v-if="!disableMenu('open-json')" />
         <div class="pdoc-virtual-group">
           <menus-toolbar-base-undo />
           <menus-toolbar-base-redo />

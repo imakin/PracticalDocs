@@ -173,7 +173,7 @@ The file remains standard JSON. The `.umodoc` segment only identifies the JSON s
 - Test confirmation when the active document has unsaved changes.
 - Test warnings for `blob:` URLs.
 - Test that the active document remains unchanged when open fails.
-- Add the CDP test at `tests/e2e/save-file.cdp.mjs`.
+- Add the CDP test at `tests/e2e/save-file.cdp.mjs`. Removed later, with the Save to JSON button it drove.
 
 ## Completion Criteria
 

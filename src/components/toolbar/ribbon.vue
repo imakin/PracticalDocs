@@ -14,10 +14,8 @@
     <toolbar-scrollable ref="scrollableRef" class="pdoc-scrollable-container">
       <div class="pdoc-ribbon-container">
         <template v-if="currentMenu === 'base'">
-          <div class="pdoc-virtual-group">
-            <menus-toolbar-base-open-json v-if="!disableMenu('open-json')" />
-            <menus-toolbar-base-save-json v-if="!disableMenu('save-json')" />
-          </div>
+          <!-- Renders the Open & Load dialog only; its button, and Save to JSON, were dropped. -->
+          <menus-toolbar-base-open-json v-if="!disableMenu('open-json')" />
           <div class="pdoc-virtual-group">
             <div class="pdoc-virtual-group-row">
               <menus-toolbar-base-undo />
