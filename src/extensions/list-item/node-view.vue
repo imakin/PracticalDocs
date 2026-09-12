@@ -274,6 +274,8 @@ const clearMarkerMetricVars = (wrapperElement) => {
   }
 
   wrapperElement.style.removeProperty('--pdoc-list-marker-font-size')
+  wrapperElement.style.removeProperty('--pdoc-list-marker-font-family')
+  wrapperElement.style.removeProperty('--pdoc-list-marker-font-weight')
   wrapperElement.style.removeProperty('--pdoc-list-marker-offset-y')
 }
 
@@ -294,6 +296,33 @@ const getTextNodesWalker = (element) =>
     },
   })
 
+/**
+ * The font the marker should be set in, out of the fonts the line is written in.
+ *
+ * A line can mix them - a formula, a citation, a word in another face - and the marker belongs to
+ * the prose, not to the fragment. The one most of the line's characters are set in wins; a tie goes
+ * to whichever came first, which is the text the marker sits directly beside.
+ */
+const dominantFont = (contributions) => {
+  const byFont = new Map()
+  for (const { font, weight } of contributions) {
+    const key = `${font.fontFamily}|${font.fontSize}|${font.fontWeight}`
+    const seen = byFont.get(key)
+    if (seen) {
+      seen.weight += weight
+    } else {
+      byFont.set(key, { font, weight })
+    }
+  }
+  let best = null
+  for (const entry of byFont.values()) {
+    if (!best || entry.weight > best.weight) {
+      best = entry
+    }
+  }
+  return best?.font || null
+}
+
 const getMarkerTextMetrics = (element) => {
   if (!element) {
     return null
@@ -303,19 +332,20 @@ const getMarkerTextMetrics = (element) => {
   let currentTextNode = walker.nextNode()
   const lineGroups = []
   const styleCache = new WeakMap()
-  let maxFontSize = 0
 
   while (currentTextNode) {
     const styleTarget = currentTextNode.parentElement || element
-    let fontSize = styleCache.get(styleTarget)
-    if (!fontSize) {
-      ;({ fontSize } = window.getComputedStyle(styleTarget))
-      styleCache.set(styleTarget, fontSize)
+    let font = styleCache.get(styleTarget)
+    if (!font) {
+      const computed = window.getComputedStyle(styleTarget)
+      font = {
+        fontSize: Number.parseFloat(computed.fontSize),
+        fontFamily: computed.fontFamily,
+        fontWeight: computed.fontWeight,
+      }
+      styleCache.set(styleTarget, font)
     }
-    const parsedFontSize = Number.parseFloat(fontSize)
-    if (Number.isFinite(parsedFontSize) && parsedFontSize > maxFontSize) {
-      maxFontSize = parsedFontSize
-    }
+    const characters = currentTextNode.textContent.trim().length
 
     const range = document.createRange()
     range.selectNodeContents(currentTextNode)
@@ -325,13 +355,19 @@ const getMarkerTextMetrics = (element) => {
     range.detach?.()
 
     textRects.forEach((rect) => {
+      // Grouped by overlapping the line, not by starting at the same height. A fragment set larger
+      // than the prose around it - a formula, a superscript - sits on the same line but its box
+      // begins higher, so matching on `top` gave it a line of its own that then sorted **above** the
+      // real first line and handed the marker its font. That is the fault the user photographed:
+      // one item of four with a bigger, heavier number, and mathematics only in that item.
       const lineGroup = lineGroups.find(
-        (group) => Math.abs(group.top - rect.top) < 1,
+        (group) => rect.top < group.bottom - 1 && rect.bottom > group.top + 1,
       )
       if (lineGroup) {
         lineGroup.top = Math.min(lineGroup.top, rect.top)
         lineGroup.bottom = Math.max(lineGroup.bottom, rect.bottom)
         lineGroup.height = Math.max(lineGroup.height, rect.height)
+        lineGroup.fonts.push({ font, weight: characters })
         return
       }
 
@@ -339,6 +375,7 @@ const getMarkerTextMetrics = (element) => {
         top: rect.top,
         bottom: rect.bottom,
         height: rect.height,
+        fonts: [{ font, weight: characters }],
       })
     })
 
@@ -346,18 +383,18 @@ const getMarkerTextMetrics = (element) => {
   }
 
   if (!lineGroups.length) {
-    return {
-      fontSize: maxFontSize > 0 ? maxFontSize : null,
-      firstLineTop: null,
-      firstLineHeight: null,
-    }
+    return { font: null, firstLineTop: null, firstLineHeight: null }
   }
 
   lineGroups.sort((a, b) => a.top - b.top)
   const [firstLine] = lineGroups
 
   return {
-    fontSize: maxFontSize > 0 ? maxFontSize : null,
+    // The first line's own font, not the largest in the item. Taking the largest meant a single
+    // formula in the middle of an item set the size of its number: measured on the user's thesis,
+    // item 3 of a list carried a marker visibly bigger and heavier than items 1, 2 and 4, because
+    // that item alone contained inline mathematics.
+    font: dominantFont(firstLine.fonts),
     firstLineTop: firstLine.top,
     firstLineHeight: Math.max(
       firstLine.height,
@@ -383,7 +420,8 @@ const syncMarkerMetrics = () => {
   const styles = window.getComputedStyle(sourceElement)
   const { fontSize, lineHeight } = styles
   const textMetrics = getMarkerTextMetrics(sourceElement)
-  const parsedFontSize = textMetrics?.fontSize || Number.parseFloat(fontSize)
+  const markerFont = textMetrics?.font
+  const parsedFontSize = markerFont?.fontSize || Number.parseFloat(fontSize)
   const sourceRect = sourceElement.getBoundingClientRect()
   const firstLineTop = textMetrics?.firstLineTop
   const firstLineHeight = textMetrics?.firstLineHeight
@@ -410,6 +448,17 @@ const syncMarkerMetrics = () => {
     Number.isFinite(parsedFontSize) && parsedFontSize > 0
       ? `${parsedFontSize}px`
       : fontSize,
+  )
+  // The family and the weight, not only the size. Without these the number kept the editor's own
+  // default face while the text it belonged to was set in the document's: measured, a marker in
+  // PingFang SC beside text in Times New Roman. A number is part of the sentence it opens.
+  wrapperElement.style.setProperty(
+    '--pdoc-list-marker-font-family',
+    markerFont?.fontFamily || styles.fontFamily,
+  )
+  wrapperElement.style.setProperty(
+    '--pdoc-list-marker-font-weight',
+    markerFont?.fontWeight || styles.fontWeight,
   )
   wrapperElement.style.setProperty(
     '--pdoc-list-marker-offset-y',
@@ -911,6 +960,8 @@ ol {
 .pdoc-list-item {
   --offset-y: var(--pdoc-list-marker-offset-y, 0);
   --font-size: var(--pdoc-list-marker-font-size, inherit);
+  --font-family: var(--pdoc-list-marker-font-family, inherit);
+  --font-weight: var(--pdoc-list-marker-font-weight, inherit);
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
@@ -935,6 +986,10 @@ ol {
     justify-content: center;
     padding: 0;
     font-size: var(--font-size);
+    // The number is part of the sentence it opens, so it is set in the same face and weight as the
+    // text beside it rather than in whatever the editor's default happens to be.
+    font-family: var(--font-family);
+    font-weight: var(--font-weight);
     line-height: 1;
     color: var(--pdoc-text-color);
     border-radius: 0.125em;

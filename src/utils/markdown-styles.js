@@ -163,5 +163,30 @@ export const markdownStyleRules = (styles, scope = '') => {
     )
   }
 
+  // The number a list item opens with is part of the sentence, so it is set like the sentence.
+  //
+  // `::marker` takes its font from the `li`, while the text a writer actually sees is usually a `p`
+  // inside it - markdown renders a spaced list that way - and that `p` is styled by Normal Paragraph.
+  // Style the paragraph and the text moved while the numbers stayed behind in whatever the editor's
+  // own default was. The marker follows List Item where the writer has set it, because that is them
+  // asking for it, and Normal Paragraph otherwise, because that is what the text beside it follows.
+  const itemValues = settings.listItem || {}
+  const paragraphValues = settings.paragraph || {}
+  const markerDeclarations = MARKDOWN_STYLE_FIELDS.filter(
+    (field) => !field.block,
+  )
+    .map((field) => {
+      const value = isSet(itemValues[field.key])
+        ? itemValues[field.key]
+        : paragraphValues[field.key]
+      return isSet(value) ? `${field.css}: ${String(value).trim()};` : null
+    })
+    .filter(Boolean)
+  if (markerDeclarations.length > 0) {
+    blocks.push(
+      `${prefix} li::marker {\n${markerDeclarations.map((d) => `  ${d}`).join('\n')}\n}`,
+    )
+  }
+
   return blocks.join('\n\n')
 }

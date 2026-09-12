@@ -1,3 +1,17 @@
+### A List Numbers Itself In The Face Of The Text It Opens
+
+- `Reported By The User, With A Photograph`: four numbered items, and the third one's number visibly bigger and heavier than the other three. Only that item contained inline mathematics. The number a list item opens with is part of the sentence; it was being set by something else entirely.
+- `A List Is Rendered Two Different Ways`, and both were wrong in their own way. An ordinary list draws its own marker as a span. A list inside a markdown block is a real `<ol>` with a native `::marker`. Fixing one would have left the other exactly as reported.
+- `An Ordinary List Took The Editor's Default Face`: the marker carried a font size taken from the item but no font family at all, so it fell back to whatever the editor defaults to - measured, a marker in PingFang SC beside text in Times New Roman. It takes the family and the weight now, from the same place it always took the size.
+- `And Its Size Came From The Largest Thing In The Item`: the metric walked every text node in the item and kept the maximum, so a single formula set the size of the number. It takes the first line's own font instead - and where a line mixes fonts, the one most of its characters are set in, because the marker belongs to the prose rather than to the fragment.
+- `The Photograph Was A Third Fault Underneath Those Two`: lines were grouped by their rect's `top`, and a fragment set larger sits on the same line but its box begins higher. So the formula was given a line of its own, that line sorted **above** the real first line, and the marker took its font. Lines are grouped by overlapping now. This is why one item in four looked different while the other three agreed.
+- `A Markdown List Kept Its Numbers Behind`: `::marker` takes its font from the `li`, and the text a writer sees is a `p` inside it, styled by Normal Paragraph - markdown renders a spaced list that way. Style the paragraph and the text moved while the numbers stayed in the editor's default: measured, markers at 14px beside text at 22px. The generated stylesheet now writes a `li::marker` rule, following List Item where the writer has set it and Normal Paragraph otherwise.
+- `Test script`: `list-marker-font.cdp.mjs`, 8 checks over both paths - the face, the size, an item carrying a much larger fragment, and the same for a list inside a markdown block. Seen **failing on five** before the fix, with the numbers that describe the report: a marker at 32px beside 18px text, and PingFang SC beside Courier New.
+
+  ```bash
+  npm run test:e2e:list-marker-font
+  ```
+
 ### A Contents Longer Than A Page Paginates Itself
 
 - `Reported By The User`: once the contents ran past the bottom of its page, the paging of the **whole document** went wrong - not only the contents. Measured on a sixty chapter fixture: **one** page break placed where nine were needed, and thirteen of a hundred and twenty lines left sitting in the margin bands of sheets two to nine.
