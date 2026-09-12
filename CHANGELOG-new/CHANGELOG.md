@@ -1,3 +1,17 @@
+### A Contents Longer Than A Page Paginates Itself
+
+- `Reported By The User`: once the contents ran past the bottom of its page, the paging of the **whole document** went wrong - not only the contents. Measured on a sixty chapter fixture: **one** page break placed where nine were needed, and thirteen of a hundred and twenty lines left sitting in the margin bands of sheets two to nine.
+- `Why The Engine Could Not Do It`: the contents is an atom node, so there is no position inside it for a break to be anchored to. The solver steps over a block it cannot break rather than abandoning the document - that is what `skipped: 1` means - but stepping over this one left it straddling a sheet boundary, and the next overflow it met was above its own last break. It stopped there, and everything below stayed unpaginated. `{"stopped":"no-anchor-below-the-last-break","breaks":1,"skipped":1}`.
+- `So The Contents Does It Itself`: it pushes any row that would straddle the foot of a column down to the top of the next one. With no row crossing a boundary the engine finds nothing here to fix and carries on down the document. The same fixture now solves `{"stopped":"settled","breaks":10,"skipped":0}` with no line in any band. **This is the contents only.** A table too tall to break still stops the solver the same way, and that remains open.
+- `The Arithmetic Starts From The Natural Layout`: the gaps already applied are subtracted from the measurement rather than cleared from the DOM to measure again. Clearing meant this and Vue were both writing `margin-top`, and the styles cleared for measuring stayed cleared whenever the answer came out unchanged and Vue saw no reason to patch. Measured: the same document settled on one run and straddled fourteen rows on the next. One writer.
+- `And The Print Version Is Not The Screen One`: a gap is a screen measure. Print breaks the page itself and then honours the margin **on top of** its own break, so the document slid down and came out with a blank page at the end - 13 printed pages for 12 sheets, where the same document without a contents printed 11 for 11. In print the row asks for `break-before: page` and takes no margin at all.
+- `Zoom`: everything measured comes back scaled and every length written is inside that same transform, so the gap is divided by the scale on the way out - the arithmetic that made every page spacer half its height at 50 per cent the last time something was drawn from these numbers. Asserted at 50 per cent, and seen failing there with the division removed.
+- `Test script`: `toc-boundaries.cdp.mjs`, 17 checks in four cases - the table rule, a contents across two sheets, the same at 50 per cent zoom, and the exported PDF page for page against the screen. Every one of the three fixes in it was seen failing first, each by removing only its own line.
+
+  ```bash
+  npm run test:e2e:toc-boundaries
+  ```
+
 ### A Heading Inside A Table Is A Styled Cell, Not A Section
 
 - `Reported By The User`: they write a literature review as a table and style its cells with a profile of their own, and the contents filled up with it - the row numbers, the citations, the summary sentences, one entry each. Their own screenshot shows nine table rows between *BAB II Tinjauan Pustaka* and *BAB III Metodologi Penelitian*.

@@ -16,7 +16,11 @@
  *
  * Endpoints come from EDITOR_URL and CDP_URL; per adr/0006 there is no fallback.
  */
+import { execFileSync, spawnSync } from 'node:child_process'
+import { mkdtemp, writeFile } from 'node:fs/promises'
 import http from 'node:http'
+import os from 'node:os'
+import path from 'node:path'
 
 import WebSocket from 'ws'
 
@@ -143,6 +147,9 @@ const finish = async (code) => {
         return true
       })()`).catch(() => {})
     }
+    for (const id of printTargets) {
+      await call('Target.closeTarget', { targetId: id }).catch(() => {})
+    }
     await call('Target.closeTarget', { targetId }).catch(() => {})
     await sleep(600)
     const after = await tabCount()
@@ -192,6 +199,9 @@ persistedBefore = await evaluate(`(() => {
   const o = {}; for (const k of ${JSON.stringify(PERSISTED_KEYS)}) o[k] = localStorage.getItem(k); return o
 })()`)
 
+// A tab opened only to print, closed the moment the bytes are captured - and again on every way out
+// of this file, because a harness that sweeps up at the end once closed the writer's browser.
+const printTargets = new Set()
 const failures = []
 const check = (label, ok, detail) => {
   console.log(
@@ -406,6 +416,208 @@ check(
   bands.inBand === 0,
   `${bands.inBand} of ${bands.lines} lines, stride ${bands.stride}`,
 )
+
+// The check above walks paragraphs and headings, which are not the contents. A row of the contents
+// straddling the foot of a column is the fault this case exists for, so it is measured directly,
+// against the columns the engine actually solved rather than against a pitch.
+const tocRows = await evaluate(`(() => {
+  const host = document.querySelector('.pdoc-page-content')
+  const storage = window.__ed.extensionStorage?.pagination || window.__ed.storage.pagination
+  const sheets = storage?.sheets || []
+  if (sheets.length === 0) return { rows: 0, straddling: -1, sheetsUsed: 0 }
+  const hostTop = host.getBoundingClientRect().top
+  const pitch = storage.stride
+  const boxAt = (i) => {
+    if (i < sheets.length) return sheets[i]
+    const last = sheets[sheets.length - 1]
+    return { ...last, top: last.top + (i - (sheets.length - 1)) * pitch }
+  }
+  const used = new Set()
+  let straddling = 0
+  let rows = 0
+  for (const row of document.querySelectorAll('.pdoc-node-toc-body .pdoc-toc-item-row')) {
+    const rect = row.getBoundingClientRect()
+    if (rect.height === 0) continue
+    rows += 1
+    const top = rect.top - hostTop
+    let sheet = 0
+    while (sheet + 1 < 200 && top >= boxAt(sheet + 1).top) sheet += 1
+    used.add(sheet)
+    const box = boxAt(sheet)
+    const columnTop = box.top + box.marginTop
+    const columnBottom = box.top + box.height - box.marginBottom
+    if (top < columnTop - 2 || top + rect.height > columnBottom + 2) straddling += 1
+  }
+  return { rows, straddling, sheetsUsed: used.size }
+})()`)
+check(
+  'every contents row sits inside a sheet text column',
+  tocRows.straddling === 0,
+  `${tocRows.straddling} of ${tocRows.rows} rows straddle a boundary`,
+)
+check(
+  'and the contents really does run across more than one sheet',
+  tocRows.sheetsUsed > 1,
+  `${tocRows.sheetsUsed} sheets`,
+)
+
+// ---------------------------------------------------------------------------
+console.log('\nCase C: and it is still right when the canvas is zoomed')
+// The canvas is scaled by a CSS transform. Everything measured comes back in the zoomed space and
+// every length written is inside that same transform, so it is not. Getting this backwards is what
+// made every page spacer half its height at 50 per cent, and the same arithmetic is being done here.
+const zoomed = await evaluate(`(async () => {
+  window.__p.page.value.zoomLevel = 50
+  await new Promise((r) => setTimeout(r, 6000))
+  const host = document.querySelector('.pdoc-page-content')
+  const storage = window.__ed.extensionStorage?.pagination || window.__ed.storage.pagination
+  const sheets = storage?.sheets || []
+  const hostRect = host.getBoundingClientRect()
+  const scale = host.offsetWidth > 0 ? hostRect.width / host.offsetWidth : 1
+  const pitch = storage.stride
+  const boxAt = (i) => {
+    if (i < sheets.length) return sheets[i]
+    const last = sheets[sheets.length - 1]
+    return { ...last, top: last.top + (i - (sheets.length - 1)) * pitch }
+  }
+  let straddling = 0
+  let rows = 0
+  for (const row of document.querySelectorAll('.pdoc-node-toc-body .pdoc-toc-item-row')) {
+    const rect = row.getBoundingClientRect()
+    if (rect.height === 0) continue
+    rows += 1
+    const top = rect.top - hostRect.top
+    let sheet = 0
+    while (sheet + 1 < 200 && top >= boxAt(sheet + 1).top) sheet += 1
+    const box = boxAt(sheet)
+    if (top < box.top + box.marginTop - 2 || top + rect.height > box.top + box.height - box.marginBottom + 2) straddling += 1
+  }
+  return { scale: Number(scale.toFixed(3)), rows, straddling, solve: storage.solve }
+})()`)
+check(
+  'the canvas really is zoomed',
+  zoomed.scale < 0.9,
+  `scale ${zoomed.scale}`,
+)
+check(
+  'every contents row still sits inside a text column',
+  zoomed.straddling === 0,
+  `${zoomed.straddling} of ${zoomed.rows} rows straddle a boundary`,
+)
+check(
+  'and the solver still settles',
+  zoomed.solve?.stopped === 'settled',
+  JSON.stringify(zoomed.solve),
+)
+
+// ---------------------------------------------------------------------------
+// The gap that carries a row onto the next sheet is a screen measure, and print honours a margin on
+// top of its own page break: the first version of this fix printed 13 pages for 12 sheets, the last
+// one empty. Only the PDF shows that, so only the PDF can guard it.
+console.log('\nCase D: and the exported PDF has the same pages as the screen')
+const poppler = ['pdfinfo'].every((tool) => {
+  const probe = spawnSync(tool, ['-v'], { encoding: 'utf8' })
+  return (
+    !probe.error &&
+    /poppler/i.test(`${probe.stdout ?? ''}${probe.stderr ?? ''}`)
+  )
+})
+if (!poppler) {
+  console.log(
+    '  NOTE  not run: poppler is not on PATH, so the PDF cannot be read',
+  )
+} else {
+  await evaluate(
+    `(async () => { window.__p.page.value.zoomLevel = 100; await new Promise((r) => setTimeout(r, 4000)); return true })()`,
+  )
+  const sheetsOnScreen = await evaluate(
+    `(window.__ed.extensionStorage?.pagination || window.__ed.storage.pagination).sheets.length`,
+  )
+  const srcdoc = await evaluate(`(async () => {
+    let el = document.querySelector('.ProseMirror')
+    while (el && !el.__vueParentComponent) el = el.parentElement
+    let inst = el.__vueParentComponent, provides = null
+    while (inst) { if (inst.provides?.exportFile) { provides = inst.provides; break } inst = inst.parent }
+    provides.exportFile.value.pdf = true
+    await new Promise((r) => setTimeout(r, 3500))
+    const iframe = document.querySelector('.pdoc-print-iframe')
+    const code = iframe ? iframe.getAttribute('srcdoc') || '' : ''
+    const dialog = [...document.querySelectorAll('.t-dialog')].find((d) => d.offsetParent !== null)
+    if (dialog) { const cancel = [...dialog.querySelectorAll('button')].find((b) => /cancel|batal/i.test(b.textContent)); if (cancel) cancel.click() }
+    provides.exportFile.value.pdf = false
+    await new Promise((r) => setTimeout(r, 400))
+    return code
+  })()`)
+  if (!srcdoc) {
+    check('the export document could be captured', false, 'empty srcdoc')
+  } else {
+    // Its own tab, closed the moment the bytes are captured.
+    const printTarget = await call('Target.createTarget', {
+      url: 'about:blank',
+    })
+    printTargets.add(printTarget.targetId)
+    const printSession = (
+      await call('Target.attachToTarget', {
+        targetId: printTarget.targetId,
+        flatten: true,
+      })
+    ).sessionId
+    await call('Page.enable', {}, printSession)
+    const frameId = (await call('Page.getFrameTree', {}, printSession))
+      .frameTree.frame.id
+    await call(
+      'Page.setDocumentContent',
+      { frameId, html: srcdoc },
+      printSession,
+    )
+    await sleep(4000)
+    const pdf = await call(
+      'Page.printToPDF',
+      {
+        printBackground: true,
+        preferCSSPageSize: true,
+        marginTop: 0,
+        marginBottom: 0,
+        marginLeft: 0,
+        marginRight: 0,
+      },
+      printSession,
+    )
+    await call('Target.closeTarget', { targetId: printTarget.targetId }).catch(
+      () => {},
+    )
+    printTargets.delete(printTarget.targetId)
+
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'pdoc-toc-'))
+    const file = path.join(dir, 'export.pdf')
+    await writeFile(file, Buffer.from(pdf.data, 'base64'))
+    const pages = Number(
+      execFileSync('pdfinfo', [file])
+        .toString()
+        .match(/Pages:\s+(\d+)/)[1],
+    )
+    const lastPage = execFileSync('pdftotext', [
+      '-f',
+      String(pages),
+      '-l',
+      String(pages),
+      file,
+      '-',
+    ])
+      .toString()
+      .trim()
+    check(
+      'the PDF has one page per on-screen sheet',
+      pages === sheetsOnScreen,
+      `${sheetsOnScreen} sheets vs ${pages} pages`,
+    )
+    check(
+      'and the last page is not blank',
+      lastPage.length > 0,
+      `${lastPage.length} characters`,
+    )
+  }
+}
 
 if (failures.length > 0) {
   console.error(
