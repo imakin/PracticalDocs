@@ -166,9 +166,10 @@ const options = $ref({
         const filename = cleanFilename || 'file-identifier'
         const title = rawTitle
 
-        // Media sources are folded back to portable markers, and the bytes this session uploaded
-        // travel with them. Anything the archive already holds is named by hash only.
-        const packed = await collectAssets(content)
+        // Media sources are folded back to portable markers, and the bytes travel with them unless
+        // this very folder already holds them. Saving under a second name has to copy the images
+        // into it; pointing at the first document's folder is how they used to be lost.
+        const packed = await collectAssets(content, filename)
         // The stored file carries its own stylesheet, so it renders correctly opened straight from
         // the folder with no editor and no server.
         const documentHtml = composeDocumentHtml(packed.html, content.profiles || [])

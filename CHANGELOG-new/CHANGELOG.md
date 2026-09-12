@@ -1,3 +1,17 @@
+### An Image Survives Being Saved Under A Second Name
+
+- `Reported By The User`: make a document with an image, save it as A, reload the page, open A, save it as B, reload, open B - and the image is gone. B's folder held no image at all, and the document pointed into it, so every reader got a 404.
+- `Why The Reload Is Part Of It`: the bytes of an upload are kept in a Map in `src/utils/document-assets.js`, which lives as long as the page does. Save A while the upload is still in that Map and the bytes travel with it, which is why the first save was always right. After a reload the document's images are urls into **A's** folder and nothing in the page holds their bytes, so a save to B sent the filenames with no data - and the server can only look for a named file in the folder it is writing, where it was not.
+- `The Folder Being Written To Is Now Part Of The Question`: `collectAssets` takes the document id it is saving into, and the url of an image says which document's folder it came from. An image whose bytes are in a different folder is fetched from the url the page is already displaying and carried into the new one. There is no other copy to use.
+- `And An Unchanged Image Still Travels Nowhere`: when the url already points at the folder being written, nothing is fetched and the asset is named by hash alone, exactly as before - so autosave on a document full of photographs still costs one request and no image bytes. The test measures this rather than trusting it: it counts the page's fetches across a save to the same name and requires the count not to move.
+- `It Was Not Silent, But It Was Easy To Miss`: the server already answered with `missingAssets` and the editor already turned that into *Saved, but 1 image(s) could not be stored*. The document was saved, the warning was one message among several, and what the writer saw afterwards was a document with a hole in it.
+- `Test script`: `document-assets-saveas.cdp.mjs`, 15 checks following the reported steps exactly - three separate page loads, the real Open dialog, the real save. It was seen **failing on six checks** before the fix and passing after. The bytes coming back out of B's folder are compared to the bytes that went in by sha256, because an earlier version of that same check compared a string-decoded body and could not have failed.
+
+  ```bash
+  npm run test:e2e:document-assets-saveas
+  npm run test:e2e:document-assets
+  ```
+
 ### A Test Types Into Its Own Tab
 
 - `One Test Attached To The Writer's Tab`: `test-keystroke-typing` searched the browser for a page with `9000` in its URL and typed into whatever it found - the writer's editor, holding the writer's document. It creates a tab of its own now and closes it on every way out, waits for the editor to mount rather than assuming it has, and takes its endpoints from `CDP_URL` and `EDITOR_URL` with no fallback. It was never wired to an npm script, which is probably why nobody noticed.

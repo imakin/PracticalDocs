@@ -38,9 +38,18 @@ export const parseAssetPath = (value) => {
 export const assetUrl = (baseUrl, documentId, name) =>
   `${baseUrl}/api/documents/${encodeURIComponent(documentId)}/assets/${encodeURIComponent(name)}`
 
+// The document the url belongs to is part of the answer, not just the filename. A save under a
+// second name has to know that the bytes it is pointing at live in somebody else's folder.
 const parseAssetUrl = (value) => {
-  const match = String(value || '').match(/\/api\/documents\/[^/]+\/assets\/([^/?#]+)$/)
-  return match ? decodeURIComponent(match[1]) : null
+  const match = String(value || '').match(
+    /\/api\/documents\/([^/]+)\/assets\/([^/?#]+)$/,
+  )
+  return match
+    ? {
+        documentId: decodeURIComponent(match[1]),
+        name: decodeURIComponent(match[2]),
+      }
+    : null
 }
 
 /** Reads an uploaded file once and remembers it under the object URL the editor will carry. */
@@ -142,7 +151,38 @@ const describeSource = (value) => {
     return { name: held.name, type: held.type, bytes: held.bytes, sha256: held.sha256 }
   }
   const fromUrl = parseAssetUrl(raw)
-  return fromUrl ? { name: fromUrl, bytes: null } : null
+  return fromUrl
+    ? { name: fromUrl.name, bytes: null, url: raw, documentId: fromUrl.documentId }
+    : null
+}
+
+/**
+ * Bytes for an image the page is only holding a url to.
+ *
+ * `uploaded` is per page load, so after a reload the images of an opened document are urls into
+ * that document's folder and nothing in the page has their bytes. Saving under a second name then
+ * sent the names alone, and the server could only look in the new folder, where they were not:
+ * the image was lost. Fetching the url it is already displaying costs one request and is the only
+ * copy available.
+ */
+const fetchAssetBytes = async (url) => {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      return null
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    if (bytes.length === 0) {
+      return null
+    }
+    return {
+      bytes,
+      type: response.headers.get('content-type') || 'application/octet-stream',
+      sha256: await hashBytes(bytes),
+    }
+  } catch {
+    return null
+  }
 }
 
 const collectMediaSources = (payload) => {
@@ -187,11 +227,17 @@ const collectBlobUrls = (payload) => {
 }
 
 /**
- * Folds every media source back to `./assets/<name>` and lists what the save has to carry. Bytes are
- * attached only for sources this session holds; anything already in the folder is named so the server
- * can keep the file it has.
+ * Folds every media source back to `./assets/<name>` and lists what the save has to carry.
+ *
+ * Bytes are attached for sources this session holds, and for an image whose only copy is in another
+ * document's folder - that one is fetched, because a folder cannot be written from a file that is
+ * not in it. An image already in the folder being written is named by hash alone, so an unchanged
+ * one still survives autosave without travelling.
+ *
+ * @param payload the document about to be saved
+ * @param documentId the folder being written to
  */
-export const collectAssets = async (payload) => {
+export const collectAssets = async (payload, documentId = null) => {
   for (const url of collectBlobUrls(payload)) {
     if (uploaded.has(url)) {
       continue
@@ -210,6 +256,15 @@ export const collectAssets = async (payload) => {
     const found = describeSource(source)
     if (!found) {
       continue
+    }
+    // The folder being written to is not the one holding these bytes, so they have to be carried.
+    if (!found.bytes && found.url && found.documentId !== documentId) {
+      const fetched = await fetchAssetBytes(found.url)
+      if (fetched) {
+        found.bytes = fetched.bytes
+        found.type = found.type || fetched.type
+        found.sha256 = found.sha256 || fetched.sha256
+      }
     }
     // Two different images can arrive under one name; the second gets a suffix so neither is lost.
     let name = safeAssetName(found.name)
