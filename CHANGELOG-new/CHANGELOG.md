@@ -1,3 +1,16 @@
+### A Font Put On A Markdown Block Survives The Block Being Edited Again
+
+- `Reported By The User, In Steps`: open a markdown block's source, set the font to Comic Sans, leave the block - it renders in Comic Sans. Open the source again, leave again, and it comes back in the editor's default.
+- `The Rendered Half Is A View Of Its Source`: that is ADR 0012, and it is why leaving the source rebuilds the content from the markdown. The font picker writes a `textStyle` mark onto that content, so the writer's choice lived on the view and was thrown away with it, every time. Measured on the node: the mark present after choosing the font, and gone after the next edit.
+- `What The Writer Applied Is Carried Across, What The Markdown Asked For Is Not`: a markdown block is selected whole, never partly, so a mark the writer applied covers all of its content. But so does a mark the markdown itself produced when the source reads `**all of it bold**` - and carrying **that** one over would mean deleting the asterisks no longer un-bolds anything. So the old source is rendered again and the marks it produces are subtracted; what is left is the writer's. Both halves are asserted, and the naive version - carrying every mark that covers everything - was seen leaving the text bold after the asterisks were deleted.
+- `Test script`: `markdown-block-styling.cdp.mjs`, 11 checks following the reported steps, seen failing on two before the fix with the report in one line: *P in helvetica neue, expected Comic Sans MS*.
+
+  ```bash
+  npm run test:e2e:markdown-block-styling
+  ```
+
+- `Two Things About The Test Itself`, both of which would have let it pass against the bug. It reads the element that actually carries the text, because the mark renders as a span inside the paragraph and reading the paragraph shows the default either way. And it chooses a font that is **not** the editor's default, because a test expecting the default cannot tell a font that was kept from a font that was lost - which is exactly how the first attempt at this was written, and why it reported no fault.
+
 ### A List Numbers Itself In The Face Of The Text It Opens
 
 - `Reported By The User, With A Photograph`: four numbered items, and the third one's number visibly bigger and heavier than the other three. Only that item contained inline mathematics. The number a list item opens with is part of the sentence; it was being set by something else entirely.

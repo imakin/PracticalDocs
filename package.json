@@ -80,6 +80,7 @@
     "prepare": "husky",
     "prepublishOnly": "npm run build",
     "test:e2e:markdown-block": "node tests/e2e/markdown-block.cdp.mjs",
+    "test:e2e:markdown-block-styling": "node tests/e2e/markdown-block-styling.cdp.mjs",
     "test:unit:markdown": "node --test tests/unit/markdown.test.mjs",
     "test:e2e:profile-switch": "node tests/e2e/profile-switch.cdp.mjs",
     "test:e2e:page-number-section": "node tests/e2e/page-number-section.cdp.mjs",

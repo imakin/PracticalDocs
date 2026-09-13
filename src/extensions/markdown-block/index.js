@@ -109,6 +109,50 @@ export const contentForSource = (schema, source) => {
   return Fragment.from(schema.nodes.paragraph.create())
 }
 
+const marksCoveringAll = (fragmentOrNode) => {
+  let shared = null
+  fragmentOrNode.descendants((child) => {
+    if (!child.isText) {
+      return
+    }
+    if (shared === null) {
+      shared = [...child.marks]
+      return
+    }
+    shared = shared.filter((mark) =>
+      child.marks.some((other) => other.eq(mark)),
+    )
+  })
+  return shared ?? []
+}
+
+/**
+ * What the writer put on the block, as opposed to what the markdown asked for.
+ *
+ * The rendered half is a view of the source (ADR 0012), so every re-render throws it away and builds
+ * it again - and with it went everything the writer had applied. The font picker writes a `textStyle`
+ * mark, which is why a block set in Comic Sans came back in the editor's default the next time its
+ * source was touched. Reported by the user in exactly those steps.
+ *
+ * A markdown block is selected whole, never partly, so a mark the writer applied covers all of its
+ * content - but so does a mark the markdown itself produced when the source is `**all of it bold**`.
+ * Carrying that one over would mean deleting the asterisks no longer un-bolds anything, and the
+ * rendered half would stop being a view of its source. So the old source is rendered again and the
+ * marks **it** produces are subtracted: what is left is the writer's, and only that is carried.
+ */
+export const blockStyleMarks = (schema, node) => {
+  const applied = marksCoveringAll(node)
+  if (applied.length === 0) {
+    return []
+  }
+  const fromSource = marksCoveringAll(
+    contentForSource(schema, node.attrs.source ?? ''),
+  )
+  return applied.filter(
+    (mark) => !fromSource.some((other) => other.eq(mark)),
+  )
+}
+
 export default Node.create({
   name: 'markdownBlock',
   group: 'block',
@@ -190,8 +234,14 @@ export default Node.create({
           }
           const text = String(source ?? '')
           const content = contentForSource(state.schema, text)
+          // What the writer applied to the block, kept across the rebuild. Without this the font
+          // they chose lasted exactly until the next time they opened the source.
+          const carried = blockStyleMarks(state.schema, node)
           if (dispatch) {
             tr.replaceWith(pos + 1, pos + node.nodeSize - 1, content)
+            for (const mark of carried) {
+              tr.addMark(pos + 1, pos + 1 + content.size, mark)
+            }
             tr.setNodeMarkup(tr.mapping.map(pos, -1), undefined, {
               ...node.attrs,
               source: text,
