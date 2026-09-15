@@ -266,7 +266,7 @@ const intStyle = (element, property, fallback) => {
  * Fragments of the same line are merged: a line broken across several text nodes by marks would
  * otherwise look like several independent boxes, and the engine would break inside a line.
  */
-const collectLines = (view, originTop) => {
+const collectLines = (view, originTop, fromBlock = null) => {
   const merged = new Map()
   const lineHeights = new WeakMap()
   /**
@@ -322,29 +322,65 @@ const collectLines = (view, originTop) => {
     }
   }
 
-  const walker = document.createTreeWalker(view.dom, NodeFilter.SHOW_TEXT, null)
-  let node
-  while ((node = walker.nextNode())) {
-    if (!node.textContent || !node.textContent.trim()) {
-      continue
+  /**
+   * Everything above `fromBlock` is settled, so it is not measured again.
+   *
+   * A break only ever pushes content **down**, so once one has been placed, no line above the block
+   * it broke can change. The solver used to re-read every text node in the document once per break -
+   * a range and its client rects for each - which is why the cost grew with the square of the
+   * document: 24 sheets blocked the main thread for 289 ms and 71 sheets for 1336 ms.
+   *
+   * The boundary is a block, not a coordinate, and it is found by its position in the child list
+   * rather than by measuring. Asking each block where it is costs a `getBoundingClientRect` per
+   * block per pass, and that is worse than what it saves: measured at 71 sheets, the rect calls
+   * alone came to 806 ms of a 2 s solve, so the coordinate version was **slower** than no skip at
+   * all. The child list is in document order, so an index answers the same question for nothing.
+   *
+   * The boundary block itself is always measured, whole. Its lines above the break are re-read even
+   * though they cannot move, which is what keeps `indexInBlock` and `blockLineCount` exact -
+   * `respectWidowsAndOrphans` counts a block's lines to decide how far back to move a break, so a
+   * block measured from the middle would have told it the wrong number and moved the break to the
+   * wrong line.
+   */
+  const children = view.dom.children
+  const boundary = fromBlock
+    ? Array.prototype.indexOf.call(children, fromBlock)
+    : -1
+  for (let index = Math.max(boundary, 0); index < children.length; index += 1) {
+    const child = children[index]
+    const walker = document.createTreeWalker(child, NodeFilter.SHOW_TEXT, null)
+    let node
+    while ((node = walker.nextNode())) {
+      if (!node.textContent || !node.textContent.trim()) {
+        continue
+      }
+      const block = blockOf(node)
+      const range = document.createRange()
+      range.selectNodeContents(node)
+      for (const rect of range.getClientRects()) {
+        add(rect, block, node, `${Math.round(rect.top)}`)
+      }
     }
-    const block = blockOf(node)
-    const range = document.createRange()
-    range.selectNodeContents(node)
-    for (const rect of range.getClientRects()) {
-      add(rect, block, node, `${Math.round(rect.top)}`)
+    for (const element of child.querySelectorAll(
+      'img, video, iframe, canvas, svg',
+    )) {
+      const rect = element.getBoundingClientRect()
+      add(
+        rect,
+        blockOf(element),
+        element,
+        `media-${Math.round(rect.top)}-${Math.round(rect.left)}`,
+      )
     }
-  }
-  for (const element of view.dom.querySelectorAll(
-    'img, video, iframe, canvas, svg',
-  )) {
-    const rect = element.getBoundingClientRect()
-    add(
-      rect,
-      blockOf(element),
-      element,
-      `media-${Math.round(rect.top)}-${Math.round(rect.left)}`,
-    )
+    if (child.matches('img, video, iframe, canvas, svg')) {
+      const rect = child.getBoundingClientRect()
+      add(
+        rect,
+        blockOf(child),
+        child,
+        `media-${Math.round(rect.top)}-${Math.round(rect.left)}`,
+      )
+    }
   }
 
   const lines = [...merged.values()].sort((a, b) => a.top - b.top)
@@ -358,6 +394,21 @@ const collectLines = (view, originTop) => {
     line.blockLineCount = counts.get(line.block)
   }
   return lines
+}
+
+/**
+ * The top-level block a line belongs to.
+ *
+ * A line's own block can be nested - a paragraph in a table cell, an item in a list - and the
+ * boundary `collectLines` skips to is a direct child of the editor, because that is the list it
+ * walks.
+ */
+const topLevelBlock = (view, element) => {
+  let node = element
+  while (node && node.parentElement && node.parentElement !== view.dom) {
+    node = node.parentElement
+  }
+  return node?.parentElement === view.dom ? node : null
 }
 
 /**
@@ -968,9 +1019,12 @@ class PaginationDriver {
       let stopped = 'ran-out-of-sheets'
       let skipped = 0
       let tried = []
+      // The block the last break was placed in. Nothing above it can change, so nothing above it is
+      // measured again - see `collectLines`. It only ever moves down the document.
+      let settledBlock = null
       for (let guard = 0; guard < MAX_SHEETS; guard += 1) {
         const originTop = geometry.host.getBoundingClientRect().top
-        const lines = collectLines(this.view, originTop)
+        const lines = collectLines(this.view, originTop, settledBlock)
         const overflow = firstOverflowing(lines, layout)
         const forced = forcedBreaks(this.view, originTop).find(
           (item) => item.pos > lastPos,
@@ -1030,7 +1084,7 @@ class PaginationDriver {
               ).slice(0, 30),
             })
             if (at !== null && at > lastPos) {
-              chosen = { top: candidate.top, pos: at }
+              chosen = { top: candidate.top, pos: at, block: candidate.block }
               break
             }
           }
@@ -1083,6 +1137,11 @@ class PaginationDriver {
         }
         lastPos = chosen.pos
         breaks.push({ pos: chosen.pos, height })
+        // A forced break carries no line of its own, so the boundary simply stays where the last
+        // measured break put it - which measures more than it has to, never less.
+        settledBlock = chosen.block
+          ? topLevelBlock(this.view, chosen.block)
+          : settledBlock
         this.applyBreaks(breaks, geometry.scale)
       }
       this.storage.solve = { stopped, breaks: breaks.length, skipped }
