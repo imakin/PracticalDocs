@@ -1,3 +1,10 @@
+### An Image Loads When The Document Is Opened, Not When It Is Scrolled To
+
+- `Reported By The User`: in a thesis with five images, only the first appeared. All five files were on the server and all five answered.
+- `The Editor Is One Tall Scrolling Canvas`, and every image was rendered with `loading="lazy"`, so only the image near the viewport ever loaded.
+- `Why It Is Worse Than A Missing Picture`: the pagination engine solves from measured geometry, so an image that has not loaded is an element in the flow whose height nobody controls - the product's first principle broken in the place it matters most. It also cost the writer a day of diagnosis: with four images rendering as nothing, a genuinely blank page and a page holding an image that had not drawn look identical.
+- `Test script`: covered by the existing asset tests, which still pass - `document-assets.cdp.mjs` and `document-assets-saveas.cdp.mjs`.
+
 ### A Page Break With A Line Or Two To Spare Still Opens Its Section
 
 - `Reported By The User`: exporting a thesis gave 29 pages where the editor drew 25, and PDF Bookmarks then refused to write - it compares the two counts before pointing a bookmark at a page, and rightly so, because writing them against a page map that no longer holds would send every one of them to the wrong page, quietly.

@@ -80,6 +80,20 @@
               />
             </div>
           </template>
+          <!--
+            Eager, and it has to be. The editor is one tall scrolling canvas, so a lazy image only
+            loads when the writer happens to scroll to it - measured on a real thesis, one image of
+            five had loaded and the other four showed nothing at all.
+
+            Two things then go wrong and the second is worse. The pagination engine solves from
+            measured geometry, so an image that has not loaded is an element in the flow whose height
+            nobody controls - the product's first principle broken where it matters most. And Chrome
+            loads every lazy image when it prints, so the printed document carried five images at
+            full height while the engine had measured a screen holding one: 29 printed pages against
+            25 sheets on screen, four extra for the four images that never loaded. That is what made
+            PDF bookmarks refuse to write, and rightly, since it compares the two counts before
+            pointing a bookmark at a page.
+          -->
           <img
             v-else
             ref="imageRef"
@@ -95,7 +109,7 @@
             :data-id="attrs.id"
             :data-preview="attrs.previewType"
             crossorigin="anonymous"
-            loading="lazy"
+            loading="eager"
             @load="onLoad"
             @error="onError"
           />
