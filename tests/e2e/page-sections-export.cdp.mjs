@@ -445,6 +445,77 @@ check(
   `screen ${JSON.stringify(screenNumbered.numbers)} vs PDF ${JSON.stringify(numbered.trailing)}`,
 )
 
+// A page break on a page with only a line or two to spare. The first line that overflows is then the
+// one the break itself pushes down, so the overflow sits at or above the break and the solver's
+// overflow branch takes it rather than the forced-break branch - and only the forced branch records
+// the section a break opens. Measured before the fix: `storage.sheets` reported its three sheets as
+// sections `0,0,2`, section 1 owning none, and the export named a band for a section that was not
+// there. The page name then ran s0 -> s1 -> s0 -> s2, and since a change of page name is a forced
+// break, three sheets printed as five pages.
+//
+// The fixture looks for the condition rather than hardcoding a line count, because how many lines
+// fill a page depends on the profile in effect. If it cannot find one it says so and fails, instead
+// of passing while testing nothing.
+console.log(
+  '\nCase C: a page break with a line or two of room left still opens its section',
+)
+let tightFill = null
+for (let lines = 24; lines <= 44 && tightFill === null; lines += 1) {
+  const attempt = await evaluate(`(async () => {
+    const line = (t) => ({ type: 'paragraph', content: [{ type: 'text', text: t }] })
+    window.__p.page.value.pageNumber = { enabled: true, position: 'bottom-center', firstPagePosition: null, format: 'numeric', template: '{number}', startAt: 1 }
+    const body = []
+    for (let i = 1; i <= ${lines}; i += 1) body.push(line('Baris ' + i))
+    body.push({ type: 'pageBreak' })
+    body.push(line('SESUDAH PAGE BREAK'))
+    body.push({ type: 'pageBreak', attrs: { sectionOrientation: 'landscape' } })
+    body.push(line('BAGIAN LANDSCAPE'))
+    window.__ed.commands.setContent({ type: 'doc', content: body })
+    await new Promise((r) => setTimeout(r, 7000))
+    const storage = window.__ed.extensionStorage.pagination
+    const spacer = document.querySelector('.pdoc-page-spacer')
+    return {
+      lines: ${lines},
+      sheets: storage.sheets.length,
+      sections: storage.sheets.map((s) => s.section).join(','),
+      shapes: storage.sheets.map((s) => (s.width > s.height ? 'L' : 'P')).join(''),
+      solve: storage.solve,
+      leftover: spacer ? Math.round(Number.parseFloat(spacer.style.height)) : null,
+    }
+  })()`)
+  // Three sheets, and the break sitting close enough to the foot of the first one. The spacer holds
+  // the leftover column space plus the bottom margin plus the sheet gap, so a small spacer is a
+  // nearly full page. 240px was measured as the far side of the fault and 130px as the near side.
+  if (attempt.sheets === 3 && attempt.leftover !== null && attempt.leftover <= 240) {
+    tightFill = attempt
+  }
+}
+check(
+  'a page break can be placed with only a line or two of room left',
+  tightFill !== null,
+  tightFill === null
+    ? 'no line count filled the page closely enough - the case tested nothing'
+    : `${tightFill.lines} lines, ${tightFill.leftover}px left below the break`,
+)
+if (tightFill !== null) {
+  check(
+    'every section owns the sheet it opens',
+    tightFill.sections === '0,1,2',
+    `sheet sections ${tightFill.sections}, shapes ${tightFill.shapes}`,
+  )
+  const tight = await exportPdf()
+  check(
+    'and the PDF still has one page per sheet',
+    tight.pages === tightFill.sheets,
+    `${tightFill.sheets} sheets vs ${tight.pages} pages`,
+  )
+  check(
+    'each on the paper its sheet is drawn on',
+    tight.shapes.join('') === tightFill.shapes,
+    `screen ${tightFill.shapes} vs PDF ${tight.shapes.join('')}`,
+  )
+}
+
 if (failures.length > 0) {
   console.error(
     `\nRESULT: FAILED -- ${failures.length} check(s): ${failures.join('; ')}`,

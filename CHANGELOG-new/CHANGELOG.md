@@ -1,3 +1,17 @@
+### A Page Break With A Line Or Two To Spare Still Opens Its Section
+
+- `Reported By The User`: exporting a thesis gave 29 pages where the editor drew 25, and PDF Bookmarks then refused to write - it compares the two counts before pointing a bookmark at a page, and rightly so, because writing them against a page map that no longer holds would send every one of them to the wrong page, quietly.
+- `The Guard Was Right And Was Not Touched`: the mismatch was real. The user narrowed it themselves once the images rendered: it happens where a page break sits on a page that still has a line or two of room left, and in their document that is the breaks on pages iii and iv.
+- `Only The Forced Branch Recorded A Section`: the solver takes whichever comes first down the page, a forced break or an overflow. When a page break sits near the foot of its page, the first line to overflow is the one the break itself pushes down - so the overflow is at or above the break and the **overflow** branch takes it. The break lands at exactly the position the page break opens, so the pagination itself is right; but `lastPos` then advances to that position, the break never matches `pos > lastPos` again, and the section it opens is never recorded at all. Instrumenting the solver settled it in one run: the trace of every `layout.open` call held one entry, for the last section.
+- `Measured`: three sections and three sheets, and `storage.sheets` reported their sections as **`0,0,2`**. Section 1 owned no sheet. Nothing on screen showed it, because the two sections happened to be drawn on the same paper - and the geometry a sheet is drawn at comes from that same number, so a document where the swallowed break is the one that turns the page landscape would be drawn on the wrong paper too.
+- `What The Export Made Of It`: a band is named per section, so the page name ran s0 -> s1 -> s0 -> s2. A change of page name is a forced break, so two of them fell where no section begins: **three sheets printed as five pages**.
+- `The Fix Is In The Engine, Not The Export`: a forced break the overflow branch swallowed opens its section too. Fixing it where the answer is produced makes the screen right as well; naming the bands from their neighbours in the export was tried first, fixes only half of it, and measured far worse - all thirteen sweep variants collapsed to a single page - so it was reverted.
+- `Test script`: `page-sections-export.cdp.mjs` grew Case C, 4 checks, 16 in the file. It **looks for** the condition rather than hardcoding a line count, since how many lines fill a page depends on the profile in effect, and it fails saying *the case tested nothing* if it cannot find one. Seen failing on three of its four checks with the fix removed: `sheet sections 0,0,2`, `3 sheets vs 5 pages`, `screen PPL vs PDF PPPPL`.
+
+  ```bash
+  npm run test:e2e:page-sections-export
+  ```
+
 ### Each Section Prints On Its Own Paper
 
 - `What Changed`: a document whose sections use different page sizes now exports with each section on its own paper - one PDF page per on-screen sheet, in that section's own text column, at full size. A landscape chapter in a portrait thesis comes out landscape. The export dialog no longer carries the warning that it cannot, because it can.

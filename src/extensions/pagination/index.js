@@ -1058,6 +1058,24 @@ class PaginationDriver {
         // A forced break has already recorded the sheet it opens, because the column it has to
         // reach belongs to the section it opens rather than to the one it closes.
         const opened = chosen.opened ?? layout.sheetAt(chosen.top) + 1
+        // And a forced break the **overflow** branch swallowed has not.
+        //
+        // When a page break sits on a page with only a line or two to spare, the first line that
+        // overflows is the one the break itself pushes down, so the overflow is at or above the
+        // break and the overflow branch takes it. The break is placed at exactly the position the
+        // page break opens - the same boundary, so the pagination is right - but `lastPos` then
+        // steps to that position, `pos > lastPos` never matches the break again, and the section it
+        // opens is **never recorded at all**.
+        //
+        // Measured on a fixture of three sections and three sheets: `storage.sheets` reported their
+        // sections as `0,0,2`. Section 1 owned no sheet, because only section 2 ever reached
+        // `layout.open`. Nothing on screen showed it while the two sections happened to be drawn
+        // alike - but the export names a band per section, so the page name ran s0 -> s1 -> s0 -> s2
+        // and every change of page name is a forced break: two pages gained in the PDF, and PDF
+        // bookmarks refused to write because the counts no longer matched.
+        if (chosen.opened === undefined && forced && forced.pos <= chosen.pos) {
+          layout.open(opened, forced.section)
+        }
         const height = layout.columnTop(opened) - chosen.top
         if (height <= 0) {
           stopped = 'next-column-is-not-below-the-line'
