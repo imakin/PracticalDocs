@@ -1,12 +1,15 @@
 /**
  * What a document with more than one page size actually exports as.
  *
- * The paper does not change in the PDF yet, and the point of this test is that it says so honestly:
- * one page per on-screen sheet, the first section's paper throughout, **at full size and in the
- * document's own text column**. The scale is the check that matters. Chrome shrinks a document to
- * fit its narrowest page, and the on-screen canvas is as wide as the widest sheet, so a landscape
- * section used to shrink the whole export to 70 per cent - with the page count and the page sizes
- * both still looking right, which is how it went unnoticed.
+ * **Each section prints on its own paper**, one page per on-screen sheet, at full size and in its
+ * own text column - and the page numbers land where the screen puts them, because the export's page
+ * boundaries are now the screen's.
+ *
+ * The scale is still the check that matters most. Chrome shrinks a document when an element
+ * overflows the page it prints on, and the on-screen canvas is as wide as the widest sheet, so a
+ * landscape section once shrank the whole export to 70 per cent - with the page count and the page
+ * sizes both still looking right, which is how it went unnoticed. Every column is measured in points
+ * here, against the paper it belongs to, so a document that shrinks cannot pass.
  *
  * Needs poppler-utils (pdfinfo, pdftotext). Endpoints come from EDITOR_URL and CDP_URL; per adr/0006
  * there is no built-in fallback.
@@ -342,7 +345,7 @@ const exportPdf = async () => {
   return { pages, shapes, trailing, columns, hints, file }
 }
 
-console.log('\nCase A: a mixed document prints at full size, on one paper')
+console.log('\nCase A: each section prints at full size, on its own paper')
 const screenPlain = await evaluate(build(false))
 check(
   'the engine paginated the whole document',
@@ -372,35 +375,38 @@ check(
   plain.pages === screenPlain.shapes.length,
   `${screenPlain.shapes.length} sheets vs ${plain.pages} pages`,
 )
-// The paper does not change yet. What must not happen is the whole document being shrunk to fit a
-// canvas wider than the page, which is what a landscape section used to do to a portrait one.
 check(
-  "every page is the first section's paper",
-  new Set(plain.shapes).size === 1 && plain.shapes[0] === 'P',
-  plain.shapes.join(''),
+  'each page is drawn on the same paper as its sheet on screen',
+  plain.shapes.join('') === screenPlain.shapes.join(''),
+  `screen ${screenPlain.shapes.join('')} vs PDF ${plain.shapes.join('')}`,
 )
 check(
-  'and the dialog said so before printing',
-  plain.hints.some((hint) => hint.includes('more than one page size')),
+  'and the dialog no longer warns that the paper cannot change',
+  !plain.hints.some((hint) => hint.includes('more than one page size')),
   JSON.stringify(plain.hints),
 )
-// A4 portrait with the default 3.18 cm side margins is a 14.64 cm column, which is 415 pt. Measured
-// before this was fixed: 291 pt, because the canvas was as wide as the landscape sheet and Chrome
-// scaled the document by 21/29.7 to fit.
-const columnOf = (pdf) => {
-  const widths = pdf.columns.map((c) => c.right - c.left)
-  return { widths, spread: Math.max(...widths) - Math.min(...widths) }
-}
-const plainColumn = columnOf(plain)
+// A4 with the default 3.18 cm side margins is a 14.64 cm column portrait - 415 pt - and a 23.34 cm
+// column landscape, 662 pt. Both are asserted against the shape of the page they were measured on,
+// which is what makes this a scale check rather than a width check: a document shrunk to fit the
+// narrowest page reads 291 pt and 468 pt, and no tolerance covers that. Measured before the fix,
+// with everything on one paper: 412 pt on every page, landscape section included.
+const EXPECTED_COLUMN = { P: 415, L: 662 }
+const columnFaults = (pdf, shapes) =>
+  pdf.columns
+    .map((column, index) => ({
+      page: index + 1,
+      shape: shapes[index],
+      width: column.right - column.left,
+      expected: EXPECTED_COLUMN[shapes[index]],
+    }))
+    .filter((row) => Math.abs(row.width - row.expected) > 14)
+const plainFaults = columnFaults(plain, plain.shapes)
 check(
-  "the text column is the document's own, not a scaled-down one",
-  Math.max(...plainColumn.widths) > 380,
-  `widest column ${Math.max(...plainColumn.widths)} pt, expected about 415`,
-)
-check(
-  'and every page uses that same column',
-  plainColumn.spread <= 24,
-  JSON.stringify(plain.columns),
+  "every page's text column is its own section's, at full size",
+  plainFaults.length === 0,
+  plainFaults.length === 0
+    ? `${plain.columns.map((c) => c.right - c.left).join(', ')} pt`
+    : JSON.stringify(plainFaults),
 )
 
 console.log('\nCase B: and the same holds once it draws page numbers')
@@ -417,28 +423,26 @@ check(
   `${screenNumbered.shapes.length} sheets vs ${numbered.pages} pages`,
 )
 check(
-  "every page is the first section's paper",
-  new Set(numbered.shapes).size === 1,
-  numbered.shapes.join(''),
+  'each page is drawn on the same paper as its sheet on screen',
+  numbered.shapes.join('') === screenNumbered.shapes.join(''),
+  `screen ${screenNumbered.shapes.join('')} vs PDF ${numbered.shapes.join('')}`,
 )
-const numberedColumn = columnOf(numbered)
+const numberedFaults = columnFaults(numbered, numbered.shapes)
 check(
-  "the text column is the document's own here too",
-  Math.max(...numberedColumn.widths) > 380,
-  `widest column ${Math.max(...numberedColumn.widths)} pt`,
+  "every page's text column is its own section's here too",
+  numberedFaults.length === 0,
+  numberedFaults.length === 0
+    ? `${numbered.columns.map((c) => c.right - c.left).join(', ')} pt`
+    : JSON.stringify(numberedFaults),
 )
+// Asserted now, and it could not be before. While a mixed document was laid out at one paper the
+// screen's page boundaries were not the export's, so the bands carrying the numbers landed on the
+// wrong pages - measured then, four of six right. Each sheet is its own paper now, so the two agree
+// again and the number a page ends with is the number the screen draws on it.
 check(
-  'and every page uses that same column',
-  numberedColumn.spread <= 24,
-  JSON.stringify(numbered.columns),
-)
-// Deliberately not asserted: which number lands on which page. The export lays a mixed document out
-// at one paper and one column, so the screen's page boundaries are not the export's, and the bands
-// that carry the numbers are placed from the screen's. Measured: pages 1, 2, 5 and 6 carry the right
-// number and the two that came from landscape sheets do not. It cannot be fixed from this end - the
-// paper has to change first - and pretending otherwise in a test would only hide it.
-console.log(
-  `  NOTE  numbers on screen ${JSON.stringify(screenNumbered.numbers)}, in the PDF ${JSON.stringify(numbered.trailing)}`,
+  'and every page ends with the number the screen draws on it',
+  numbered.trailing.join('|') === screenNumbered.numbers.join('|'),
+  `screen ${JSON.stringify(screenNumbered.numbers)} vs PDF ${JSON.stringify(numbered.trailing)}`,
 )
 
 if (failures.length > 0) {
@@ -448,6 +452,6 @@ if (failures.length > 0) {
   await finish(1)
 }
 console.log(
-  '\nRESULT: PASSED -- a mixed document prints at full size, one page per sheet, and says which paper it used.',
+  '\nRESULT: PASSED -- each section prints on its own paper, one page per sheet, at full size.',
 )
 await finish(0)

@@ -1,3 +1,22 @@
+### Each Section Prints On Its Own Paper
+
+- `What Changed`: a document whose sections use different page sizes now exports with each section on its own paper - one PDF page per on-screen sheet, in that section's own text column, at full size. A landscape chapter in a portrait thesis comes out landscape. The export dialog no longer carries the warning that it cannot, because it can.
+- `The Cause Was Recorded As One Sentence With An And In It`: *the canvas is as wide as the widest sheet, **and** Chrome scales a printed document down to fit its narrowest page*. Those are two claims, and which one does the work decides whether there is a fix at all. Separated by a spike - four standalone documents printed and measured with poppler - Chrome turned out **not** to scale a document to its narrowest page. It shrinks only when an element overflows the page it is printed on. The variant modelling the old export measured 0.707, reproducing the reported 70 per cent exactly; the variant whose only change is that nothing is wider than its own paper measured 1.000 on every page.
+- `So The Rule Is One Line`: no element may be wider than the page it prints on. The canvas is cut to the **narrowest** sheet, each block is given its own section's column and its own section's left margin, and a block wider than the canvas simply overflows it - which prints correctly, and was measured doing so before anything else was built.
+- `The Column Stays The Width It Has On Screen`: the page bands that carry the numbers are placed from screen measurements, so a block that broke its lines differently in the export would put every band on the wrong page.
+- `And The Page Numbers Came Right On Their Own`: while a mixed document was laid out at one paper, the screen's page boundaries were not the export's and the numbers landed wrong - four of six right, measured. Each sheet being its own paper puts the two back in agreement, so nothing has to be predicted. The test asserts it now; it could not before.
+- `Three Faults Surfaced That Had Nothing To Do With Paper`, all latent and harmless while there was only one page name, and together they turned six sheets into **thirteen** pages:
+  - `The Wrappers Had No Page Name`: the root, the body, the canvas and the editor resolved to the default page, so the flow crossed from the default page to a named one and back. A change of page name is a forced break, so an unnamed element between two named ones is two of them. Measured before the fix: the landscape section's second page printed **portrait**, because the default page's paper is what that content landed on.
+  - `A Band Is A Span, So The Paragraph Is Never Split`: a page boundary usually falls in the middle of a paragraph and that is where the band has to go. Written as a `div` it was invalid inside a `p`, so the parser closed the paragraph, emitted the div, and left everything after it as a **bare text node** - measured, 2076, 1130 and 2076 characters loose in the flow, with no section and no column, because a text node can carry neither an attribute nor a class. A `span` with `display: block` is valid there, so nothing is torn; the page number inside the band became a span too, which is the only reason the band had been a div. The band takes the width of the **column**, not the paper: a paper-wide box starting at the column's left edge hangs off the page by the left margin, measured as a uniform shrink to 0.865, which is 21 / (21 + 3.18) exactly.
+  - `A Page Break At A Section Boundary Broke Twice`: its own `break-before` and the change of page name. The marker's own is dropped where the sections differ.
+- `Test script`: `page-sections-export.cdp.mjs`, 12 checks over two cases. Every column is measured in points against the paper it belongs to - 415 pt portrait, 662 pt landscape - so a document that shrinks cannot pass. Seen failing on four before the fix, which is how many checks asserted the old compromise.
+
+  ```bash
+  npm run test:e2e:page-sections-export
+  ```
+
+- `Not Measured, And Only The Writer Can`: every number here was taken with Chrome's `printToPDF`. The Export button prints through Chrome's own print dialog instead, and that path has not been measured since the change.
+
 ### A Font Put On A Markdown Block Survives The Block Being Edited Again
 
 - `Reported By The User, In Steps`: open a markdown block's source, set the font to Comic Sans, leave the block - it renders in Comic Sans. Open the source again, leave again, and it comes back in the editor's default.
