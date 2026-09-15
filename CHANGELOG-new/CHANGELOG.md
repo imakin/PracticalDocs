@@ -1,3 +1,16 @@
+### A Cross-Reference Wears The Styling The Writer Gives It
+
+- `Reported By The User`: a reference inserted into a sentence was always link blue and underlined, and applying a colour to it did nothing.
+- `The Mark Was Never The Problem`: it reached the node and was carried on it. Probed on a live document, a reference carried `textStyle{color:#c00000}` and `bold`, and the page painted `font-weight: 700` - the weight came through - and `rgb(52, 128, 249)`, the primary colour, for the colour that did not. A mark renders as a span wrapping the anchor, and `.pdoc-cross-reference` painted the colour on the anchor itself, so it beat what the span passed down. Half of a writer's styling silently worked, which is why it read as arbitrary.
+- `Print Copies Every Stylesheet On The Page`, so this was the exported PDF's colour too, not only the editor's.
+- `What It Is Now`: a reference takes the styling of the text around it, and anything applied to it shows. It is a few words inside someone's sentence, not a piece of chrome - the product's first principle applied to the one element that was exempt from it.
+- `What Stays`: a reference whose target has been deleted is still drawn in the error colour with a wavy underline, whatever the writer has applied. That is a fault to be fixed, not a choice to be honoured - the number it shows is stale.
+- `Test script`: `cross-reference-styling.cdp.mjs`, 10 checks, its own synthetic document. Seen failing on three with the fix removed: the colour of its paragraph, the underline, and the applied colour reading `rgb(52, 128, 249)`.
+
+  ```bash
+  npm run test:e2e:cross-reference-styling
+  ```
+
 ### An Image Loads When The Document Is Opened, Not When It Is Scrolled To
 
 - `Reported By The User`: in a thesis with five images, only the first appeared. All five files were on the server and all five answered.

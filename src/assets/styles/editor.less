@@ -569,16 +569,27 @@
     }
   }
 
+  // A cross-reference is a few words inside someone's sentence, not a piece of chrome, so it takes
+  // the styling of the text around it and nothing here paints over that.
+  //
+  // This rule used to force the primary colour and an underline onto the anchor itself. A mark the
+  // writer applied - a colour, a font, a size - reached the node and was carried on it, but it
+  // renders as a span wrapping the anchor, and a colour set on the anchor beats one inherited from
+  // its parent. So bold worked and colour never did, and there was no way to tell from the outside
+  // which of the two had gone wrong. Measured: marks `textStyle{color:#c00000}` and `bold` both on
+  // the node, painted `rgb(52, 128, 249)` and `font-weight: 700`.
+  //
+  // Print copies every stylesheet on the page, so this was the exported PDF's colour too.
   .pdoc-cross-reference {
-    color: var(--pdoc-primary-color);
+    color: inherit;
     cursor: pointer;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
+    text-decoration: none;
 
+    // Not styling: the target is gone, and the number shown is stale. It stays visible whatever the
+    // writer has applied, because it is a fault to be fixed rather than a choice to be honoured.
     &[data-missing='true'] {
       color: var(--pdoc-error-color);
-      text-decoration-style: wavy;
+      text-decoration: underline wavy;
     }
   }
 
