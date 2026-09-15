@@ -684,17 +684,32 @@ onClickOutside(
   // it only pads the end of the content, so while the strip is scrolled part way, cards still pass
   // beneath the button and a sliver of one shows past its right edge.
   width: calc(100% - 40px);
-  scrollbar-width: thin;
 
+  // The bar has to be **visible**, and it has to fit. Measured: the strip stood 66px tall - 54 of
+  // content and a 12px scrollbar - inside a wrapper locked to 56px with `overflow: hidden`, so the
+  // bar was drawn and then clipped away. Every control in the ribbon row is 56px and the row itself
+  // clips vertically, so the wrapper cannot grow; the bar has to be made to fit instead.
+  //
+  // `scrollbar-width: thin` was what made it 12px: Chrome ignores the `::-webkit-scrollbar` rules
+  // below on any element that sets the standard property, so the 6px asked for here was never
+  // applied. Asking for 6px leaves a bar that stands 8px in the box, measured, so the budget is
+  // 4 of padding, 42 of card, 2 of margin and 8 of bar - exactly 56. The card's vertical margin is
+  // what pays for it.
   &::-webkit-scrollbar {
     height: 6px;
   }
   &::-webkit-scrollbar-thumb {
     background-color: var(--pdoc-border-color, #d9d9d9);
     border-radius: 3px;
+    &:hover {
+      background-color: var(--pdoc-text-color-light);
+    }
   }
+  // Not transparent. A thumb on an invisible track says nothing about how far the strip runs, and
+  // the writer has to find the bar before they can drag it.
   &::-webkit-scrollbar-track {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
   }
 
   &.popup-content {
@@ -702,12 +717,30 @@ onClickOutside(
     // The popup is a list, not a strip, and has no button beside it.
     overflow-x: visible;
     width: auto;
+
+    // Four across, then the next row.
+    //
+    // This list had no styling at all: the rule for `.block-cards-list` is nested under
+    // `.block-profiles-section`, which is not its parent here, so it was a plain block and every
+    // card took a row of its own - a column of sixteen, taller than the window, with a sideways
+    // scrollbar under it for a list that never needed one.
+    //
+    // The width is the four cards, exactly: 68 of card and 4 of margin each. It is stated rather
+    // than left to the popup, because a popup that sizes itself to its content would re-wrap to a
+    // different count whenever a profile with a longer name is added.
+    .block-cards-list {
+      display: flex;
+      flex-wrap: wrap;
+      width: 4 * 72px;
+    }
   }
   .card {
     background-color: var(--pdoc-color-white);
     border: solid 1px var(--pdoc-border-color-light);
     border-radius: var(--pdoc-radius);
-    margin: 4px 2px;
+    // 1px top and bottom, not 4px: the rest is what the strip's scrollbar stands in. The 2px at the
+    // sides is untouched, so the cards keep their pitch and the popup still holds four across.
+    margin: 1px 2px;
     text-align: center;
     padding: 5px 6px;
     box-sizing: border-box;

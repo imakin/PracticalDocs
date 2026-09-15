@@ -50,6 +50,7 @@
     "test:e2e:render-markdown": "node tests/e2e/render-markdown.cdp.mjs",
     "test:e2e:document-references": "node tests/e2e/document-references.cdp.mjs",
     "test:e2e:cross-reference-styling": "node tests/e2e/cross-reference-styling.cdp.mjs",
+    "test:e2e:profile-strip-layout": "node tests/e2e/profile-strip-layout.cdp.mjs",
     "test:e2e:autosave-blank-guard": "node tests/e2e/autosave-blank-guard.cdp.mjs",
     "test:e2e:pagination": "node tests/e2e/pagination-geometry.cdp.mjs",
     "test:e2e:pagination-pdf": "node tests/e2e/pagination-pdf-parity.cdp.mjs",

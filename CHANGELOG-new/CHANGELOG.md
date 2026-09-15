@@ -1,3 +1,16 @@
+### The Profile Strip Can Be Scrolled, And The Profile Popup Is A Grid
+
+- `Reported By The User`: the strip of profiles in the toolbar had no usable sideways scrollbar, and the popup listed the profiles one per row - a column of fifteen, taller than the window.
+- `The Bar Was Drawn And Then Clipped Away`: measured, the strip stood **66px** tall - 54 of content and a 12px scrollbar - inside a wrapper locked to **56px** with `overflow: hidden`. Every control in the ribbon row is 56px and the row clips vertically, so the wrapper cannot grow: the bar had to be made to fit.
+- `What Made It 12px`: `scrollbar-width: thin`. Chrome ignores the `::-webkit-scrollbar` rules on any element that sets the standard property, so the 6px the file asked for was never applied. Without it the bar stands 8px, and the budget works out exactly - 4 of padding, 42 of card, 2 of margin, 8 of bar, 56 in total. The card's vertical margin went from 4px to 1px, which is what pays for it; the 2px at the sides is untouched, so the cards keep their pitch.
+- `The Track Is No Longer Transparent`: a thumb on an invisible track says nothing about how far the strip runs, and the writer has to find the bar before they can drag it.
+- `The Popup List Had No Styling At All`: the rule for `.block-cards-list` is nested under `.block-profiles-section`, which is not its parent in the template, so the list was a plain block and every card took a row of its own. It is a flex grid now, four across, stated as the width of exactly four cards rather than left to the popup - a popup that sizes itself to its content would re-wrap to a different count the moment a profile with a longer name is added.
+- `Test script`: `profile-strip-layout.cdp.mjs`, 8 checks, asserting on the toolbar in an editor left as it opens. Seen failing on three with both fixes removed, including the row count reading `[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]`.
+
+  ```bash
+  npm run test:e2e:profile-strip-layout
+  ```
+
 ### The Pagination Solver Measures Only What Can Still Move
 
 - `Asked By The User`: the editor felt slow while resizing an image or a table. Does the engine debounce, and can it re-measure only from the cursor back?
