@@ -80,22 +80,48 @@ test('preserves block style profiles in document snapshots', () => {
   assert.deepEqual(parsed.profiles, fixture.profiles)
 })
 
-test('rejects malformed JSON, unknown formats, and unsupported versions', () => {
+test('opens any JSON that carries a document, whatever it is stamped with', () => {
+  const snapshot = createDocumentSnapshot(createFixture())
+
+  // The name this format used to be called, and a name no version of it has ever used. Neither is a
+  // reason to refuse a file the writer can see the text of.
+  for (const format of ['umodoc', 'other', undefined]) {
+    const parsed = parseDocumentFile(JSON.stringify({ ...snapshot, format }))
+    assert.deepEqual(parsed.content, snapshot.content)
+    assert.equal(parsed.format, 'practicaldocs')
+  }
+
+  const newer = parseDocumentFile(
+    JSON.stringify({ ...snapshot, formatVersion: 999 }),
+  )
+  assert.deepEqual(newer.content, snapshot.content)
+
+  // The stamps are defaulted rather than demanded, so a file a script wrote still opens.
+  const bare = parseDocumentFile(
+    JSON.stringify({ content: snapshot.content, page: snapshot.page }),
+  )
+  assert.deepEqual(bare.content, snapshot.content)
+  assert.equal(bare.editorVersion, '')
+  assert.equal(bare.document.title, '')
+  assert.ok(!Number.isNaN(Date.parse(bare.savedAt)))
+})
+
+test('still refuses what it cannot open as a document', () => {
   assert.throws(
     () => parseDocumentFile('{'),
     (error) =>
       error instanceof DocumentFileError && error.code === 'invalidJson',
   )
 
-  const snapshot = createDocumentSnapshot(createFixture())
+  // JSON, and nothing a document could be made of. Opening this blank would lose the writer's work
+  // behind a file that merely parsed.
   assert.throws(
-    () => parseDocumentFile(JSON.stringify({ ...snapshot, format: 'other' })),
-    (error) => error.code === 'unknownFormat',
+    () => parseDocumentFile('{"hello":"world"}'),
+    (error) => error.code === 'invalidContent',
   )
   assert.throws(
-    () =>
-      parseDocumentFile(JSON.stringify({ ...snapshot, formatVersion: 999 })),
-    (error) => error.code === 'unsupportedVersion',
+    () => parseDocumentFile('[]'),
+    (error) => error.code === 'invalidFile',
   )
 })
 

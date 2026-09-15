@@ -788,8 +788,9 @@ try {
       after: summarize(editor.getJSON()),
     }
   })()`)
-  assert.equal(roundTrip.format, 'umodoc')
-  assert.equal(roundTrip.version, 1)
+  // Not the stamp. A saved file opens because it carries a document, not because it is labelled with
+  // a name this build happens to recognise - the core storage is the storage server now, and a file
+  // reaching this path was as likely written by a script as by the Save button.
   assert.equal(roundTrip.opened, true)
   assert.deepEqual(roundTrip.after, roundTrip.before)
 

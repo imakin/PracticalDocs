@@ -983,8 +983,6 @@
     },
     "errors": {
       "invalidJson": "所选文件不是有效的 JSON。",
-      "unknownFormat": "所选文件不是 PracticalDocs 文档。",
-      "unsupportedVersion": "此文档使用了不受支持的文件格式版本。",
       "invalidFile": "所选文档文件不完整或无效。",
       "invalidContent": "文档包含当前编辑器无法加载的内容。",
       "openError": "无法打开文档。"

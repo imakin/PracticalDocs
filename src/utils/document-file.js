@@ -4,15 +4,15 @@ import {
   PAGE_NUMBER_POSITIONS,
 } from './page-numbering.js'
 
-export const DOCUMENT_FILE_FORMAT = 'practicaldocs'
 /**
- * What this format used to be called.
+ * The stamp this editor writes. It is a label on the way out, not a gate on the way in.
  *
- * Files written before the rename carry it, and refusing them would be refusing the writer's own
- * work over a label. Read both, write the current one - the same rule `validatePage` follows for a
- * field that did not exist yet.
+ * Every file written before the rename carries `umodoc`, and a file a script or another tool
+ * produced carries whatever that tool chose - refusing those is refusing the writer's own work over
+ * a label. What decides whether a file is a document is its `content`, which is checked; the stamps
+ * are read if they are there and defaulted if they are not.
  */
-export const DOCUMENT_FILE_FORMAT_LEGACY = 'umodoc'
+export const DOCUMENT_FILE_FORMAT = 'practicaldocs'
 export const DOCUMENT_FILE_VERSION = 1
 
 export class DocumentFileError extends Error {
@@ -88,6 +88,11 @@ const validateLabel = (value) => {
 }
 
 const validateContent = (value) => {
+  // Now that the stamps no longer gate the file, this is what tells a document from any other JSON,
+  // so it says so in the words the writer needs rather than naming a field they never wrote.
+  if (value === undefined || value === null) {
+    fail('invalidContent', 'This file has no document content.')
+  }
   // A document is stored as HTML now, which the editor parses directly. The document object is still
   // accepted so files written in the older shape keep opening.
   if (typeof value === 'string') {
@@ -212,34 +217,20 @@ const validatePage = (value) => {
 
 export const validateDocumentSnapshot = (value) => {
   const snapshot = requireRecord(value, 'root')
-  if (
-    snapshot.format !== DOCUMENT_FILE_FORMAT &&
-    snapshot.format !== DOCUMENT_FILE_FORMAT_LEGACY
-  ) {
-    fail('unknownFormat', 'This is not a PracticalDocs document.')
-  }
-  if (
-    !Number.isInteger(snapshot.formatVersion) ||
-    snapshot.formatVersion !== DOCUMENT_FILE_VERSION
-  ) {
-    fail(
-      'unsupportedVersion',
-      `Document format version ${String(snapshot.formatVersion)} is unsupported.`,
-    )
-  }
+  // The format name and the version used to be a gate, and a file that failed it was refused before
+  // anything looked at what was in it. The core storage is the storage server now, so a file that
+  // reaches this function has usually been produced by something other than the Save button - and a
+  // document the writer can plainly see the text of is not worth refusing over a missing stamp. What
+  // makes a file a document is its `content`, and that is still checked, so a file with nothing to
+  // open is still refused rather than opened blank.
+  const editorVersion =
+    typeof snapshot.editorVersion === 'string' ? snapshot.editorVersion : ''
+  const stamped =
+    typeof snapshot.savedAt === 'string' && !Number.isNaN(Date.parse(snapshot.savedAt))
+  const savedAt = stamped ? snapshot.savedAt : new Date().toISOString()
 
-  const editorVersion = requireString(snapshot.editorVersion, 'editorVersion', {
-    allowEmpty: false,
-  })
-  const savedAt = requireString(snapshot.savedAt, 'savedAt', {
-    allowEmpty: false,
-  })
-  if (Number.isNaN(Date.parse(savedAt))) {
-    fail('invalidFile', '"savedAt" must be a valid ISO 8601 date.')
-  }
-
-  const document = requireRecord(snapshot.document, 'document')
-  const title = requireString(document.title, 'document.title')
+  const document = isRecord(snapshot.document) ? snapshot.document : {}
+  const title = typeof document.title === 'string' ? document.title : ''
   const profiles = Array.isArray(snapshot.profiles) ? snapshot.profiles : []
   // This function is a whitelist, so a field that is not named here is dropped on the way in **and**
   // on the way out. That is exactly how page number settings were silently lost: a document saved

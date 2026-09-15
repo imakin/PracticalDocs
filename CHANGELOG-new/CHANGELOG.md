@@ -1,3 +1,16 @@
+### A Document File Opens Because It Carries A Document, Not Because Of Its Stamp
+
+- `What Changed`: opening a file no longer checks the format name or the version number. Any JSON that carries document content opens, whatever it is labelled with - or whether it is labelled at all.
+- `Why`: the core storage is the storage server now, so a file arriving on this path was as likely written by a script or another tool as by the Save button. Two stamps stood between the writer and a document whose text they could plainly see. Files written before the rename carried `umodoc`, which needed a second constant to keep readable, and that was only the case anyone had thought of.
+- `What Still Refuses`: `content`. It is what tells a document from any other JSON, so a file with none is refused rather than opened blank - which would lose the writer's work behind a file that merely parsed. It says `This file has no document content.` now, instead of naming a field the writer never wrote.
+- `The Other Stamps Are Defaulted, Not Demanded`: `editorVersion`, `savedAt` and the title fall back when missing. What is written out is unchanged - this editor still stamps its own name and version.
+- `Test script`: `document-file.test.mjs` covers the loosening directly - a file stamped `umodoc`, one stamped `other`, one with no stamp at all, and a version from the future all open with their content intact, and `{"hello":"world"}` and `[]` are still refused. `document-references.cdp.mjs` no longer asserts the stamp on a round trip, only that the document comes back unchanged, which is what a round trip is about.
+
+  ```bash
+  node --test tests/unit/document-file.test.mjs
+  npm run test:e2e:document-references
+  ```
+
 ### A Cross-Reference Wears The Styling The Writer Gives It
 
 - `Reported By The User`: a reference inserted into a sentence was always link blue and underlined, and applying a colour to it did nothing.

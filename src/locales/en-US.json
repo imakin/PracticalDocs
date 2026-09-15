@@ -1010,8 +1010,6 @@
     },
     "errors": {
       "invalidJson": "The selected file is not valid JSON.",
-      "unknownFormat": "The selected file is not a PracticalDocs document.",
-      "unsupportedVersion": "This document was created with an unsupported file format version.",
       "invalidFile": "The selected document file is incomplete or invalid.",
       "invalidContent": "The document contains content that this editor cannot load.",
       "openError": "The document could not be opened."
