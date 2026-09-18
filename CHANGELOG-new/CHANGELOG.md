@@ -1,3 +1,9 @@
+### Reverted: The Pagination Solver Measures The Whole Document Again
+
+- `Reported By The User`: after the solver was taught to skip measuring blocks above the last break, loading their thesis paginated many pages wrongly from early on, and raising the zoom and putting it back to 100 per cent set it right again. They placed it on that change.
+- `It Is Reverted`, and the reason is what could **not** be shown rather than what could: the fault did not reproduce here in any of the three load paths tried - a plain `setContent`, the same with the images really fetched from the storage server, and the document opened the way the Open dialog opens it, with its profiles and page settings. Across 44 pages every line sat inside its column, and the measurements before and after a zoom round trip were identical. With no reproduction there is nothing to defend the change with, and a correctness report from a real document outweighs a speedup measured on a synthetic one.
+- `What Was Given Up`: about 25-30 per cent on a 48 sheet document, and nothing at all at 24 or 71 sheets. The profile says the dominant cost was never the measuring - it is the forced relayout after each break is dispatched, so a document of 71 sheets is laid out 70 times. That is the thing worth fixing, and `adr/0026` records it along with the coordinate boundary that measured slower than no skip at all.
+
 ### The Engine Leaves The Contents' Own Rows Alone
 
 - `Reported By The User`: in their thesis, a gap opened between the DAFTAR ISI heading and the contents under it, and the exported PDF was empty after that heading until the page turned.
@@ -24,24 +30,6 @@
 
   ```bash
   npm run test:e2e:profile-strip-layout
-  ```
-
-### The Pagination Solver Measures Only What Can Still Move
-
-- `Asked By The User`: the editor felt slow while resizing an image or a table. Does the engine debounce, and can it re-measure only from the cursor back?
-- `It Does Debounce`: 200 ms, cancelled and restarted on every change, so a continuous drag costs nothing until it pauses.
-- `It Was Not Incremental`: every solve walked **every text node in the document** once per break, building a range for each and reading its client rects. Measured before anything changed, one solve blocked the main thread for 289 ms at 24 sheets, 844 ms at 48 and 1336 ms at 71 - doubling the document cost about **2.9x**, not 2x.
-- `What Changed`: a break only ever pushes content **down**, so once one is placed, nothing above the block it broke can change, and that block is where the next pass starts. The boundary block itself is always measured whole - `respectWidowsAndOrphans` counts a block's lines to decide how far back to move a break, so a block measured from the middle would have moved the break to the wrong line.
-- `The Obvious Version Was Slower Than No Fix At All`: the boundary was a coordinate first, which costs a `getBoundingClientRect` per block per pass. Profiled at 71 sheets those calls alone came to **806 ms**, and the solve went from 1336 ms to about 1950 ms. The child list is already in document order, so an index answers the same question for nothing.
-- `Measured, three runs each`: 48 sheets went from 739-863 ms to 588-601 ms, about **25-30 per cent**. At 24 and 71 sheets it is unchanged.
-- `Why It Stops There`: the profile says the quadratic term that is left is not measurement at all - it is the **forced relayout** after each break is dispatched. The solver places one break, dispatches it, and measures again, so a document of 71 sheets is laid out **70 times**. Removing that means placing every break from one measurement and shifting the lines below arithmetically, which is a rewrite of the solve loop and is not done here. See `adr/0026`.
-- `Test script`: no new test - this changes how fast the answer is reached, not what it is, so the guard is that the existing pagination suite still agrees. All green with the change in.
-
-  ```bash
-  npm run test:e2e:page-sections
-  npm run test:e2e:page-sections-export
-  npm run test:e2e:pagination-pdf
-  npm run test:e2e:pdf-bookmarks
   ```
 
 ### A Document File Opens Because It Carries A Document, Not Because Of Its Stamp
