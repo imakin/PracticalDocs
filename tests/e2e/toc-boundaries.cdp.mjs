@@ -406,7 +406,12 @@ const bands = await evaluate(`(() => {
     const r = p.getBoundingClientRect()
     if (r.height === 0) continue
     lines += 1
-    const offset = ((r.top - base) / scale) % stride
+    // base is the top of the first column, so a whole number of strides below it is another column
+    // top - the right place for a line to be. A line landing exactly there computes an offset a
+    // fraction of a pixel short of a full stride rather than zero, and reading that as "near the
+    // foot of the page" flagged nine lines that were sitting exactly where they belong.
+    const raw = ((r.top - base) / scale) % stride
+    const offset = raw > stride - 1 ? 0 : raw
     if (offset > stride - 120) inBand += 1
   }
   return { stride, inBand, lines }

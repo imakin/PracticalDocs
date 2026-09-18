@@ -4,7 +4,12 @@
     class="pdoc-node-view"
     @click.capture="editor?.commands.setNodeSelection(getPos())"
   >
-    <div class="pdoc-node-container pdoc-node-toc">
+    <!--
+      This block places its own rows, so the pagination engine leaves the lines inside it alone. It
+      has no document position inside it to anchor a break to, and a break anchored on the block
+      instead lands it part way down a column - see `collectLines` and adr/0022.
+    -->
+    <div class="pdoc-node-container pdoc-node-toc" data-pdoc-self-paginating="true">
       <div ref="bodyRef" class="pdoc-node-toc-body" :class="profileClass">
         <p v-if="entries.length === 0" class="pdoc-toc-empty">{{ t('toc.empty') }}</p>
         <div

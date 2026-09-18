@@ -1,3 +1,18 @@
+### The Engine Leaves The Contents' Own Rows Alone
+
+- `Reported By The User`: in their thesis, a gap opened between the DAFTAR ISI heading and the contents under it, and the exported PDF was empty after that heading until the page turned.
+- `The Contents Is An Atom`: it holds text with line boxes the solver can measure, but no document position inside it. Measured directly on a contents of 31 rows: the line the solver chose was row 10, **497px** down the canvas, and the position it resolved to was the `toc` node, which begins at **239**.
+- `So The Spacer Lands Before The Whole Block` carrying a height worked out for a line far inside it. The block does not reach the next column - it stops part way down this one. The contents then finds a row of its own straddling the foot of the column and pushes it, which makes the block taller, which overflows again. Caught on the user's document twice: a **295px** spacer between the heading and the contents with a **302px** gap inside it, and **580/281** at 200 per cent zoom. Both settled - the solve reported `settled` while the page read as empty.
+- `Refusing The Break Is Not The Fix, And The Measurement Says So`: the solver then steps over the block, and `{"stopped":"no-anchor-below-the-last-break","breaks":0,"skipped":1}` is the whole document left unpaginated - the fault `adr/0022` was written about, met again. So these lines are not offered as break candidates at all. A block declares itself with `data-pdoc-self-paginating`, and the engine paginates around the height it settles on. That is the contract `adr/0022` promised, enforced on both sides for the first time.
+- `What Is Not Claimed`: the bad state is **intermittent**. Six runs of the same document with the old code - three at each zoom - all came out correct, and a synthetic fixture of the same shape never showed it. What is certain is the mechanism, measured directly, and that a break anchored before a block with a height computed for a line inside it is wrong however rarely it fires. A test written to reproduce the symptom passed with the fix removed, so it was deleted rather than committed: a test that cannot fail is worse than none.
+- `One Consequence`: lines below the contents now land exactly on column tops, and `toc-boundaries` read that as a fault - its band check takes an offset modulo the stride, and an exact hit comes back a third of a pixel short of a full stride rather than zero, flagging nine correctly placed lines. It treats a sub-pixel shortfall as zero now.
+- `Test script`: the existing suite is the guard. `toc-boundaries` **three times**, as its own note asks, plus `page-sections`, `page-sections-export`, `pagination-pdf-parity`, `pdf-bookmarks`, `toc` and `block-pagination`.
+
+  ```bash
+  npm run test:e2e:toc-boundaries
+  npm run test:e2e:pagination-pdf
+  ```
+
 ### The Profile Strip Can Be Scrolled, And The Profile Popup Is A Grid
 
 - `Reported By The User`: the strip of profiles in the toolbar had no usable sideways scrollbar, and the popup listed the profiles one per row - a column of fifteen, taller than the window.

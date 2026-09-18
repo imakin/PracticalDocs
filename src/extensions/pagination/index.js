@@ -269,6 +269,7 @@ const intStyle = (element, property, fallback) => {
 const collectLines = (view, originTop, fromBlock = null) => {
   const merged = new Map()
   const lineHeights = new WeakMap()
+  const selfPaginated = new WeakMap()
   /**
    * Text rects are the glyph box, not the line box: at line-height 1.5 a 12pt line measures about
    * 17px where the line it occupies is 24px. Print breaks on the line box, so measuring glyphs makes
@@ -293,6 +294,42 @@ const collectLines = (view, originTop, fromBlock = null) => {
     return (lineHeight - rect.height) / 2
   }
 
+  /**
+   * Lines inside a block that paginates itself are not the solver's business.
+   *
+   * Such a block is an **atom**: it holds text with line boxes the solver can measure, but no
+   * document position inside it, so `posAtDOM` on one of those lines returns the position of the
+   * block itself. Measured on a contents of 31 rows: the line chosen was row 10, 497px down the
+   * canvas, and the position it resolved to was the `toc` node, which begins at 239.
+   *
+   * Anchoring there is not a small error. The spacer is placed before the whole block while its
+   * height was worked out for a line far inside it, so the block does not reach the next column - it
+   * lands part way down this one. The block then finds a row of its own straddling the foot of the
+   * column and pushes it, which makes it taller, which overflows again. Measured on the user's
+   * thesis: a 295px spacer between the heading and the contents and a 302px gap inside it, settled,
+   * on every solve - a page that reads as empty after its heading, on screen and in the PDF.
+   *
+   * Refusing the break is not the answer either, and the measurement says so: the solver then steps
+   * over the block, and `{"stopped":"no-anchor-below-the-last-break","breaks":0,"skipped":1}` is the
+   * whole document left unpaginated - the fault `adr/0022` was written about, met again.
+   *
+   * So these lines are not collected as breakable at all. `adr/0022` gave this kind of block the job
+   * of placing its own rows; the engine's part is to leave them alone and paginate around the height
+   * they end up with.
+   */
+  const selfPaginating = (block) => {
+    if (!block) {
+      return false
+    }
+    if (!selfPaginated.has(block)) {
+      selfPaginated.set(
+        block,
+        Boolean(block.closest?.('[data-pdoc-self-paginating]')),
+      )
+    }
+    return selfPaginated.get(block)
+  }
+
   const add = (rect, block, node, key) => {
     if (rect.height <= 0 || rect.width <= 0) {
       return
@@ -304,6 +341,7 @@ const collectLines = (view, originTop, fromBlock = null) => {
     if (!existing) {
       merged.set(key, {
         block,
+        placesItself: selfPaginating(block),
         top,
         bottom,
         clientTop: rect.top,
@@ -492,6 +530,10 @@ const firstOverflowing = (lines, layout) => {
   // the whole pass linear in the number of lines rather than in lines times sheets.
   let sheet = 0
   for (const line of lines) {
+    // The block places this line itself. See `collectLines`.
+    if (line.placesItself) {
+      continue
+    }
     while (
       sheet < MAX_SHEETS - 1 &&
       line.top >= layout.bottom(sheet) + layout.geometry.gap
