@@ -1,3 +1,17 @@
+### A Picture Arriving Re-Paginates The Page It Landed On
+
+- `Reported By The User`: opening their thesis paginated wrongly from the early pages, and nudging the zoom up one step and back set it right. They had found the remedy long before the cause.
+- `The Remedy Is The Clue`: a zoom change re-solves. So the pagination was not wrong - it was **stale**. Something had changed the height of the page after the last solve, and nothing told the engine.
+- `That Something Is The Pictures`: the engine re-solves when the document changes or when it is asked, and an image arriving is neither. `onLoad` set the image's own height and stopped there, so every line below it moved while the sheets kept the geometry of a page whose picture had no height yet.
+- `Measured Through The Interface`, on a thesis of 44 sheets opened through the Open dialog with all fourteen pictures loading a moment after the last solve: **47 lines of text crossing the foot of a sheet or sitting in the gap between two**. After the fix, on the same document by the same steps: **0**, and pressing the zoom up and back changes nothing, because there is nothing left to correct.
+- `The Fix`: the picture asks for a solve once it has taken its real height, the way the table of contents already does. The driver debounces at 200ms, so fourteen pictures arriving together cost one solve.
+- `Test script`: the existing suite is the guard - this changes when the engine is asked, not what it answers. `page-sections`, `page-sections-export`, `pagination-pdf-parity`, `pdf-bookmarks`, `sheet-drift`, `document-assets`, `block-pagination`, `page-break`, `toc`, and `toc-boundaries` three times, all green.
+
+  ```bash
+  npm run test:e2e:pagination-pdf
+  npm run test:e2e:document-assets
+  ```
+
 ### The Sheets Are Drawn Where The Engine Solved Them
 
 - `Reported By The User`: in a long document the pagination drifts further out of step the further down you read, and they had predicted this would happen.

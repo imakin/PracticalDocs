@@ -905,6 +905,20 @@ const onLoad = async () => {
   if (!didClamp) {
     syncRenderedImageHeight()
   }
+  /**
+   * The picture has just taken up its real height, so every line below it has moved.
+   *
+   * The engine re-solves when the document changes or when it is asked. An image arriving changes
+   * neither: the document is the same and the driver hears nothing, so the sheets keep the geometry
+   * of a page whose picture had no height yet. Measured on a thesis of 44 sheets opened through the
+   * dialog, with all fourteen pictures loading a moment after the last solve: **47 lines of text
+   * crossing the foot of a sheet or sitting in the gap between two**. Pressing the zoom up and back
+   * put it right - because that re-solves - which is exactly the remedy the writer had found.
+   *
+   * So the picture says so itself, the way the contents does. The driver debounces, so fourteen
+   * pictures arriving together cost one solve.
+   */
+  editor.value?.commands.refreshPagination?.()
 }
 
 const onError = () => {
