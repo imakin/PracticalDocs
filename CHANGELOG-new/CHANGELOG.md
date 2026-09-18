@@ -1,3 +1,16 @@
+### The Sheets Are Drawn Where The Engine Solved Them
+
+- `Reported By The User`: in a long document the pagination drifts further out of step the further down you read, and they had predicted this would happen.
+- `Measured On Their Thesis`, 44 sheets: the drawn sheets lagged the geometry the engine had solved by **3px at sheet 6, 11px at sheet 24 and 21px by the last one**. Nothing was wrong with the solve - the sheets were simply painted somewhere else.
+- `The Cause Is One Divisor`: every length the engine writes - a spacer's height, a sheet's box, a page number's place - is divided by the canvas scale on the way out, and that scale came from dividing a fractional rect width by `offsetWidth`, which is **rounded to a whole pixel**. On a canvas measuring 793.695px the divisor was 794, so the scale came out **0.9996** while the page's own transform was plainly `matrix(1, 0, 0, 1, 0, 0)`. Every length was 0.04 per cent short, and that error is not paid once - it accumulates down the document.
+- `The Fix`: take the unscaled width from the computed style, which keeps its fraction and is unaffected by transforms. Measured again on the same 44 sheets, the drift is **0px on every one of them**.
+- `Why It Looked Like Rounding And Was Not`: the sheet boxes are each rounded to whole pixels when written, which would wander by half a pixel and stay there. A wrong scale tilts every length in the same direction instead, which is what turns a rounding-sized error into a visible one by the end of a thesis.
+- `Test script`: `sheet-drift.cdp.mjs`, 5 checks, its own synthetic document of 260 paragraphs. Seen failing on two with the fix removed - 7px of drift across 16 sheets, where the fixed engine reports 0.
+
+  ```bash
+  npm run test:e2e:sheet-drift
+  ```
+
 ### Reverted: The Pagination Solver Measures The Whole Document Again
 
 - `Reported By The User`: after the solver was taught to skip measuring blocks above the last break, loading their thesis paginated many pages wrongly from early on, and raising the zoom and putting it back to 100 per cent set it right again. They placed it on that change.

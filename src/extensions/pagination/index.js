@@ -35,6 +35,39 @@ const RECOMPUTE_DELAY = 200
 const TOLERANCE = 1
 
 /**
+ * The width the element would have with no transform on it, fractions kept.
+ *
+ * `offsetWidth` is rounded to a whole pixel, and it used to be the divisor here. On a canvas
+ * measuring 793.695px that made it 794, so the scale came out **0.9996** where the page's transform
+ * was plainly `matrix(1, 0, 0, 1, 0, 0)` - measured. Every length the engine writes is divided by
+ * this, so each one was 0.04 per cent out, and the error is not paid once: it accumulates down the
+ * document. Measured on a 44 sheet document, the drawn sheets fell behind the geometry the engine
+ * had solved by 3px at sheet 6, 11px at sheet 24 and **21px** by the last one - the pages drifting
+ * further out of step the further down you read, which is what the writer reported.
+ *
+ * The computed width keeps its fraction and is unaffected by transforms, which is exactly the
+ * quantity wanted.
+ */
+const borderBoxWidth = (element) => {
+  const style = getComputedStyle(element)
+  const width = Number.parseFloat(style.width)
+  if (!Number.isFinite(width)) {
+    return element.offsetWidth
+  }
+  if (style.boxSizing === 'border-box') {
+    return width
+  }
+  // Content box: the rect measures the border box, so the two have to be made comparable.
+  return (
+    width +
+    ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth'].reduce(
+      (sum, name) => sum + (Number.parseFloat(style[name]) || 0),
+      0,
+    )
+  )
+}
+
+/**
  * The page geometry of every section, in pixels.
  *
  * A centimetre is measured rather than assumed - it depends on the browser's own dpi, and on the
@@ -83,10 +116,11 @@ const readGeometry = (view, sections) => {
    * The engine works in the scaled space, because that is what it measures, and divides by this on
    * the way out.
    */
-  const scale =
-    host.offsetWidth > 0
-      ? host.getBoundingClientRect().width / host.offsetWidth
-      : 1
+  const scale = (() => {
+    const measured = host.getBoundingClientRect().width
+    const unscaled = borderBoxWidth(host)
+    return unscaled > 0 ? measured / unscaled : 1
+  })()
 
   const source = web ? sections.slice(0, 1) : sections
   const list = source.map((section) => {
