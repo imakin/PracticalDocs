@@ -980,6 +980,7 @@ class PaginationDriver {
     this.editor = editor
     this.timer = null
     this.solving = false
+    this.lastSignature = null
     this.schedule()
   }
 
@@ -1162,10 +1163,36 @@ class PaginationDriver {
         this.applyBreaks(breaks, geometry.scale)
       }
       this.storage.solve = { stopped, breaks: breaks.length, skipped }
+      /**
+       * Solve again until two solves agree.
+       *
+       * A solve measures the document as it stands at that moment, and while a document is being
+       * opened it is still arriving: the profiles and their stylesheet, the content, the numbering
+       * and the page geometry each land a tick apart, and each moves every line. The driver settles
+       * on whichever of them it happened to measure, and afterwards nothing schedules another solve -
+       * the document is no longer changing, so the first answer stands however wrong it is.
+       *
+       * Measured on a thesis of 44 sheets in a **private window**, where nothing is cached and the
+       * order is at its worst: the first solve placed **42** breaks and left **47** lines crossing
+       * the foot of a sheet or sitting in the gap between two. A second solve, changing nothing else
+       * and taken with the page still at the top, placed **43** and left **none**; a third agreed
+       * with the second. That second solve is what the writer had been buying by hand every time
+       * they nudged the zoom up and back.
+       *
+       * So the answer is confirmed rather than assumed. A solve that disagrees with the one before it
+       * schedules another, and agreement ends it - normally one extra solve, and none at all once the
+       * document is quiet, since an unchanged answer schedules nothing.
+       */
+      const signature = `${stopped}:${breaks.map((item) => item.pos).join(',')}`
+      const settled = signature === this.lastSignature
+      this.lastSignature = signature
       const sheets = this.padToWholeSheets(geometry, layout)
       this.publishPages(geometry, layout, sheets)
       this.renderSheets(geometry, layout, sheets)
       this.renderPageNumbers(geometry, layout)
+      if (!settled) {
+        this.schedule()
+      }
     } finally {
       this.solving = false
     }

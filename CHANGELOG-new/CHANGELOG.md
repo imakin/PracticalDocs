@@ -1,3 +1,18 @@
+### The Engine Confirms Its Answer
+
+- `Reported By The User`: opening their thesis paginated it wrongly from the early pages, and nudging the zoom up one step and back set it right. They had the remedy long before anyone had the cause.
+- `A Solve Measures The Document As It Stands`: opening one changes four things that each move every line - the profiles and their stylesheet, the content, the numbering, the page geometry - and they land a tick apart. The driver debounces at 200ms and settles on whichever it happens to measure. Afterwards **nothing schedules another solve**: the document is no longer changing, so the first answer stands however wrong it is. The zoom nudge worked because changing the zoom asks for a solve.
+- `Measured in a private window`, on 44 sheets, counting lines that cross the foot of a drawn sheet or sit in the gap between two: **47** as opened, **0** after one more solve that changed nothing else. A third solve agreed with the second.
+- `Why It Took A Private Window`: a warm browser has the fonts, profiles and pictures cached, so they arrive before the first solve and it settles right. Three sessions of trying to reproduce this in an ordinary tab came back correct every time. A fresh session puts the arrivals in their worst order.
+- `The Fix`: a solve compares its breaks with the previous solve's, and schedules another if they differ. Two that agree end it - one extra solve after a change, none while the document is quiet.
+- `Three Fixes Built On The Same Reasoning Measured Nothing And Were Reverted`: re-solving when a web font loads, re-solving when the profile stylesheet is written, and one more solve at the end of opening a document. The last is the instructive one - asking at the end of opening is too early, it coalesces with the solve already scheduled, so it is the same wrong solve rather than a second one. See `adr/0027`.
+- `Test script`: the suite is the guard, and the fault itself was measured through the interface with mouse events only - no `setContent`, no commands, the zoom pressed by its own button.
+
+  ```bash
+  npm run test:e2e:pagination
+  npm run test:e2e:pagination-pdf
+  ```
+
 ### A Picture Arriving Re-Paginates The Page It Landed On
 
 - `Reported By The User`: opening their thesis paginated wrongly from the early pages, and nudging the zoom up one step and back set it right. They had found the remedy long before the cause.
