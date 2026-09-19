@@ -137,6 +137,23 @@
         </template>
       </t-popup>
       <div class="pdoc-status-bar-split"></div>
+      <!--
+        How long the page took to lay out. It says it is working while the engine is scheduled, and
+        the measurement once the answer has settled - a solve holds the main thread for its whole
+        length, so anything announced when one starts could not be painted until it had finished.
+      -->
+      <span
+        v-if="layoutWorking || layoutTook !== null"
+        class="pdoc-layout-timing"
+        :class="{ working: layoutWorking }"
+      >
+        <template v-if="layoutWorking">{{ t('layout.working') }}</template>
+        <template v-else>{{ t('layout.took') }} {{ layoutTook }} ms</template>
+      </span>
+      <div
+        v-if="layoutWorking || layoutTook !== null"
+        class="pdoc-status-bar-split"
+      ></div>
       <!-- 请遵循开源协议，勿删除或隐藏版权信息！ -->
       <t-button
         class="pdoc-status-bar-button auto-width"
@@ -346,6 +363,31 @@ const editor = inject('editor')
 const page = inject('page')
 const options = inject('options')
 const $document = useState('document', options)
+
+// How long laying the page out took, as the engine reports it.
+let layoutWorking = $ref(false)
+let layoutTook = $ref(null)
+const onLayoutStart = () => {
+  layoutWorking = true
+}
+const onLayoutEnd = (ms) => {
+  layoutWorking = false
+  layoutTook = ms
+}
+watch(
+  () => editor.value,
+  (instance, previous) => {
+    previous?.off?.('layoutStart', onLayoutStart)
+    previous?.off?.('layoutEnd', onLayoutEnd)
+    instance?.on?.('layoutStart', onLayoutStart)
+    instance?.on?.('layoutEnd', onLayoutEnd)
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => {
+  editor.value?.off?.('layoutStart', onLayoutStart)
+  editor.value?.off?.('layoutEnd', onLayoutEnd)
+})
 
 // 快捷键抽屉
 const showShortcut = $ref(false)
@@ -760,6 +802,18 @@ watch(
 }
 .pdoc-drawer__close-btn {
   margin-right: 3px;
+}
+
+.pdoc-layout-timing {
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--pdoc-text-color-light);
+  white-space: nowrap;
+  // No spinner and no colour change on the working state: this sits in a bar the writer reads at a
+  // glance, and a measurement that draws attention to itself would be a second thing to ignore.
+  &.working {
+    font-style: italic;
+  }
 }
 
 .pdoc-word-count {

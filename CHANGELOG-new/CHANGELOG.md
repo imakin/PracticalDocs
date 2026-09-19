@@ -1,3 +1,18 @@
+### The Status Bar Says How Long The Page Took To Lay Out, And The Engine Stops Working While You Type
+
+- `Asked For By The User`: they knew the pagination engine was heavy and wanted to know **how** heavy, in the bar at the foot of the window - with the condition that if the slow part was not `solve`, the measurement should go wherever the slow part actually was.
+- `It Is Solve`: **1764 ms** on a 44 sheet thesis, measured directly. A sampling profile does not show it, because most of that time is the browser laying out the page rather than any JavaScript frame - it comes back spread across `(program)` and `(idle)`, which is how this went unnamed for so long.
+- `Then The Measurement Found Something Worse`: typing five characters with 400ms between them cost **nine solves and 18.7 seconds** of blocked main thread, each solve slower than the last - 878, 795, 818, 1201, 1728, 2037, 1637, 2183, 2899. The debounce was 200ms, and a pause between two keystrokes is longer than that, so every keystroke bought its own solve; the confirming solve from `adr/0027` then doubled it. It is also why the toolbar felt slow - a menu cannot open while the thread is inside a solve.
+- `The Engine Waits As Long As Its Last Solve Took` now, never less than the old 200ms and never more than two seconds. On a document where a solve is 30ms nothing changes. On the thesis: the same five characters cost **two solves and 1.6 seconds**, and **not one solve while the typing was going on**.
+- `When It Says It, And Why That Is The Whole Trick`: a solve holds the main thread for its whole length, so a message raised when one starts cannot be painted until it has finished. Raised when the solve is **scheduled**, it appears on every keystroke and reads as a promise the engine has not kept - which is exactly what the writer reported. It is raised one painted frame before the work: announce, let the browser draw it, then take the thread.
+- `A Hidden Tab Still Lays Out`: reaching for that frame with `requestAnimationFrame` alone stopped the engine dead in a tab nobody was looking at - measured, five characters typed and **no solve at all** twenty-five seconds later. A timer is used when the page is not visible.
+- `The Number Is Work, Not Waiting`: the solves added together, not the wall clock from first schedule to settled. Counting the deliberate wait reported the thesis as 5888 ms where the work was 1601 ms, which would have made the fix look like a regression.
+- `Test script`: `layout-timing.cdp.mjs`, 6 checks, real keystrokes, asserting the working state is actually seen and not only its result.
+
+  ```bash
+  npm run test:e2e:layout-timing
+  ```
+
 ### Columns Are The Width Of The Page They Sit On
 
 - `Reported By The User`, with the steps to see it: a portrait page, a page break, a landscape page, another break, a portrait page again - then insert columns on that last page. They came out as wide as the **landscape** page, running off the paper they were on.

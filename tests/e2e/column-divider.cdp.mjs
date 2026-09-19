@@ -283,8 +283,22 @@ check(
   `portrait ${portrait?.width}px, landscape ${landscape?.width}px`,
 )
 
-// The cursor goes on the third page, with the mouse, before the menu is touched.
-await clickAt(portrait.right, portrait.middle)
+// The cursor goes on the third page, with the mouse, before the menu is touched - and the run says
+// so before going on. A click that lands on the wrong paragraph inserts the columns on the landscape
+// page, where they are correctly the landscape width, and the check below then fails for a reason
+// that has nothing to do with the thing being tested. Seen once; a test that fails for the wrong
+// reason is worse than no test.
+const cursorIsOnThePortraitPage = () => evaluate(`(() => {
+  const selection = window.__ed.state.selection
+  return selection.$head.parent.textContent.includes('Halaman tiga')
+})()`)
+let placed = false
+for (let attempt = 0; attempt < 4 && !placed; attempt += 1) {
+  await clickAt(portrait.right, portrait.middle)
+  await sleep(400)
+  placed = await cursorIsOnThePortraitPage()
+}
+check('the cursor is on the third page', placed, placed ? 'yes' : 'the click never landed there')
 await clickWhenReady('the Insert tab', `
   [...document.querySelectorAll('div, span, button')]
     .filter((el) => el.textContent.trim() === 'Insert' && el.children.length === 0)[0]
