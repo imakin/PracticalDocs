@@ -754,7 +754,12 @@
       display: flex;
       flex-direction: row;
       width: 100%;
-      gap: 12px;
+      /* No gap. It was 12px of empty band between the columns that nobody had written and nobody
+         could reach - the writer met it as an invisible margin while dragging the divider. The space
+         between the texts is the columns' own padding now, which is inside a column and therefore
+         belongs to it. The area the pointer may grab is unchanged and is set in `findBoundaryPosition`,
+         where it always lived. */
+      gap: 0;
       box-sizing: border-box;
       position: relative;
       z-index: 10;
@@ -780,7 +785,9 @@
 
     .grid-resize-handle {
       position: absolute;
-      right: -7px;
+      /* Half its own width, so the line sits on the shared edge rather than beside it. It used to be
+         -7px, which put it in the middle of the 12px gap. */
+      right: -1px;
       top: -10px;
       bottom: 0;
       width: 2px;

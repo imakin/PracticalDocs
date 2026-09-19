@@ -1,3 +1,16 @@
+### Columns Sit Edge To Edge, And The Divider Is Still Easy To Catch
+
+- `Reported By The User`: dragging the divider between columns met an invisible margin. They asked for the margin to be nothing while the area the pointer may grab stayed as wide as it was.
+- `It Was A 12px Gap` on the column container - empty band nobody had written and nobody could reach, which is this product's first principle broken in the plainest way. The space between the texts is the columns' own padding now, which sits inside a column and therefore belongs to it.
+- `The Grabbing Area Never Came From The Gap`: it is a band measured around the column's edge in `findBoundaryPosition`. It was **asymmetric** - four pixels on the left of the edge and twelve on the right, reaching into the gap - so the divider could be missed from the left. Measured with the old code, a pointer 5px to the **left** of the edge caught nothing while 5px to the right caught it. It is the same width as before and centred on the edge now, so it catches from either side.
+- `The Constant That Looked Wrong Was Right`: the stored width subtracts a constant that turns out to be the gap doubled. Replacing it with the padding measured from the box made **pressing** the divider jump further - 279 to 306 before, 285 to 327 after - so it was put back. How far a drag actually moves the edge varies from one attempt to the next, because of the next point, so no figure is claimed for it.
+- `What Is Still True And Is Not About The Gap`: every column keeps `flex-grow: 1`, so a width written on one of them is a starting size the row shares out again. Pressing the divider still shifts the edge by some tens of pixels before any dragging. That behaviour predates this change and is left alone; the test says so in its own words rather than leaving the next reader to discover it.
+- `Test script`: `column-divider.cdp.mjs`, 7 checks. The columns are inserted from the real menu and the divider is dragged with the mouse. Run against the old code it fails on four, including the gap and the left-hand edge of the grabbing band.
+
+  ```bash
+  npm run test:e2e:column-divider
+  ```
+
 ### A Cell Draws The Sides The Writer Chose
 
 - `Asked For By The User`: control over a table cell's borders. Every table came out as the same full grid, and a thesis rarely wants one - the house rule is a line above and below and nothing else, and an equation written as a table wants no lines at all, with the number in a cell of its own.

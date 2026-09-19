@@ -67,6 +67,7 @@
     "test:e2e:text-case": "node tests/e2e/text-case.cdp.mjs",
     "test:e2e:table-caption": "node tests/e2e/table-caption-removal.cdp.mjs",
     "test:e2e:cell-borders": "node tests/e2e/cell-borders.cdp.mjs",
+    "test:e2e:column-divider": "node tests/e2e/column-divider.cdp.mjs",
     "test:e2e:profile-margins": "node tests/e2e/profile-margins.cdp.mjs",
     "test:e2e:toc": "node tests/e2e/toc-page-numbers.cdp.mjs",
     "test:e2e:toc-boundaries": "node tests/e2e/toc-boundaries.cdp.mjs",

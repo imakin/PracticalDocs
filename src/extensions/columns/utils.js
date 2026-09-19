@@ -10,9 +10,13 @@ export const findBoundaryPosition = (view, event, handleWidth) => {
   for (let i = 0; i < children.length; i++) {
     const colEl = children[i]
     const rect = colEl.getBoundingClientRect()
+    // The same 16px band the pointer always had, now centred on the edge instead of reaching into a
+    // gap that no longer exists. Deliberately wider than the 2px line it grabs: a divider that can
+    // only be caught on its own pixel is a divider nobody catches.
+    const reach = handleWidth + 6
     if (
-      event.clientX >= rect.right - handleWidth - 2 &&
-      event.clientX <= rect.right + 10 + handleWidth
+      event.clientX >= rect.right - reach &&
+      event.clientX <= rect.right + reach
     ) {
       const pos = view.posAtDOM(colEl, 0)
       if (pos !== null) {
