@@ -116,6 +116,7 @@ const server = http.createServer(async (req, res) => {
         json: body.json || null,
         snapshot: body.snapshot || null,
         profiles: body.profiles || [],
+        markdownStyles: body.markdownStyles || null,
         pageSettings: body.pageSettings || null,
         savedAt: new Date().toISOString(),
       }

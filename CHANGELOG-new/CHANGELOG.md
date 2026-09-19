@@ -1,3 +1,16 @@
+### Markdown Styling Is Kept When The Document Is Saved, And Applied When It Is Opened
+
+- `Reported By The User`: the Markdown Styles dialog was useless - what it set was neither saved with the file nor loaded back.
+- `Four Places, None Of Them Talking To The Next`: the editor's snapshot carried the settings, and after that nothing did. The save never sent them; the storage server's `settings.json` held page settings, profiles and assets and had no field for them; the read never returned them; and the Open dialog never put them in the snapshot it built.
+- `And A Fifth, Which Is The One Worth Knowing`: on opening, the styling was applied **inside the branch that only runs when the document carries a non-empty profile list**. A document styled through the Markdown Styles dialog and nothing else therefore opened with none of it, even once the other four were fixed. Markdown styling is its own group beside the profiles, as the code says in three places; it is applied on its own terms now.
+- `The Dialog Itself Was Never Broken`: its fields commit on Enter or on losing focus. A value typed and left sitting in the box is not a setting yet, which is easy to mistake for the fault being reported.
+- `Test script`: `markdown-styles-persist.cdp.mjs`, 8 checks. The dialog is driven with the mouse; the document is written to the storage server under a name of the test's own and deleted at the end, because pressing Save writes under the document's own name and a test must not write over the writer's work.
+- `The Test Had To Reload The Page`, not merely empty it: clearing the content leaves this session's styling in place, so the document opened looking right for a reason that had nothing to do with what was saved - run against the unfixed editor, that check passed while the store held nothing at all. Reloading raises the browser's own leave-site dialog, which blocks every command sent over the wire until it is answered; the run did not fail, it stopped.
+
+  ```bash
+  npm run test:e2e:markdown-styles
+  ```
+
 ### The Status Bar Says How Long The Page Took To Lay Out, And The Engine Stops Working While You Type
 
 - `Asked For By The User`: they knew the pagination engine was heavy and wanted to know **how** heavy, in the bar at the foot of the window - with the condition that if the slow part was not `solve`, the measurement should go wherever the slow part actually was.

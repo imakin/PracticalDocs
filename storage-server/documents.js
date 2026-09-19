@@ -9,7 +9,7 @@ import { formatHtml } from './format-html.js'
  *
  *   data/tesis4/
  *     document.html     the document, and the source of truth
- *     settings.json     page settings, profiles, title, savedAt
+ *     settings.json     page settings, profiles, markdown styles, title, savedAt
  *     assets/           the original image bytes under their original names
  *     checksums.txt     sha256 per file, in sha256sum format
  *
@@ -136,6 +136,10 @@ export const writeDocument = async (dataDir, name, payload, assets = []) => {
         savedAt: payload.savedAt,
         pageSettings: payload.pageSettings || null,
         profiles: payload.profiles || [],
+        // Markdown styling is its own group beside the profiles, and it has to be kept or a document
+        // opens looking different from the way it was saved. It was never written here, so the
+        // Markdown Styles dialog changed the page and lost the change on the next save.
+        markdownStyles: payload.markdownStyles || null,
         assets: written,
       },
       null,
@@ -159,6 +163,7 @@ export const readDocumentFolder = async (dataDir, name) => {
       html,
       pageSettings: settings.pageSettings || null,
       profiles: settings.profiles || [],
+      markdownStyles: settings.markdownStyles || null,
       savedAt: settings.savedAt || new Date().toISOString(),
     },
     assets: settings.assets || [],

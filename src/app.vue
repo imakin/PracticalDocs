@@ -194,6 +194,10 @@ const options = $ref({
             json: packed.json,
             snapshot: packed.snapshot,
             profiles: content.profiles || [],
+            // Beside the profiles, not inside them: the snapshot carries the markdown styling and it
+            // has to reach the server, or the Markdown Styles dialog is a dialog whose settings last
+            // until the page is reloaded.
+            markdownStyles: packed.snapshot?.markdownStyles || null,
             pageSettings: page,
             assets: packed.assets,
           }),

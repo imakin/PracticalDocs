@@ -197,6 +197,12 @@ const loadDocumentFromServer = async (doc) => {
       content,
       page,
       profiles,
+      ...(payload.markdownStyles || payload.snapshot?.markdownStyles
+        ? {
+            markdownStyles:
+              payload.markdownStyles || payload.snapshot.markdownStyles,
+          }
+        : {}),
     }
     // Media sits beside the document as ordinary files, referenced by a relative path. Point those at
     // the server this document just came from so the editor can fetch them.

@@ -1349,7 +1349,6 @@ const applyDocumentSnapshot = async (snapshot) => {
       if (editor.value?.commands.setNumberingConfig) {
         editor.value.commands.setNumberingConfig({
           profiles: value.profiles,
-          ...(value.markdownStyles ? { markdownStyles: value.markdownStyles } : {}),
         })
       } else {
         const refStorage = getRefStorage()
@@ -1360,6 +1359,19 @@ const applyDocumentSnapshot = async (snapshot) => {
       try {
         localStorage.setItem('practicaldocs:profiles', JSON.stringify(value.profiles))
       } catch {}
+    }
+    /**
+     * The markdown styling is applied whether or not the document has profiles.
+     *
+     * It used to be handed over inside the branch above, which only runs when the document carries a
+     * **non-empty** profile list - so a document styled through the Markdown Styles dialog and
+     * nothing else opened with none of it. Markdown styling is its own group beside the profiles, as
+     * everything else here already says; it has to be applied on its own terms.
+     */
+    if (value.markdownStyles && editor.value?.commands.setNumberingConfig) {
+      editor.value.commands.setNumberingConfig({
+        markdownStyles: value.markdownStyles,
+      })
     }
     setContent(value.content, {
       emitUpdate: false,
