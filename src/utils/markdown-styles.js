@@ -163,6 +163,45 @@ export const markdownStyleRules = (styles, scope = '') => {
     )
   }
 
+  /**
+   * A list's first line indent is the list's own, never the paragraph's.
+   *
+   * Markdown renders a spaced list as `li > p`, so the Normal Paragraph rule lands on the text of
+   * every list item as well - which is wanted for the font and the size, and wrong for the indent.
+   * A thesis body indents its first line; a bullet must not, or every bullet starts two characters
+   * in. Setting Bullet List to 0 did nothing about it, because `ul { text-indent: 0 }` loses to
+   * `p { text-indent: 2em }`: the inner paragraph is what carries the text.
+   *
+   * A descendant selector, not a child one: in the editor a list item is a node view, so its text
+   * sits in `li > span.marker + div.content > p` rather than directly in the `li`. The saved file
+   * renders the plain `li > p`, and `li p` reaches the paragraph in both.
+   *
+   * So the indent of a list's text is stated on that inner paragraph, where it can win, and it is
+   * taken from the list itself - List Item first, then the kind of list, then **none**. Never from
+   * Normal Paragraph: a writer who has said nothing about lists has not asked for their bullets to
+   * be indented.
+   */
+  const indentKey = 'textIndent'
+  const firstStated = (...candidates) =>
+    candidates.find((value) => isSet(value))
+  for (const [listKey, listSelector] of [
+    ['bulletList', 'ul'],
+    ['orderedList', 'ol'],
+  ]) {
+    const stated = firstStated(
+      (settings.listItem || {})[indentKey],
+      (settings[listKey] || {})[indentKey],
+    )
+    // Only when there is something to say. A writer who has set no indent anywhere gets no rule -
+    // markdown renders as markdown until they ask otherwise, and that holds here as everywhere else.
+    if (!isSet(stated) && !isSet((settings.paragraph || {})[indentKey])) {
+      continue
+    }
+    blocks.push(
+      `${prefix} ${listSelector} li p {\n  text-indent: ${isSet(stated) ? String(stated).trim() : '0'};\n}`,
+    )
+  }
+
   // The number a list item opens with is part of the sentence, so it is set like the sentence.
   //
   // `::marker` takes its font from the `li`, while the text a writer actually sees is usually a `p`

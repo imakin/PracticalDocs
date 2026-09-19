@@ -105,3 +105,51 @@ test('the tables are the only place a setting is declared', () => {
     assert.ok(target.name, `${target.key} has no name for the dialog`)
   }
 })
+
+test("a paragraph's first line indent stops at the edge of a list", () => {
+  // Markdown renders a spaced list as `li > p`, so the Normal Paragraph rule lands on the text of
+  // every list item too. That is wanted for the font and wrong for the indent: a thesis body indents
+  // its first line, a bullet must not.
+  const css = markdownStyleRules({ paragraph: { textIndent: '2em' } }, '.scope')
+  assert.match(css, /\.scope \.pdoc-markdown-rendered p \{[^}]*text-indent: 2em;/)
+  assert.match(
+    css,
+    /\.scope \.pdoc-markdown-rendered ul li p \{\n  text-indent: 0;/,
+  )
+  assert.match(
+    css,
+    /\.scope \.pdoc-markdown-rendered ol li p \{\n  text-indent: 0;/,
+  )
+})
+
+test('a list says what its own first line indent is', () => {
+  const css = markdownStyleRules(
+    { paragraph: { textIndent: '2em' }, bulletList: { textIndent: '1em' } },
+    '.scope',
+  )
+  assert.match(
+    css,
+    /\.scope \.pdoc-markdown-rendered ul li p \{\n  text-indent: 1em;/,
+  )
+  // The numbered list said nothing, so it takes none rather than the paragraph's.
+  assert.match(
+    css,
+    /\.scope \.pdoc-markdown-rendered ol li p \{\n  text-indent: 0;/,
+  )
+})
+
+test('List Item wins over the kind of list it is in', () => {
+  const css = markdownStyleRules(
+    { listItem: { textIndent: '3em' }, bulletList: { textIndent: '1em' } },
+    '.scope',
+  )
+  assert.match(
+    css,
+    /\.scope \.pdoc-markdown-rendered ul li p \{\n  text-indent: 3em;/,
+  )
+})
+
+test('a document that sets no indent anywhere gets no indent rule', () => {
+  const css = markdownStyleRules({ h1: { fontSize: '24pt' } }, '.scope')
+  assert.doesNotMatch(css, /text-indent/)
+})

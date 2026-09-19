@@ -1,3 +1,18 @@
+### A Paragraph's First Line Indent Stops At The Edge Of A List
+
+- `Reported By The User`: setting First Line Indent to 2em on Normal Paragraph indented every bullet and numbered item too, and setting the list's own indent to 0 did nothing about it.
+- `Markdown Renders A Spaced List As A Paragraph Inside An Item`, so the Normal Paragraph rule lands on the text of every list item as well. That is wanted for the font and the size - the marker beside the text already follows the same rule, deliberately - and wrong for the indent: a thesis body indents its first line, a bullet must not.
+- `Why Setting The List To 0 Did Nothing`: it wrote `ul { text-indent: 0 }`, and the paragraph inside the item is what carries the text, so `p { text-indent: 2em }` won. The indent of a list's text is stated on that inner paragraph now, where it can win.
+- `Where It Comes From`: List Item if that is set, then the kind of list, then **none**. Never from Normal Paragraph - a writer who has said nothing about lists has not asked for their bullets to be indented.
+- `A Descendant Selector, Not A Child One`: in the editor a list item is a node view, so its text sits in `li > span + div > p` rather than directly in the `li`; the saved file renders the plain `li > p`. Measured on both - `li > p` styled the file and missed the screen entirely.
+- `And Only When There Is Something To Say`: a document that sets no indent anywhere still gets no rule at all. The first attempt emitted one always, and the unit test that guards *nothing set means no rules* caught it - markdown renders as markdown until the writer asks otherwise.
+- `Test script`: five unit tests on the rules themselves, and `markdown-styles-persist.cdp.mjs` grew a case that sets the indent through the dialog with the mouse and measures both paragraphs. Seen failing with the rule removed, the bullet reading 28px where it should read 0.
+
+  ```bash
+  node --test tests/unit/markdown-styles.test.mjs
+  npm run test:e2e:markdown-styles
+  ```
+
 ### Markdown Styling Is Kept When The Document Is Saved, And Applied When It Is Opened
 
 - `Reported By The User`: the Markdown Styles dialog was useless - what it set was neither saved with the file nor loaded back.

@@ -328,6 +328,66 @@ check(
   `${opened}px, ${EXPECTED_PX}px expected`,
 )
 
+console.log('\nCase D: a paragraph indent does not reach into a list')
+// What the writer reported: First Line Indent on Normal Paragraph indented every bullet too, and
+// setting the list's own indent to 0 did nothing about it.
+await evaluate(`(async () => {
+  window.__ed.commands.setContent({ type: 'doc', content: [
+    { type: 'markdownBlock', attrs: { source: 'Paragraf biasa.\\n\\n- satu\\n- dua' }, content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Paragraf biasa.' }] },
+      { type: 'bulletList', content: [
+        { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'satu' }] }] },
+        { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'dua' }] }] },
+      ] },
+    ] },
+  ] })
+  await new Promise((r) => setTimeout(r, 2500))
+  return true
+})()`)
+
+const indents = () => evaluate(`(() => {
+  const root = document.querySelector('.ProseMirror')
+  const plain = [...root.querySelectorAll('p')].find((p) => !p.closest('li'))
+  const inList = root.querySelector('li p')
+  const px = (el) => (el ? Math.round(Number.parseFloat(getComputedStyle(el).textIndent)) : null)
+  return { plain: px(plain), inList: px(inList), listFound: Boolean(inList) }
+})()`)
+
+const beforeIndent = await indents()
+check('the fixture has a paragraph and a list', beforeIndent.listFound, JSON.stringify(beforeIndent))
+
+await clickWhenReady('the Markdown Styles control', `
+  [...document.querySelectorAll('button, .pdoc-button')]
+    .filter((el) => el.textContent.includes('Markdown Styles'))
+    .sort((a, b) => a.textContent.length - b.textContent.length)[0]
+`)
+await clickWhenReady('the Normal Paragraph entry', `
+  [...document.querySelectorAll('button, div, li, span')]
+    .filter((el) => el.textContent.trim() === 'Normal Paragraph' && el.children.length === 0)[0]
+`)
+await clickWhenReady('the First Line Indent field', `
+  [...document.querySelectorAll('input')].find((el) => (el.placeholder || '').includes('2em'))
+`)
+await typeText('2em')
+await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId)
+await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId)
+await sleep(1200)
+await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }, sessionId)
+await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }, sessionId)
+await sleep(800)
+
+const afterIndent = await indents()
+check(
+  'the ordinary paragraph is indented',
+  afterIndent.plain > 0,
+  `${afterIndent.plain}px`,
+)
+check(
+  'and the text of a bullet is not',
+  afterIndent.inList === 0,
+  `${afterIndent.inList}px`,
+)
+
 // The test's own document, removed.
 await fetch(`${STORAGE}/api/documents/${DOCUMENT}`, { method: 'DELETE' }).catch(() => {})
 
