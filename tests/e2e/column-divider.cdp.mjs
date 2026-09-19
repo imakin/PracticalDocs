@@ -248,6 +248,77 @@ check(
   `${afterDrag.between}px between them`,
 )
 
+console.log('\nCase D: columns on a portrait page are the width of that page')
+// The writer's own reproduction: a portrait page, a landscape one, then a portrait one again, and
+// columns inserted on the last. A document whose sections differ is drawn on a canvas as wide as the
+// **widest** sheet, and the engine brings a block on a narrower page in with a margin - which does
+// nothing to a width of `100%`. The columns came out as wide as the landscape page, running off the
+// paper they were on.
+await evaluate(`(async () => {
+  const line = (text) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
+  window.__ed.commands.setContent({ type: 'doc', content: [
+    line('Halaman satu, tegak.'),
+    { type: 'pageBreak', attrs: { sectionOrientation: 'landscape' } },
+    line('Halaman dua, melintang.'),
+    { type: 'pageBreak', attrs: { sectionOrientation: 'portrait' } },
+    line('Halaman tiga, tegak lagi.'),
+  ] })
+  await new Promise((r) => setTimeout(r, 5000))
+  return true
+})()`)
+
+const paragraphAt = (text) => evaluate(`(() => {
+  const found = [...document.querySelectorAll('.ProseMirror p')]
+    .find((p) => p.textContent.includes(${JSON.stringify(text)}))
+  if (!found) return null
+  const box = found.getBoundingClientRect()
+  return { width: Math.round(box.width), right: Math.round(box.right) - 6, middle: Math.round(box.top + box.height / 2) }
+})()`)
+
+const portrait = await paragraphAt('Halaman tiga')
+const landscape = await paragraphAt('Halaman dua')
+check(
+  'the two pages really are different widths',
+  portrait && landscape && landscape.width - portrait.width > 100,
+  `portrait ${portrait?.width}px, landscape ${landscape?.width}px`,
+)
+
+// The cursor goes on the third page, with the mouse, before the menu is touched.
+await clickAt(portrait.right, portrait.middle)
+await clickWhenReady('the Insert tab', `
+  [...document.querySelectorAll('div, span, button')]
+    .filter((el) => el.textContent.trim() === 'Insert' && el.children.length === 0)[0]
+`)
+await clickWhenReady('the Columns control', `
+  [...document.querySelectorAll('button, .pdoc-button')]
+    .filter((el) => el.textContent.includes('Columns'))
+    .sort((a, b) => a.textContent.length - b.textContent.length)[0]
+`)
+await clickWhenReady('the entry for two columns', `
+  [...document.querySelectorAll('div, span, li, button')]
+    .filter((el) => el.textContent.trim() === '2' && el.children.length === 0)
+    .filter((el) => el.getBoundingClientRect().width > 20)[0]
+`)
+await sleep(2500)
+
+const inserted = await evaluate(`(() => {
+  const container = document.querySelector('.pdoc-node-column-container')
+  if (!container) return null
+  const box = container.getBoundingClientRect()
+  return { width: Math.round(box.width), left: Math.round(box.left), right: Math.round(box.right) }
+})()`)
+check('the columns were inserted', Boolean(inserted), JSON.stringify(inserted))
+check(
+  'and they are the width of the portrait page they sit on',
+  inserted && Math.abs(inserted.width - (portrait.width + 16)) <= 4,
+  `columns ${inserted?.width}px against a portrait text column of ${portrait.width}px`,
+)
+check(
+  'not the width of the landscape page elsewhere in the document',
+  inserted && inserted.width < landscape.width - 50,
+  `columns ${inserted?.width}px, landscape ${landscape.width}px`,
+)
+
 const shot = await call('Page.captureScreenshot', { format: 'png' }, sessionId)
 await mkdir(SHOTS, { recursive: true })
 await writeFile(path.join(SHOTS, 'column-divider.png'), Buffer.from(shot.data, 'base64'))

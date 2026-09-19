@@ -765,7 +765,16 @@
       z-index: 10;
       margin-left: -8px;
       margin-right: -8px;
-      width: calc(100% + 16px) !important;
+      /* The 16px is the two columns' own padding, pulled back out so their text lines up with the
+         text above them. The section insets have to come off as well: a document whose sections are
+         drawn on different paper puts its canvas at the width of the **widest** sheet, and a block on
+         a narrower page is brought in by the engine with a margin. A margin does not shrink a width
+         of `100%`, which is read from the canvas - so columns inserted on a portrait page in a
+         document holding a landscape one came out as wide as the landscape page. The table rule
+         above takes the same two properties off for the same reason. */
+      width: calc(
+        100% + 16px - var(--pdoc-section-left, 0px) - var(--pdoc-section-right, 0px)
+      ) !important;
 
       &:hover {
         .pdoc-node-column {

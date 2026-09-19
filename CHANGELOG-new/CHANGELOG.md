@@ -1,3 +1,15 @@
+### Columns Are The Width Of The Page They Sit On
+
+- `Reported By The User`, with the steps to see it: a portrait page, a page break, a landscape page, another break, a portrait page again - then insert columns on that last page. They came out as wide as the **landscape** page, running off the paper they were on.
+- `A Mixed Document Is Drawn On One Canvas`, as wide as the widest sheet it holds, and the engine brings a block on a narrower page in with a margin of its own. A margin does not shrink a width of `100%`, which is read from the canvas - and the column container states `width: calc(100% + 16px)`, so it took the landscape width wherever it was put.
+- `The Table Rule Already Knew This`: it takes `--pdoc-section-left` and `--pdoc-section-right` off its own width for exactly this reason, and has a comment saying so. The columns were never taught the same thing. They are now.
+- `Measured`: on a page whose text column is 553px, in a document holding a landscape page 882px wide, the columns came out **898px**. They are **569px** now - the text column plus the 16px of their own padding, which is deliberately pulled back out so their text lines up with the text above them.
+- `Test script`: `column-divider.cdp.mjs` grew Case D, 4 checks, 11 in the file. It builds the writer's own three sections and inserts the columns from the real menu with the cursor placed on the third page by clicking there. Seen failing on two with the fix removed, reading `columns 898px against a portrait text column of 553px`.
+
+  ```bash
+  npm run test:e2e:column-divider
+  ```
+
 ### Columns Sit Edge To Edge, And The Divider Is Still Easy To Catch
 
 - `Reported By The User`: dragging the divider between columns met an invisible margin. They asked for the margin to be nothing while the area the pointer may grab stayed as wide as it was.
