@@ -92,6 +92,76 @@ const CustomTable = Table.extend({
   },
 })
 
+/**
+ * Each side of a cell, on its own.
+ *
+ * A table in a thesis is rarely the grid the editor draws by default. The usual house style rules a
+ * line above and below and nothing else, and an equation is written as a table whose borders are all
+ * off, with the number in a cell of its own - which is what the writer was reaching for when they
+ * asked for this.
+ *
+ * Held as four CSS values rather than a set of flags, because a flag cannot say what the line looks
+ * like and the writer will want a thick rule above a total and a hairline between rows. `null` means
+ * the side is left to the stylesheet, which is what an untouched table keeps doing.
+ *
+ * Written as an inline style and read back from one, exactly as `background` and `color` beside them
+ * are. That is what carries them into the saved file and into the exported PDF, both of which take
+ * the cell's own markup: nothing else in this editor would have to be taught about them.
+ *
+ * Read back through the CSSOM rather than by matching the text, because the browser rewrites what it
+ * was given. Four sides all set to `none` come back out of a cell as
+ * `border-width: medium; border-style: none; border-color: currentcolor` - the shorthand, with not
+ * one of the four longhands left to match. A pattern looking for `border-top:` found nothing, so a
+ * borderless table drew its full grid again the moment it was reopened. The test caught it; the eye
+ * would not have, because the table looked right until it was saved.
+ */
+const sideOf = (element, name) => {
+  const style = element.getAttribute('style')
+  if (!style || typeof document === 'undefined') {
+    return null
+  }
+  // A detached element, so the browser resolves whatever shorthand it was given into the side
+  // actually asked for, without the document having to hold it.
+  const probe = document.createElement('div')
+  probe.setAttribute('style', style)
+  // The three longhands, not the side's own shorthand: asking for `borderTop` comes back empty
+  // whenever the browser cannot serialise it in one piece, which is exactly the case this has to
+  // read - a cell whose four sides were all turned off comes back as
+  // `border-width: medium; border-style: none; border-color: currentcolor`.
+  const line = probe.style[`${name}Style`]
+  if (!line) {
+    return null
+  }
+  if (line === 'none' || line === 'hidden') {
+    return line
+  }
+  const width = probe.style[`${name}Width`] || 'medium'
+  const colour = probe.style[`${name}Color`]
+  return colour ? `${width} ${line} ${colour}` : `${width} ${line}`
+}
+
+const SIDES = [
+  ['borderTop', 'border-top'],
+  ['borderRight', 'border-right'],
+  ['borderBottom', 'border-bottom'],
+  ['borderLeft', 'border-left'],
+]
+
+const borderAttributes = () =>
+  Object.fromEntries(
+    SIDES.map(([name, property]) => [
+      name,
+      {
+        default: null,
+        parseHTML: (element) => sideOf(element, name),
+        renderHTML: (attributes) => {
+          const value = attributes[name]
+          return value ? { style: `${property}: ${value}` } : {}
+        },
+      },
+    ]),
+  )
+
 // 扩展单元格
 const TableCellOptions = {
   addAttributes() {
@@ -125,6 +195,7 @@ const TableCellOptions = {
           return color ? { style: `color: ${color}` } : {}
         },
       },
+      ...borderAttributes(),
     }
   },
 }

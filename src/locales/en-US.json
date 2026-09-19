@@ -305,7 +305,18 @@
     "splitCell": "Split Cell",
     "toggleHeaderCell": "Header Cell",
     "toggleHeaderRow": "Header Row",
-    "toggleHeaderColumn": "Header Column"
+    "toggleHeaderColumn": "Header Column",
+    "cellBorders": {
+      "text": "Cell Borders",
+      "tip": "Choose which sides of the selected cells draw a line",
+      "all": "All Borders",
+      "none": "No Borders",
+      "horizontal": "Top and Bottom Only",
+      "top": "Toggle Top",
+      "right": "Toggle Right",
+      "bottom": "Toggle Bottom",
+      "left": "Toggle Left"
+    }
   },
   "tools": {
     "barcode": {

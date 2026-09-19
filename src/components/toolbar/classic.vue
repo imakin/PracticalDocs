@@ -136,7 +136,7 @@
         <div class="pdoc-virtual-group">
           <menus-toolbar-table-cells-align />
           <menus-toolbar-table-cells-background />
-          <!-- <menus-toolbar-table-border-color /> -->
+          <menus-toolbar-table-cell-borders />
         </div>
         <div class="pdoc-virtual-group">
           <menus-toolbar-table-add-row-before :huge="false" />

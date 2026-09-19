@@ -152,7 +152,7 @@
           <div class="pdoc-virtual-group">
             <menus-toolbar-table-cells-align />
             <menus-toolbar-table-cells-background />
-            <!-- <menus-toolbar-table-border-color /> -->
+            <menus-toolbar-table-cell-borders />
           </div>
           <div class="pdoc-virtual-group">
             <div class="pdoc-virtual-group-row">

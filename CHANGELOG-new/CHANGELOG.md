@@ -1,3 +1,17 @@
+### A Cell Draws The Sides The Writer Chose
+
+- `Asked For By The User`: control over a table cell's borders. Every table came out as the same full grid, and a thesis rarely wants one - the house rule is a line above and below and nothing else, and an equation written as a table wants no lines at all, with the number in a cell of its own.
+- `What Was There`: a Border Color entry that set `borderColor`, an attribute the cell schema never declared. It did nothing, and it had been commented out of both toolbars. It is replaced rather than repaired.
+- `Each Side Is Its Own Attribute` - `borderTop`, `borderRight`, `borderBottom`, `borderLeft` - holding a CSS value rather than a flag, because a flag cannot say what the line looks like and a writer will want a thick rule above a total and a hairline between rows. `null` leaves the side to the stylesheet, so an untouched table is exactly as it was.
+- `Written As An Inline Style, Which Is What Carries It`: the saved file and the exported PDF both take the cell's own markup, so nothing else in the editor had to be taught about borders.
+- `Reading Them Back Is The Part That Bites`: the browser rewrites what it is given. Four sides all set to `none` come back out of a cell as `border-width: medium; border-style: none; border-color: currentcolor` - the shorthand, with not one longhand left to match - and asking the CSSOM for `borderTop` returns **empty**, because it cannot serialise that side in one piece. The three longhands per side are read instead. Before that, a borderless table drew its full grid again the moment it was reopened; the test caught it, the eye would not have, because it looked right until it was saved.
+- `In The Toolbar`: Table > Cell Borders - All Borders, No Borders, Top and Bottom Only, and each side toggled on its own. It applies to every selected cell, so dragging across the table and choosing No Borders clears the whole thing.
+- `Test script`: `cell-borders.cdp.mjs`, 8 checks. The cells are selected by dragging the mouse across them and the borders chosen from the real menu, as a writer does; only the fixture is set up in code. Seen failing on three with the attributes removed.
+
+  ```bash
+  npm run test:e2e:cell-borders
+  ```
+
 ### The Engine Confirms Its Answer
 
 - `Reported By The User`: opening their thesis paginated it wrongly from the early pages, and nudging the zoom up one step and back set it right. They had the remedy long before anyone had the cause.
