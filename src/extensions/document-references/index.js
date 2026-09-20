@@ -709,7 +709,12 @@ export const CrossReference = Node.create({
   },
 
   parseHTML() {
-    return [{ tag: 'a[data-type="cross-reference"]' }]
+    // Ahead of the Link mark, whose rule is `a[href]` and matches this anchor too. At equal priority
+    // the mark won, and a reference read back out of markup came in as **plain text wearing a link**
+    // - it kept its words and lost its wiring, so it never renumbered again. Measured on a round
+    // trip through `getHTML`: `heading,text,paragraph,text,crossReference` went in and
+    // `heading,text,paragraph,text,text` came back.
+    return [{ tag: 'a[data-type="cross-reference"]', priority: 100 }]
   },
 
   renderHTML({ HTMLAttributes }) {
