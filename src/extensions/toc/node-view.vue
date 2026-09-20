@@ -12,19 +12,34 @@
     <div class="pdoc-node-container pdoc-node-toc" data-pdoc-self-paginating="true">
       <div ref="bodyRef" class="pdoc-node-toc-body" :class="profileClass">
         <p v-if="entries.length === 0" class="pdoc-toc-empty">{{ t('toc.empty') }}</p>
-        <div
-          v-for="entry in entries"
-          :key="entry.id"
-          class="pdoc-toc-item-row"
-          :data-toc-break="gaps[entry.id] ? '' : null"
-          :style="{ paddingLeft: entry.indent, marginTop: gaps[entry.id] }"
-          @click="goToHeading(entry.id)"
-        >
-          <span v-if="entry.label" class="pdoc-toc-item-label">{{ entry.label }}</span>
-          <span class="pdoc-toc-item-text">{{ entry.textContent }}</span>
-          <span class="pdoc-toc-item-dots"></span>
-          <span class="pdoc-toc-item-page">{{ entry.pageNumber }}</span>
-        </div>
+        <template v-for="entry in entries" :key="entry.id">
+          <!--
+            The same element the pagination engine puts at every other page boundary, and it has to
+            be that element rather than a margin on the row. Everything downstream of a page boundary
+            is built from the spacers: the export turns each one into the band that closes a page,
+            carries the page number, and opens the next page with its top margin. A margin produced a
+            boundary none of that machinery could see, so a contents running onto a second page cost
+            every page after it its number - measured on a sixty chapter fixture, the printed folios
+            ran one behind from the contents onward and the first two pages carried none at all.
+          -->
+          <span
+            v-if="gaps[entry.id]"
+            class="pdoc-page-spacer"
+            contenteditable="false"
+            aria-hidden="true"
+            :style="{ display: 'block', height: gaps[entry.id] }"
+          ></span>
+          <div
+            class="pdoc-toc-item-row"
+            :style="{ paddingLeft: entry.indent }"
+            @click="goToHeading(entry.id)"
+          >
+            <span v-if="entry.label" class="pdoc-toc-item-label">{{ entry.label }}</span>
+            <span class="pdoc-toc-item-text">{{ entry.textContent }}</span>
+            <span class="pdoc-toc-item-dots"></span>
+            <span class="pdoc-toc-item-page">{{ entry.pageNumber }}</span>
+          </div>
+        </template>
       </div>
     </div>
   </node-view-wrapper>
@@ -149,9 +164,9 @@ const build = () => {
  *   the next answer from the current padded one compounds, and the list walks down the document.
  * - **Measurements are scaled, the value written is not.** Everything from `getBoundingClientRect`
  *   is in the zoomed space, and so is what the engine publishes in `storage.sheets`, because
- *   `renderSheets` divides by the scale on the way out. A margin is a CSS length inside the same
- *   transform, so it has to be divided too - the bug that made every spacer half its height at 50
- *   per cent zoom, found the last time something was drawn from these numbers.
+ *   `renderSheets` divides by the scale on the way out. The spacer's height is a CSS length inside
+ *   the same transform, so it has to be divided too - the bug that made every spacer half its height
+ *   at 50 per cent zoom, found the last time something was drawn from these numbers.
  */
 // A bound, so that a measurement going wrong stops rather than walking down the document forever.
 const MAX_SHEETS_HERE = 1000
@@ -192,9 +207,9 @@ const reflow = () => {
   )
 
   // The natural layout, worked out by subtracting what is already applied rather than by clearing it
-  // and measuring again. Clearing meant this function and Vue were both writing `margin-top`: the
-  // styles cleared here stayed cleared whenever the answer came out unchanged and Vue saw no reason
-  // to patch, and a solve landing between the clear and Vue's next patch measured a contents with no
+  // and measuring again. Clearing meant this function and Vue were both writing the gap: the styles
+  // cleared here stayed cleared whenever the answer came out unchanged and Vue saw no reason to
+  // patch, and a solve landing between the clear and Vue's next patch measured a contents with no
   // gaps in it at all. Measured: the same document settled on one run and straddled fourteen rows on
   // the next. One writer, and this reads.
   let applied = 0
@@ -320,18 +335,6 @@ const goToHeading = (id) => {
     // One row per heading. Indentation is padding on the row, so it moves the text and leaves the
     // page number where it is - the number column is a fixed track at the right edge and the dot
     // leader takes up whatever is left between them.
-    // The gap that carries a row onto the next sheet is a screen measure. Print breaks the page by
-    // itself, and then honours the margin on top of its own break, so the whole document slid down
-    // by one gap and came out with a blank page at the end - measured, 12 sheets on screen against
-    // 13 printed pages, the last empty, where the same document without a contents printed 11 for
-    // 11. In print the row asks for the break instead and takes no margin at all.
-    @media print {
-      .pdoc-toc-item-row[data-toc-break] {
-        margin-top: 0 !important;
-        break-before: page;
-      }
-    }
-
     .pdoc-toc-item-row {
       display: flex;
       align-items: baseline;
