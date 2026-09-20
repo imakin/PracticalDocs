@@ -1,4 +1,7 @@
+import { registerUpload } from '@/utils/document-assets'
 import { defaultPageNumberSettings } from '@/utils/page-numbering'
+import { saveDocumentToServer } from '@/utils/save-to-server'
+import { shortId } from '@/utils/short-id'
 
 import defaultDicts from './dicts'
 
@@ -192,19 +195,28 @@ export default {
     en_US: {},
     zh_CN: {},
   },
-  async onSave() {
-    return await new Promise((_, reject) => {
-      reject(new Error('Key "onSave": Please set the save method'))
-    })
+  // Saving and uploading work out of the box, against the server the toolbar already points at.
+  // They used to reject, which left an application that embedded this editor without writing its own
+  // handlers able to open a document and unable to save it. A host that wants somewhere else to save
+  // to still passes its own, and these are never reached.
+  async onSave(content, page, document) {
+    return await saveDocumentToServer(content, page, document)
   },
   async onFileUpload(file) {
-    return await new Promise((_, reject) => {
-      if (!file) {
-        reject(new Error('File not found'))
-        return
-      }
-      reject(new Error('Key "onFileUpload": Please set the upload method'))
-    })
+    if (!file) {
+      throw new Error('File not found')
+    }
+    // The bytes are kept so the next save can put them in the document folder. A bare object URL
+    // would live only in this tab: the document would record the name and the size of the picture,
+    // and not one byte of it.
+    const registered = await registerUpload(file)
+    return {
+      id: shortId(),
+      url: registered.url,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    }
   },
   onFileDelete() {
     console.error(
