@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { renderMarkdown } from '../../src/utils/markdown.js'
+import { crossReferenceToken, renderMarkdown } from '../../src/utils/markdown.js'
 
 test('ordinary markdown still renders as it did', () => {
   assert.match(renderMarkdown('# Metodologi'), /<h1>Metodologi<\/h1>/)
@@ -62,4 +62,48 @@ test('an empty source renders nothing', () => {
   assert.equal(renderMarkdown('').trim(), '')
   assert.equal(renderMarkdown(null).trim(), '')
   assert.equal(renderMarkdown(undefined).trim(), '')
+})
+
+test('a cross-reference becomes the anchor the reference node parses', () => {
+  const html = renderMarkdown('Lihat [[ref:abc123]] untuk rinciannya.')
+  assert.match(html, /<a data-type="cross-reference" data-target-id="abc123"/)
+  assert.match(html, /data-display-mode="label"/)
+  // Empty on purpose: the text is the target's current number, written by the reference sync. Any
+  // text baked in here would be the number as it stood when the block was last edited.
+  assert.match(html, /href="#reference-abc123"><\/a>/)
+  assert.match(html, /Lihat /)
+  assert.match(html, / untuk rinciannya\./)
+})
+
+test('a display mode travels with the reference', () => {
+  assert.match(renderMarkdown('[[ref:t1|title]]'), /data-display-mode="title"/)
+  assert.match(renderMarkdown('[[ref:t1|label-title]]'), /data-display-mode="label-title"/)
+  // A mode nobody defined is a typo, and a typo should still give a working reference.
+  assert.match(renderMarkdown('[[ref:t1|shouty]]'), /data-display-mode="label"/)
+})
+
+test('the token the toolbar writes is the token the parser reads', () => {
+  assert.equal(crossReferenceToken('abc'), '[[ref:abc]]')
+  assert.equal(crossReferenceToken('abc', 'label'), '[[ref:abc]]')
+  assert.equal(crossReferenceToken('abc', 'title'), '[[ref:abc|title]]')
+  assert.match(renderMarkdown(crossReferenceToken('abc', 'title')), /data-target-id="abc"/)
+})
+
+test('ordinary square brackets are left alone', () => {
+  // The rule must not claim every pair of brackets the writer types.
+  const html = renderMarkdown('Nilai [1] dan [[dua]] dan [[ref: spasi]] tetap teks.')
+  assert.doesNotMatch(html, /cross-reference/)
+  assert.match(html, /\[\[ref: spasi\]\]/)
+})
+
+test('an ordinary markdown link still becomes a link', () => {
+  const html = renderMarkdown('[situs](https://example.com)')
+  assert.match(html, /<a href="https:\/\/example\.com">situs<\/a>/)
+  assert.doesNotMatch(html, /cross-reference/)
+})
+
+test('a target id is escaped into its attributes', () => {
+  const html = renderMarkdown('[[ref:a"onload=x]]')
+  assert.doesNotMatch(html, /data-target-id="a"onload/)
+  assert.match(html, /&quot;/)
 })

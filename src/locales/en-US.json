@@ -984,7 +984,8 @@
         "label": "Numbered label",
         "title": "Title only",
         "labelTitle": "Numbered label and title"
-      }
+      },
+      "markdownHint": "Inside a markdown block the reference is written as {token}."
     },
     "citation": {
       "text": "Citation",

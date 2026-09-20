@@ -93,6 +93,12 @@ const commit = () => {
 
 const enter = () => {
   typing = true
+  // The writer is in this source. A toolbar action taken from here belongs to this block, even
+  // though pressing a toolbar button takes the focus back out of the textarea.
+  const store = props.editor?.storage?.markdownBlock
+  if (store) {
+    store.openPos = props.getPos?.() ?? null
+  }
   // The cursor is in. The hold was only ever a way of getting here, so it stops counting down.
   held = false
   clearHold()
@@ -105,6 +111,45 @@ const leave = () => {
   held = false
   clearHold()
   commit()
+}
+
+/**
+ * Text arriving from somewhere other than the keyboard - today, a cross-reference chosen in the
+ * toolbar dialog.
+ *
+ * It lands at the caret, which is why this has to happen here: the caret inside a textarea is not
+ * part of the document, so no command can know where the writer was. `selectionStart` survives the
+ * blur that pressing a toolbar button causes, so the position is still the one they left.
+ *
+ * A block whose source is closed takes the text at the end of its markdown and opens, rather than
+ * refusing. Refusing would mean the writer has to remember to put the cursor back first.
+ */
+const onSourceInsert = ({ pos, text }) => {
+  if (pos !== props.getPos?.()) {
+    return
+  }
+  const element = sourceRef
+  const base = active ? draft : (props.node.attrs.source ?? '')
+  const start =
+    element && active ? (element.selectionStart ?? base.length) : base.length
+  const end = element && active ? (element.selectionEnd ?? start) : base.length
+  draft = base.slice(0, start) + text + base.slice(end)
+  commit()
+  held = true
+  clearHold()
+  holdTimer = setTimeout(() => {
+    held = false
+    holdTimer = null
+  }, HOLD_MS)
+  nextTick(() => {
+    autoSize()
+    if (sourceRef) {
+      // After what was inserted, so the writer carries on typing where they left off.
+      const caret = start + text.length
+      sourceRef.setSelectionRange(caret, caret)
+    }
+  })
+  focusSource()
 }
 
 const onKeydown = (event) => {
@@ -170,9 +215,11 @@ const onSourceRequested = (pos) => {
 
 onMounted(() => {
   props.editor?.on?.('markdownSourceRequested', onSourceRequested)
+  props.editor?.on?.('markdownSourceInsert', onSourceInsert)
 })
 onBeforeUnmount(() => {
   props.editor?.off?.('markdownSourceRequested', onSourceRequested)
+  props.editor?.off?.('markdownSourceInsert', onSourceInsert)
   clearHold()
 })
 

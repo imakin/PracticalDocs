@@ -946,7 +946,8 @@
         "label": "编号标签",
         "title": "仅标题",
         "labelTitle": "编号标签和标题"
-      }
+      },
+      "markdownHint": "在 Markdown 块中，引用会写成 {token}。"
     },
     "citation": {
       "text": "引文",

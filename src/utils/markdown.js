@@ -129,6 +129,60 @@ const blockMathRule = (state, startLine, endLine, silent) => {
   return true
 }
 
+/**
+ * A cross-reference, written as `[[ref:<id>]]`.
+ *
+ * The rule emits the same anchor the cross-reference node parses, so a reference typed in markdown
+ * becomes a real `crossReference` node and is renumbered by the same sync that renumbers every other
+ * reference in the document. Rendering the number here instead would freeze it at the moment the
+ * block was last edited, which is the one thing a cross-reference must never do.
+ *
+ * The display mode follows a pipe: `[[ref:abc123|title]]`. An unknown mode falls back to the label,
+ * because a typo in a mode name should still produce a working reference.
+ */
+const REFERENCE_OPEN = '[[ref:'
+const REFERENCE_CLOSE = ']]'
+const DISPLAY_MODES = new Set(['label', 'title', 'label-title'])
+const BRACKET = 0x5b
+
+export const crossReferenceToken = (targetId, displayMode = 'label') =>
+  DISPLAY_MODES.has(displayMode) && displayMode !== 'label'
+    ? `${REFERENCE_OPEN}${targetId}|${displayMode}${REFERENCE_CLOSE}`
+    : `${REFERENCE_OPEN}${targetId}${REFERENCE_CLOSE}`
+
+const crossReferenceRule = (state, silent) => {
+  const start = state.pos
+  if (state.src.charCodeAt(start) !== BRACKET) {
+    return false
+  }
+  if (
+    state.src.slice(start, start + REFERENCE_OPEN.length) !== REFERENCE_OPEN
+  ) {
+    return false
+  }
+  const end = state.src.indexOf(REFERENCE_CLOSE, start + REFERENCE_OPEN.length)
+  if (end === -1 || end >= state.posMax) {
+    return false
+  }
+  const body = state.src.slice(start + REFERENCE_OPEN.length, end)
+  // An id is one token: no whitespace, no nested brackets. Anything else is a writer typing square
+  // brackets, and it stays the text they typed.
+  if (!body || /[\s[\]]/.test(body)) {
+    return false
+  }
+  const [targetId, mode] = body.split('|')
+  if (!targetId) {
+    return false
+  }
+  if (!silent) {
+    const token = state.push('cross_reference', '', 0)
+    token.content = targetId
+    token.meta = { displayMode: DISPLAY_MODES.has(mode) ? mode : 'label' }
+  }
+  state.pos = end + REFERENCE_CLOSE.length
+  return true
+}
+
 const markdown = new MarkdownIt({
   html: false,
   linkify: true,
@@ -136,6 +190,8 @@ const markdown = new MarkdownIt({
 })
 
 markdown.inline.ruler.before('escape', 'math_inline', inlineMathRule)
+// Before the link rule, or `[[ref:id]]` is offered to it first and comes back as bracketed text.
+markdown.inline.ruler.before('link', 'cross_reference', crossReferenceRule)
 markdown.block.ruler.before('fence', 'math_block', blockMathRule, {
   alt: ['paragraph', 'reference', 'blockquote', 'list'],
 })
@@ -143,7 +199,21 @@ markdown.block.ruler.before('fence', 'math_block', blockMathRule, {
 markdown.renderer.rules.math_inline = (tokens, index) =>
   `<span data-type="inline-math" data-latex="${escapeAttribute(tokens[index].content)}"></span>`
 
+/**
+ * Empty on purpose. The text of a reference is `referenceText`, written by the reference sync from
+ * the target's current number - so the markup carries the target and nothing that can go stale.
+ */
+markdown.renderer.rules.cross_reference = (tokens, index) => {
+  const id = escapeAttribute(tokens[index].content)
+  const mode = escapeAttribute(tokens[index].meta?.displayMode || 'label')
+  return (
+    `<a data-type="cross-reference" data-target-id="${id}" data-display-mode="${mode}"` +
+    ` data-target-number="" data-target-text="" data-missing="false" href="#reference-${id}"></a>`
+  )
+}
+
 markdown.renderer.rules.math_block = (tokens, index) =>
   `<div data-type="block-math" data-latex="${escapeAttribute(tokens[index].content)}"></div>`
 
-export const renderMarkdown = (content) => markdown.render(String(content || ''))
+export const renderMarkdown = (content) =>
+  markdown.render(String(content || ''))

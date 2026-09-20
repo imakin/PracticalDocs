@@ -59,6 +59,13 @@ const MARKDOWN_ATTRIBUTES = [
   'language',
   'start',
   'checked',
+  // A cross-reference written as `[[ref:id]]`. Its target and display mode come from the markdown,
+  // so a source that names a different target than the rendered node is genuine drift and has to be
+  // rebuilt. `referenceText` is deliberately absent: that one is written by the reference sync from
+  // the target's current number, and comparing it would report every reference as stale the moment
+  // a number changed.
+  'targetId',
+  'displayMode',
 ]
 
 /**
@@ -75,9 +82,12 @@ export const markdownSignature = (fragment) => {
       const marks = node.marks
         .map((mark) => {
           const attrs = MARKDOWN_ATTRIBUTES.filter(
-            (key) => mark.attrs?.[key] !== undefined && mark.attrs?.[key] !== null,
+            (key) =>
+              mark.attrs?.[key] !== undefined && mark.attrs?.[key] !== null,
           ).map((key) => `${key}=${mark.attrs[key]}`)
-          return attrs.length ? `${mark.type.name}(${attrs.join(',')})` : mark.type.name
+          return attrs.length
+            ? `${mark.type.name}(${attrs.join(',')})`
+            : mark.type.name
         })
         .join('+')
       parts.push(`t[${marks}]${node.text}`)
@@ -148,9 +158,43 @@ export const blockStyleMarks = (schema, node) => {
   const fromSource = marksCoveringAll(
     contentForSource(schema, node.attrs.source ?? ''),
   )
-  return applied.filter(
-    (mark) => !fromSource.some((other) => other.eq(mark)),
-  )
+  return applied.filter((mark) => !fromSource.some((other) => other.eq(mark)))
+}
+
+/**
+ * The block whose source the writer is in, if any.
+ *
+ * Two routes lead into a source panel and they leave the editor's selection in different places.
+ * Clicking the block sets a node selection on it, which the walk below finds. The button on the
+ * block's handle does not move the selection at all, so the panel can be open over a selection that
+ * still sits in some other paragraph - and a toolbar action taken from there would land in that
+ * paragraph instead of in the source the writer is looking at.
+ *
+ * `openPos` closes that gap: it is set when a source is opened and cleared as soon as the selection
+ * lands outside it. It is only consulted when the selection itself does not answer the question.
+ */
+export const findMarkdownBlock = (state, editor = null) => {
+  if (!state) {
+    return null
+  }
+  const { $from, node } = state.selection
+  if (node?.type.name === 'markdownBlock') {
+    return { pos: state.selection.from, node }
+  }
+  for (let { depth } = $from; depth > 0; depth -= 1) {
+    const parent = $from.node(depth)
+    if (parent.type.name === 'markdownBlock') {
+      return { pos: $from.before(depth), node: parent }
+    }
+  }
+  const openPos = editor?.storage?.markdownBlock?.openPos
+  if (typeof openPos === 'number') {
+    const open = state.doc.nodeAt(openPos)
+    if (open?.type.name === 'markdownBlock') {
+      return { pos: openPos, node: open }
+    }
+  }
+  return null
 }
 
 export default Node.create({
@@ -159,6 +203,12 @@ export default Node.create({
   content: 'block+',
   defining: true,
   isolating: true,
+
+  addStorage() {
+    // Which block has its source open, for this reader, in this session. Not a document fact - see
+    // `openMarkdownSource` below for why that distinction is kept.
+    return { openPos: null }
+  },
 
   addAttributes() {
     return {
@@ -195,7 +245,11 @@ export default Node.create({
       // `pre` is a verbatim tag to `storage-server/format-html.js`, so every character in here is
       // copied out byte for byte and the formatter cannot reflow the markdown into something else.
       // `hidden` keeps it out of the way when the file is opened straight in a browser.
-      ['pre', { 'data-markdown-source': '', hidden: 'hidden' }, node.attrs.source || ''],
+      [
+        'pre',
+        { 'data-markdown-source': '', hidden: 'hidden' },
+        node.attrs.source || '',
+      ],
       ['div', { 'data-markdown-rendered': '' }, 0],
     ]
   },
@@ -323,7 +377,37 @@ export default Node.create({
           if (!node || node.type.name !== this.name) {
             return false
           }
+          this.storage.openPos = pos
           editor?.emit?.('markdownSourceRequested', pos)
+          return true
+        },
+
+      /**
+       * Type something into one block's source, where the writer's cursor is.
+       *
+       * An event, for the same reason as `openMarkdownSource`: the caret inside a textarea is not in
+       * the document, so only the node view knows where the text should land. The node view writes
+       * the result back through `setMarkdownSource`, so the change arrives as one transaction like
+       * any other edit to a source.
+       *
+       * This is how a cross-reference reaches markdown. The toolbar knows the target, the block
+       * knows the caret, and the markdown - `[[ref:id]]` - is what they agree on.
+       */
+      insertMarkdownSourceText:
+        ({ pos, text }) =>
+        ({ state, editor }) => {
+          const node = state.doc.nodeAt(pos)
+          if (!node || node.type.name !== this.name || !text) {
+            return false
+          }
+          // After this command has finished, never during it. The node view answers by writing the
+          // source back through `setMarkdownSource`, and a transaction dispatched from inside a
+          // command that is still building its own is applied against a state that has already moved
+          // on - ProseMirror throws "Applying a mismatched transaction", the caller's chain dies
+          // where it stands, and the dialog that asked for the insert is left open over the page.
+          queueMicrotask(() => {
+            editor?.emit?.('markdownSourceInsert', { pos, text: String(text) })
+          })
           return true
         },
 
@@ -349,7 +433,9 @@ export default Node.create({
               return commands.unwrapMarkdownBlock({ pos: $from.before(depth) })
             }
             if (node.isTextblock) {
-              return commands.convertToMarkdownBlock({ pos: $from.before(depth) })
+              return commands.convertToMarkdownBlock({
+                pos: $from.before(depth),
+              })
             }
           }
           return false
@@ -406,5 +492,36 @@ export default Node.create({
 
   onCreate() {
     this.editor.commands.rebuildMarkdownBlocks()
+  },
+
+  /**
+   * A selection that has left the open block ends the claim on it.
+   *
+   * Without this, `openPos` outlives the panel it described: the writer opens one block's source,
+   * clicks away into an ordinary paragraph, and the next toolbar insert is still routed into the
+   * markdown of a block they are no longer in. A node selection **on** the block is how the block
+   * itself is selected, so that one keeps the claim.
+   */
+  onSelectionUpdate() {
+    const { openPos } = this.storage
+    if (typeof openPos !== 'number') {
+      return
+    }
+    const { $from, node } = this.editor.state.selection
+    if (
+      node?.type.name === this.name &&
+      this.editor.state.selection.from === openPos
+    ) {
+      return
+    }
+    for (let { depth } = $from; depth > 0; depth -= 1) {
+      if (
+        $from.node(depth).type.name === this.name &&
+        $from.before(depth) === openPos
+      ) {
+        return
+      }
+    }
+    this.storage.openPos = null
   },
 })
