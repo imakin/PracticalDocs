@@ -99,7 +99,8 @@
     "test:e2e:pdf-bookmarks": "node tests/e2e/pdf-bookmarks.cdp.mjs",
     "test:unit:pdf-outline": "node --test tests/unit/pdf-outline.test.mjs",
     "test:e2e:markdown-cross-reference": "node tests/e2e/markdown-cross-reference.cdp.mjs",
-    "test:e2e:toc-multipage-export": "node tests/e2e/toc-multipage-export.cdp.mjs"
+    "test:e2e:toc-multipage-export": "node tests/e2e/toc-multipage-export.cdp.mjs",
+    "test:e2e:math-block-pagination": "node tests/e2e/math-block-pagination.cdp.mjs"
   },
   "dependencies": {
     "@eslint/object-schema": "3.0.2",

@@ -401,6 +401,39 @@ const collectLines = (view, originTop) => {
     return selfPaginated.get(block)
   }
 
+  /**
+   * A block that renders text the engine can measure but owns no position inside itself.
+   *
+   * Display mathematics is the case that brought this in. KaTeX draws one formula as dozens of boxes
+   * - numerator, rule, denominator, each operator - and every one of them produces text rects, so the
+   * solver saw a twelve line block and tried to break between the parts of a fraction. Every one of
+   * those rects maps back through `posAtDOM` to the same position, the node's own, so the break it
+   * wanted was one it had already placed: measured on the user's thesis, an overflow at position
+   * 78141 against a last break at 78145, `no-anchor-below-the-last-break`, and **the last six pages
+   * of the document left unpaginated** - text running through the foot of the sheet and the page
+   * number printed over it.
+   *
+   * Collapsing the whole thing into one line is what the document means anyway: a formula is not
+   * breakable, so its box is its line, and the engine moves it whole to the next sheet. Measuring the
+   * box rather than the glyphs also measures what print measures, which is why the formula now
+   * overflows before the paragraph under it does rather than after.
+   *
+   * `data-pdoc-self-paginating` is the other half of this idea and not a substitute: the contents
+   * places its own rows and wants to be left alone, while a formula wants to be moved.
+   */
+  const ATOMIC_SELECTOR = '[data-type="block-math"], [data-type="inline-math"]'
+  const atomKeys = new WeakMap()
+  let nextAtomKey = 0
+  const atomicOf = (node) => {
+    const start = node.nodeType === Node.TEXT_NODE ? node.parentElement : node
+    const atom = start?.closest?.(ATOMIC_SELECTOR) || null
+    if (atom && !atomKeys.has(atom)) {
+      nextAtomKey += 1
+      atomKeys.set(atom, `atom-${nextAtomKey}`)
+    }
+    return atom
+  }
+
   const add = (rect, block, node, key) => {
     if (rect.height <= 0 || rect.width <= 0) {
       return
@@ -437,6 +470,20 @@ const collectLines = (view, originTop) => {
     if (!node.textContent || !node.textContent.trim()) {
       continue
     }
+    const atom = atomicOf(node)
+    if (atom) {
+      // An inline formula is part of the line it sits in, so it is merged into that line rather than
+      // becoming one of its own: the block it belongs to is the paragraph, and the key is the line.
+      const rect = atom.getBoundingClientRect()
+      const inline = atom.getAttribute('data-type') === 'inline-math'
+      add(
+        rect,
+        inline ? blockOf(atom) : atom,
+        atom,
+        inline ? `${Math.round(rect.top)}` : atomKeys.get(atom),
+      )
+      continue
+    }
     const block = blockOf(node)
     const range = document.createRange()
     range.selectNodeContents(node)
@@ -447,6 +494,12 @@ const collectLines = (view, originTop) => {
   for (const element of view.dom.querySelectorAll(
     'img, video, iframe, canvas, svg',
   )) {
+    // KaTeX draws fraction rules and radicals as svg. They belong to the formula's one box, not to a
+    // line of their own.
+    const atom = atomicOf(element)
+    if (atom) {
+      continue
+    }
     const rect = element.getBoundingClientRect()
     add(
       rect,
