@@ -91,14 +91,20 @@ const sheetGeometry = () => {
     orientation: page.value?.orientation,
     margin: page.value?.margin,
   }
-  const at = (sheet) => sections[owners[sheet] ?? 0] ?? fallback
+  // A sheet past the last one belongs to the last section, not to the first. The band that opens
+  // the page after the final break asks for `sheet + 1`, and when a block such as the contents adds
+  // a spacer of its own that index runs one past the end - so the last opening band was named for
+  // section 0 while the paragraph under it sat in the last section. A change of page name is a
+  // forced break: the document's final page split in two, the first half holding only bands.
+  const owner = (sheet) => owners[Math.min(sheet, owners.length - 1)] ?? 0
+  const at = (sheet) => sections[owner(sheet)] ?? fallback
   return {
     count: owners.length,
     mixed:
       sections.length > 1 &&
       sections.some((section) => !sameGeometry(section, sections[0])),
     sections,
-    section: (sheet) => String(owners[sheet] ?? 0),
+    section: (sheet) => String(owner(sheet)),
     height: (sheet) => sheetSizeOf(at(sheet)).height,
     marginTop: (sheet) => Number(at(sheet)?.margin?.top) || 0,
     marginBottom: (sheet) => Number(at(sheet)?.margin?.bottom) || 0,
@@ -367,6 +373,16 @@ const carrySectionNames = (root) => {
       if (child.hasAttribute('data-pdoc-section')) {
         current = child.getAttribute('data-pdoc-section')
       } else if (child.querySelector('[data-pdoc-section]')) {
+        // A container whose contents are named but which names nothing itself - a columns block,
+        // whose inner blocks carry the section while the wrapper the node view draws does not. It
+        // used to be walked through and left unnamed, so its own box sat on the default page while
+        // everything around it sat on the section's: two changes of page name, one at each edge,
+        // and each one a forced break. Measured on the writer's thesis: a blank page after every
+        // page that ended in a columns block. The wrapper takes the section it is standing in
+        // before its children are visited.
+        if (current !== null) {
+          child.setAttribute('data-pdoc-section', current)
+        }
         visit(child)
       } else if (current !== null) {
         child.setAttribute('data-pdoc-section', current)
@@ -496,8 +512,28 @@ const getSectionPageRules = (hasPageNumbers) => {
     (least, _section, index) => Math.min(least, geometry.paperOf(index).width),
     Number.POSITIVE_INFINITY,
   )
+  // A named page is only worth having when a section prints on different paper. Its purpose is to
+  // hand Chrome a different `@page` size for that section; it does that by forcing a page break
+  // wherever the name changes - and Blink does not carry a name from a flex container to its
+  // items, so `page: auto` on a list item's content or a markdown block's inner box falls to the
+  // default page. Every such box is then a change of name, and a change of name is a forced break.
+  //
+  // Measured on the writer's thesis, fourteen sections that differ only in their margins, all on
+  // A4: 56 pages for 53 sheets, two of them blank, each holding nothing but a closing band that had
+  // been pushed off its page. With the names withheld, 53 for 53. With every box named explicitly
+  // instead, still 55 - so the names are not repaired, they are withheld, and only issued when the
+  // paper actually differs. The margin rules below never depended on them.
+  const paperOf = (index) => geometry.paperOf(index)
+  const samePaper = (a, b) =>
+    Math.abs(a.width - b.width) < 0.01 && Math.abs(a.height - b.height) < 0.01
+  const paperDiffers = sections.some(
+    (_section, index) => !samePaper(paperOf(index), paperOf(0)),
+  )
   const pageRule = (index) => {
-    const paper = geometry.paperOf(index)
+    if (!paperDiffers) {
+      return ''
+    }
+    const paper = paperOf(index)
     // With page numbers the margins are real blocks in the flow, so the page needs no padding of its
     // own. Without them nothing has to be drawn in the margin and the padding is what keeps Chrome's
     // free pagination inside the section's margins.
@@ -508,16 +544,16 @@ const getSectionPageRules = (hasPageNumbers) => {
         size: ${paper.width}cm ${paper.height}cm;
         padding: ${padding};
         margin: 0;
-      }`
+      }
+      [data-pdoc-section='${index}'] { page: pdoc-s${index}; }`
   }
   const perSection = sections
     .map((section, index) => {
-      const paper = geometry.paperOf(index)
+      const paper = paperOf(index)
       const left = geometry.marginLeftOf(index)
       const right = geometry.marginRightOf(index)
       const column = Math.round((paper.width - left - right) * 1000) / 1000
       return `${pageRule(index)}
-      [data-pdoc-section='${index}'] { page: pdoc-s${index}; }
       .pdoc-print-column[data-pdoc-section='${index}'] {
         --pdoc-section-left: 0px;
         --pdoc-section-right: 0px;
@@ -560,8 +596,11 @@ const getSectionPageRules = (hasPageNumbers) => {
          **portrait**, because the default page's paper is what that content landed on. The opening
          section's name is given to all of them, so the first change of name in the document is the
          first real boundary. The footer closes the last section and carrySectionNames names it. (No
-         backtick may appear in here: this whole block sits inside a template literal.) */
-      html,
+         backtick may appear in here: this whole block sits inside a template literal.) Withheld
+         with the rest of the names when every section prints on the same paper. */
+      ${
+        paperDiffers
+          ? `html,
       body,
       .pdoc-editor-container,
       .pdoc-page-content,
@@ -569,6 +608,8 @@ const getSectionPageRules = (hasPageNumbers) => {
       .pdoc-editor,
       .pdoc-page-node-header {
         page: pdoc-s0;
+      }`
+          : ''
       }
       ${perSection}`
 }

@@ -671,7 +671,43 @@ const charTop = (node, index) => {
  * monotonically inside one text node, so the first character of the line can be binary-searched
  * instead, which does not care where the viewport happens to be.
  */
-const positionAtLineStart = (view, line) => {
+/**
+ * Never inside a row of columns.
+ *
+ * A columns block is a flex row, and a spacer anchored between or inside its columns becomes one
+ * more flex item: it takes no height and moves nothing, so on screen the row stays where it was and
+ * the solver simply breaks again further down. The export is not so forgiving. It turns every spacer
+ * into a band with `break-after: page`, and a band inside the row cuts the row in two - the formula
+ * column on one page and the equation number that sits beside it on the next, with everything after
+ * it shifted by a page. Measured on the writer's thesis: 54 pages for 53 sheets, two bands found
+ * inside `.pdoc-node-column`, both at equation rows.
+ *
+ * So a break that resolves to a position inside a columns block is anchored before the whole block.
+ * The row moves to the next sheet as one piece, which is the only thing a row can do anyway.
+ */
+const COLUMN_STRUCTURE = new Set(['columnContainer', 'column'])
+
+const outsideAnyColumns = (view, pos) => {
+  if (typeof pos !== 'number') {
+    return pos
+  }
+  try {
+    const $pos = view.state.doc.resolve(pos)
+    for (let depth = 1; depth <= $pos.depth; depth += 1) {
+      if (COLUMN_STRUCTURE.has($pos.node(depth).type.name)) {
+        return $pos.before(depth)
+      }
+    }
+    return pos
+  } catch {
+    return pos
+  }
+}
+
+const positionAtLineStart = (view, line) =>
+  outsideAnyColumns(view, positionAtLineStartInside(view, line))
+
+const positionAtLineStartInside = (view, line) => {
   const node = line.source
   if (!node || node.nodeType !== Node.TEXT_NODE) {
     // An element line is a whole block of its own - an image, a video, a canvas. `posAtDOM` on it
