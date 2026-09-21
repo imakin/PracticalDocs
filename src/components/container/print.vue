@@ -376,9 +376,44 @@ const carrySectionNames = (root) => {
   visit(canvas)
 }
 
+/**
+ * Every formula pinned to the height it has on screen, for as long as it takes to copy the page.
+ *
+ * KaTeX builds a formula out of boxes that are taller than the box holding them - struts, raised and
+ * lowered spans - and the wrapper clips them with `overflow: hidden`. On screen the wrapper's height
+ * is all that matters, and it is what the engine measures a formula by. When Chrome cuts the flow
+ * into pages it evidently takes the clipped innards into account too, so the printed content runs
+ * taller than the screen's, the band that closes the page no longer fits, and - being unbreakable -
+ * it moves whole to the next page, where its own `page-break-after` ends that page at once: **a page
+ * carrying nothing but a page number.**
+ *
+ * Measured on a document of sixteen formulas over three sheets: four pages, the third holding only
+ * the number 2. The same document with the formulas' innards removed printed three. With the boxes
+ * pinned, three, with the formulas still in them.
+ *
+ * Pinned on the live DOM, because a height can only be read where the page is laid out, and undone
+ * immediately: the writer's editor must look no different for having exported.
+ */
+const withPinnedFormulas = (root, read) => {
+  const pinned = []
+  for (const formula of root?.querySelectorAll('[data-type="block-math"]') ?? []) {
+    pinned.push([formula, formula.style.height, formula.style.overflow])
+    formula.style.height = `${formula.getBoundingClientRect().height}px`
+    formula.style.overflow = 'hidden'
+  }
+  try {
+    return read()
+  } finally {
+    for (const [formula, height, overflow] of pinned) {
+      formula.style.height = height
+      formula.style.overflow = overflow
+    }
+  }
+}
+
 const getContentHtml = () => {
-  const originalContent =
-    document.querySelector(`${container} .pdoc-page-content`)?.outerHTML || ''
+  const page = document.querySelector(`${container} .pdoc-page-content`)
+  const originalContent = withPinnedFormulas(page, () => page?.outerHTML || '')
   return prepareEchartsForPrint(stripScreenPagination(originalContent))
 }
 // 因echart依赖于组件动态展示，打印时效果无法通过html实现，所以通过转成图片方式解决

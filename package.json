@@ -1,6 +1,6 @@
 {
   "name": "@np_makin/practicaldocs",
-  "version": "11.1.4",
+  "version": "12.0.2",
   "description": "PracticalDocs is a document editor for long, page-accurate documents - theses and reports - built on Vue 3 and Tiptap. It is based on Umo Editor by Umodoc (MIT), with its own pagination engine, numbering profiles and PDF tooling.",
   "keywords": [
     "docs editor",
@@ -102,7 +102,8 @@
     "test:e2e:toc-multipage-export": "node tests/e2e/toc-multipage-export.cdp.mjs",
     "test:e2e:math-block-pagination": "node tests/e2e/math-block-pagination.cdp.mjs",
     "test:e2e:save-without-host-handler": "node tests/e2e/save-without-host-handler.cdp.mjs",
-    "build:app": "vite build --mode app"
+    "build:app": "vite build --mode app",
+    "test:e2e:math-export-parity": "node tests/e2e/math-export-parity.cdp.mjs"
   },
   "dependencies": {
     "@eslint/object-schema": "3.0.2",
