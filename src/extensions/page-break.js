@@ -1,5 +1,11 @@
 import { mergeAttributes, Node } from '@tiptap/core'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
+import {
+  NodeSelection,
+  Plugin,
+  PluginKey,
+  Selection,
+  TextSelection,
+} from '@tiptap/pm/state'
 
 import {
   normalizeSectionMargin,
@@ -230,13 +236,42 @@ export default Node.create({
   },
   addCommands() {
     return {
+      // Inserting a block atom leaves it selected, and the next character typed replaces the
+      // selection: a writer who pressed Page Break and carried on typing lost the break. So the
+      // cursor is moved past it, into the paragraph that follows - a new one when the break is the
+      // last thing in the document.
       setPageBreak:
         () =>
-        ({ commands }) =>
-          commands.insertContent({
-            type: this.name,
-            attrs: { id: shortId(BREAK_ID_LENGTH) },
-          }),
+        ({ chain }) =>
+          chain()
+            .insertContent({
+              type: this.name,
+              attrs: { id: shortId(BREAK_ID_LENGTH) },
+            })
+            .command(({ tr, dispatch }) => {
+              const { selection } = tr
+              if (
+                !(selection instanceof NodeSelection) ||
+                selection.node.type.name !== this.name
+              ) {
+                return true
+              }
+              const after = selection.from + selection.node.nodeSize
+              let next = Selection.findFrom(tr.doc.resolve(after), 1, true)
+              if (!next) {
+                const { paragraph } = tr.doc.type.schema.nodes
+                if (!paragraph) {
+                  return true
+                }
+                tr.insert(after, paragraph.create())
+                next = TextSelection.create(tr.doc, after + 1)
+              }
+              if (dispatch) {
+                tr.setSelection(next).scrollIntoView()
+              }
+              return true
+            })
+            .run(),
       // Change the numbering section a break opens. A break carries no section by default - it just
       // ends a page - so this is how a user opts one in. Passing null for a field puts it back to
       // following the section before it.
