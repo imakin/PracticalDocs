@@ -314,6 +314,14 @@
     padding: 0.1em 0.4em;
     margin-left: 0.25em;
     margin-right: 0.25em;
+    // The inline box takes no part in the height of its line. Left to inherit the paragraph's
+    // line-height, a code span set in a fallback monospace face made Chrome's pagination treat the
+    // block ending with it as reaching the foot of the page, and the band that closes that page was
+    // moved whole to the next one - a blank page in the PDF, with the closing band alone on it.
+    // Measured on the writer's thesis and bisected property by property: only the font family did
+    // it, and only through the line box. The background and padding are drawn from the content
+    // area, which line-height does not touch, so nothing visible changes.
+    line-height: 1;
   }
 
   blockquote {
