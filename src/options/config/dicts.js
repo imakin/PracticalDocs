@@ -102,6 +102,8 @@ const fonts = [
     label: { en_US: 'NSimSun', zh_CN: '新宋体' },
     value: 'NSimSun',
   },
+  { label: 'Liberation Serif', value: 'Liberation Serif' },
+  { label: 'Liberation Sans', value: 'Liberation Sans' },
   { label: 'Arial', value: 'Arial' },
   { label: 'Times New Roman', value: 'Times New Roman' },
   { label: 'Verdana', value: 'Verdana' },

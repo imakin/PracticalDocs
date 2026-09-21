@@ -13,9 +13,15 @@
   --pdoc-text-selection-background: #94cfff;
 
   // 字体相关
+  // The interface.
   --pdoc-font-family:
     helvetica neue, helvetica, pingfang sc, hiragino sans gb, microsoft yahei,
     simsun, sans-serif;
+  // The page, which is a different question from the interface: a document is read as print and a
+  // toolbar is read as a screen. `Default Font` in the font picker means *no* font-family is written
+  // onto the text, so the text falls through to this - which is why this, and not the picker, is
+  // what decides how an untouched document looks.
+  --pdoc-content-font-family: 'Liberation Serif', 'Times New Roman', Times, serif;
   --pdoc-font-size: 14px;
   --pdoc-font-size-small: 12px;
   --pdoc-text-color: rgb(51, 54, 57);

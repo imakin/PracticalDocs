@@ -332,12 +332,28 @@ const downloadAndEnableFont = async (item) => {
   }
 }
 
+/**
+ * Only the faces this browser can actually draw.
+ *
+ * The list is written for a Chinese desktop and most of it - Songti, Heiti, Kaiti, the Fangsong and
+ * FZ families, DengXian, LiSu - is not installed anywhere else, so the picker was mostly entries
+ * marked with a warning that choosing them would do nothing. `refreshFontSupportStatus` has already
+ * measured every one of them by the time this runs, so this only reads the answer.
+ *
+ * Unknown counts as available, deliberately: a font that has not been measured yet is not a font
+ * known to be missing, and hiding it would be a worse mistake than showing it.
+ *
+ * `Default Font` carries no value and is never hidden - it is the way back to the page's own font.
+ */
+const installedOnly = (list) =>
+  (list || []).filter((item) => !item?.value || fontStatusMap[item.value] !== false)
+
 const allFonts = computed(() => {
   ensureRecentState()
   const all = [
     {
       label: t('base.fontFamily.all'),
-      children: options.value.dicts?.fonts,
+      children: installedOnly(options.value.dicts?.fonts),
     },
   ]
   // 通过字体值获取字体列表
@@ -348,6 +364,9 @@ const allFonts = computed(() => {
       )
       .filter(Boolean)
   }
+  // Recent and used are not filtered. They answer "what did I choose" and "what is in this
+  // document", and a font the document really uses has to stay visible even where it cannot be
+  // drawn, or the writer cannot see what is applied.
   if ($recent.value.fonts.length > 0) {
     all.unshift({
       label: t('base.fontFamily.recent'),
