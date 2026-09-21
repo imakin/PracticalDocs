@@ -324,6 +324,16 @@ for (let i = 1; i <= TAIL; i += 1) {
 }
 await typeText(source.join('\n'))
 await sleep(1000)
+
+// The fixture is two thousand characters typed into a textarea, and anything that re-renders the
+// node view while that is happening - a stylesheet saved in another window, say - closes the source
+// panel and the rest of the typing lands somewhere else. Say so here rather than letting it surface
+// three checks later as "no formulas rendered".
+const typed = await evaluate(`document.querySelector('.pdoc-node-markdown-block textarea')?.value ?? ''`)
+assert.ok(
+  typed.includes(`Sesudah rumus ${TAIL}`),
+  `the fixture did not all reach the source panel: it ends ${JSON.stringify(typed.slice(-60))}`,
+)
 // Leaving the source is what commits it, and the block renders.
 await clickAt(bodyBox.x, bodyBox.y - 200)
 await sleep(8000)

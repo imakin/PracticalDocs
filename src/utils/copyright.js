@@ -9,8 +9,18 @@ import pkg from '../../package.json'
  */
 const line = (tag, value) => (value ? `\n * ${tag} ${value}` : '')
 
+/**
+ * The banner every build carries.
+ *
+ * The second half is not decoration. This editor is a derivative of Umo Editor, whose MIT licence
+ * asks that its copyright notice and permission notice travel with every copy, and a built file
+ * handed to a browser is a copy. The full text ships beside it as `LICENSE`.
+ */
 export default `/**
  * ${pkg.name} ${pkg.version}${line('@license', pkg.license)}${line('@author', [pkg.author?.name, pkg.author?.url].filter(Boolean).join(' '))}${line('@see', pkg.homepage)}
+ *
+ * Based on Umo Editor by Umodoc. Copyright (c) 2024 umo-team, MIT licensed.
+ * The full licence text is distributed with this software as LICENSE.
  **/
 `
 
@@ -23,3 +33,6 @@ export const consoleCopyright = () => {
 }
 
 export const { version } = pkg
+// The name to put a copyright line under, taken from the package rather than typed into a component,
+// so there is one place to change it.
+export const authorName = pkg.author?.name || ''

@@ -46,3 +46,4 @@ tests/screenshots/
 # Other
 .DS_Store
 Thumbs.db
+dist-app/
