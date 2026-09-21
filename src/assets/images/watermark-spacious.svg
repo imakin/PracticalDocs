@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="70" height="90" viewBox="0 0 70 90" role="img" aria-label="Spacious watermark spacing">
+  <title>Spacious watermark spacing</title>
+  <defs>
+    <pattern id="pdoc-watermark-spacious" width="60" height="38" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)">
+      <text x="0" y="12" font-family="Arial, Helvetica, sans-serif" font-size="6" fill="#c2c2c2">Watermark</text>
+    </pattern>
+  </defs>
+  <rect width="70" height="90" fill="#fff"></rect>
+  <rect width="70" height="90" fill="url(#pdoc-watermark-spacious)"></rect>
+</svg>

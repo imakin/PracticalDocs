@@ -838,12 +838,9 @@
   },
   "about": {
     "title": "About PracticalDocs",
-    "poweredBy": "Based on <a href=\"https://www.umodoc.com/en\" target=\"_blank\">Umo Editor</a> by Umodoc, MIT licensed",
     "version": "Version",
-    "openSource": "open-source edition",
-    "documentation": "Documentation",
-    "thanks": "Thanks to all contributors",
-    "next": "Learn more about the more powerful <a href=\"https://www.umodoc.com/business\" target=\"_blank\">Umo Editor Next</a>"
+    "basedOn": "Based on Umo Editor by Umodoc.",
+    "licence": "Read the MIT licence"
   },
   "layout": {
     "working": "Layouting...",

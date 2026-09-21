@@ -182,11 +182,14 @@ const clearWatermark = () => {
           color: var(--pdoc-primary-color);
         }
       }
+      // Drawn rather than photographed. These two only show the reader how far apart the repeats
+      // sit, and the pictures that used to do it were screenshots of a Chinese phrase baked into a
+      // PNG - untranslatable, and three and a half kilobytes each for a 70 by 90 swatch.
       &.compact .bg {
-        background-image: url('@/assets/images/watermark-compact.png');
+        background-image: url('@/assets/images/watermark-compact.svg');
       }
       &.spacious .bg {
-        background-image: url('@/assets/images/watermark-spacious.png');
+        background-image: url('@/assets/images/watermark-spacious.svg');
       }
     }
   }

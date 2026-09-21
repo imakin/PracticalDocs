@@ -1,7 +1,15 @@
 <template>
+  <!--
+    What the licence asks for, and nothing else.
+    
+    MIT has one condition: the copyright notice and the permission notice travel with every copy of
+    the software. It says nothing about a logo, a contributor list or a link to anyone's site, so the
+    upstream project's are gone. What is left is the notice itself, the version, and a way to read
+    the full licence text - which ships beside this page as `LICENSE`.
+  -->
   <modal
     :visible="visible"
-    width="300px"
+    width="320px"
     :footer="false"
     @close="emits('close')"
   >
@@ -9,81 +17,27 @@
       <icon name="copyright" />
       {{ t('about.title') }}
     </template>
-    <div
-      style="
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        line-height: 2;
-        padding: 30px 0 0;
-      "
-    >
-      <a href="https://www.umodoc.com" target="_blank">
-        <img src="@/assets/images/logo.svg" width="160" style="display: flex" />
-      </a>
-      <p>
-        {{ t('about.version') }}: v{{ version }} ({{ t('about.openSource') }})
-      </p>
-      <p v-html="t('about.poweredBy')"></p>
-      <p>
-        <a href="https://github.com/umodoc/editor" target="_blank"> Github </a>
-        |
-        <a
-          :href="`https://dev.umodoc.com/${locale === 'zh-CN' ? 'cn' : 'en'}/docs/editor`"
-          target="_blank"
-        >
-          {{ t('about.documentation') }}
-        </a>
-        |
-        <a href="https://www.npmjs.com/package/@umoteam/editor" target="_blank">
-          NPM
-        </a>
-      </p>
-      <t-divider>{{ t('about.thanks') }}</t-divider>
-      <p style="text-align: center; font-size: 12px; padding: 0 10px">
-        <a href="https://github.com/Cassielxd" target="_blank">Cassielxd</a>
-        ·
-        <a href="https://github.com/china-wangxu" target="_blank"
-          >china-wangxu</a
-        >
-        ·
-        <a href="https://github.com/Goldziher" target="_blank"
-          >Na'aman Hirschfeld</a
-        >
-        ·
-        <a href="https://github.com/SevenDreamYang" target="_blank"
-          >SevenDreamYang</a
-        >
-        ·
-        <a href="https://github.com/ChenErik" target="_blank">ChenErik</a>
-        ·
-        <a href="https://github.com/SerRashin" target="_blank">SerRashin</a>
-        ·
-        <a href="https://github.com/SunnyWisozk" target="_blank"
-          >Sunny Wisozk</a
-        >
-        ·
-        <a href="https://github.com/xuzhenjun130k" target="_blank"
-          >Sherman Xu</a
-        >
-        ·
-        <a href="https://github.com/vace" target="_blank">vace</a>
-        ·
-        <a href="https://github.com/Mikasa33" target="_blank">Mikasa33</a>
-      </p>
+    <div class="pdoc-about">
+      <img src="@/assets/images/logo.svg" width="96" alt="" />
+      <p class="pdoc-about-name">PracticalDocs</p>
+      <p>{{ t('about.version') }}: v{{ version }}</p>
       <t-divider></t-divider>
-      <p
-        style="text-align: center; font-size: 12px"
-        v-html="t('about.next')"
-      ></p>
+      <p class="pdoc-about-notice">{{ OWN_NOTICE }}</p>
+      <p class="pdoc-about-notice">{{ t('about.basedOn') }}</p>
+      <p class="pdoc-about-notice">{{ UPSTREAM_NOTICE }}</p>
+      <p>
+        <a :href="LICENSE_URL" target="_blank" rel="noreferrer">
+          {{ t('about.licence') }}
+        </a>
+      </p>
     </div>
   </modal>
 </template>
 
 <script setup>
-import { version } from '@/utils/copyright'
+import { authorName, version } from '@/utils/copyright'
 
-const props = defineProps({
+defineProps({
   visible: {
     type: Boolean,
     default: false,
@@ -91,28 +45,55 @@ const props = defineProps({
 })
 const emits = defineEmits(['close'])
 
-const { locale } = useI18n()
+// This editor's own work, and then the work it was built on. MIT lets a derivative carry its own
+// copyright; what it does not let anyone do is drop the original one, which is why both are here and
+// why the upstream notice is spelled out rather than summarised.
+const OWN_NOTICE = `Copyright (c) 2026 ${authorName}. MIT licensed.`
+const UPSTREAM_NOTICE = 'Copyright (c) 2024 umo-team. MIT licensed.'
+// Relative, so it resolves to the copy that ships beside whatever page this is running on.
+const LICENSE_URL = './LICENSE'
 </script>
 
 <style lang="less" scoped>
-img {
-  margin-bottom: 30px;
-}
-p {
-  margin: 3px 0 !important;
-  line-height: 1.5;
-  a,
-  :deep(a) {
+.pdoc-about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 8px;
+  line-height: 1.6;
+  text-align: center;
+
+  img {
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 2px 0 !important;
+  }
+
+  .pdoc-about-name {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .pdoc-about-notice {
+    font-size: 12px;
+    color: var(--pdoc-text-color-secondary);
+  }
+
+  a {
     color: var(--pdoc-primary-color);
     font-weight: 500;
+    font-size: 12px;
     text-decoration: none;
+
     &:hover {
       text-decoration: underline;
     }
   }
 }
+
 :deep(.pdoc-divider) {
-  margin: 30px 0 15px;
-  font-size: 12px;
+  margin: 20px 0 12px;
 }
 </style>

@@ -801,12 +801,9 @@
   },
   "about": {
     "title": "关于 PracticalDocs",
-    "poweredBy": "基于 <a href=\"https://www.umodoc.com\" target=\"_blank\">Umo Editor</a>（Umodoc，MIT 许可）",
-    "version": "当前版本",
-    "openSource": "开源版",
-    "documentation": "开发文档",
-    "thanks": "感谢每一位贡献者",
-    "next": "了解功能更强大的 <a href=\"https://www.umodoc.com/business\" target=\"_blank\">Umo Editor Next</a>"
+    "version": "版本",
+    "basedOn": "基于 Umodoc 的 Umo Editor。",
+    "licence": "阅读 MIT 许可证"
   },
   "wordCount": {
     "characters": "字符",
