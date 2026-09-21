@@ -476,10 +476,18 @@ const collectLines = (view, originTop) => {
       // becoming one of its own: the block it belongs to is the paragraph, and the key is the line.
       const rect = atom.getBoundingClientRect()
       const inline = atom.getAttribute('data-type') === 'inline-math'
+      // The **text node** stays the source, not the element, even though the box being measured is
+      // the element's. `positionAtLineStart` anchors an element line by walking out to the start of
+      // the top level block it sits in, which for a formula inside a markdown block is the block
+      // itself - and the first markdown block in a document begins at position 0. Measured: a break
+      // anchored at 0, which on screen is a harmless strip of blank at the top of page one and in
+      // the export is a band with `page-break-after: always` before any content - **an empty first
+      // page in the PDF**. Through the text node the anchor resolves to the formula's own position,
+      // which is where the break belongs.
       add(
         rect,
         inline ? blockOf(atom) : atom,
-        atom,
+        node,
         inline ? `${Math.round(rect.top)}` : atomKeys.get(atom),
       )
       continue
