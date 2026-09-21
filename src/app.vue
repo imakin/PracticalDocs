@@ -1,132 +1,47 @@
 <template>
-  <div class="examples">
-    <div class="box">
-      <practical-docs ref="editorRef" v-bind="options"></practical-docs>
-    </div>
-    <!-- <div class="box">
-      <practical-docs editor-key="testaaa" :toolbar="{ defaultMode: 'classic' }" />
-    </div> -->
+  <!--
+    The page this editor is deployed as, and the page `npm run dev` serves. One file, so what ships is
+    what the writer has been looking at all along - a second entry for production is a second way for
+    the two to behave differently, which is how the editor came to be unable to save when it was
+    embedded elsewhere.
+
+    The editor fills the window. It used to sit inside a bordered box with a margin around it, which
+    is a demonstration frame, not a product.
+  -->
+  <div class="pdoc-app">
+    <practical-docs v-bind="options" />
   </div>
 </template>
 
 <script setup>
-const editorRef = $ref(null)
-const remoteMentionUsers = [
-  {
-    id: 'remote-alice',
-    label: 'Alice Chen',
-    bio: '远程目录用户',
-    color: 'var(--pdoc-primary-color)',
-  },
-  {
-    id: 'remote-bob',
-    label: 'Bob Li',
-    bio: '远程目录用户',
-    color: 'var(--pdoc-primary-color)',
-  },
-  {
-    id: 'remote-charlie',
-    label: 'Charlie Wang',
-    bio: '远程目录用户',
-    color: 'var(--pdoc-primary-color)',
-  },
-  {
-    id: 'remote-dora',
-    label: 'Dora Xu',
-    bio: '远程目录用户',
-    color: 'var(--pdoc-primary-color)',
-  },
-]
-const templates = [
-  {
-    title: '工作任务',
-    description: '工作任务模板',
-    content:
-      '<h1>工作任务</h1><h3>任务名称：</h3><p>[任务的简短描述]</p><h3>负责人：</h3><p>[执行任务的个人姓名]</p><h3>截止日期：</h3><p>[任务需要完成的日期]</p><h3>任务详情：</h3><ol><li>[任务步骤1]</li><li>[任务步骤2]</li><li>[任务步骤3]...</li></ol><h3>目标：</h3><p>[任务需要达成的具体目标或结果]</p><h3>备注：</h3><p>[任何额外信息或注意事项]</p>',
-  },
-  {
-    title: '工作周报',
-    description: '工作周报模板',
-    content:
-      '<h1>工作周报</h1><h2>本周工作总结</h2><hr /><h3>已完成工作：</h3><ul><li>[任务1名称]：[简要描述任务内容及完成情况]</li><li>[任务2名称]：[简要描述任务内容及完成情况]</li><li>...</li></ul><h3>进行中工作：</h3><ul><li>[任务1名称]：[简要描述任务当前进度和下一步计划]</li><li>[任务2名称]：[简要描述任务当前进度和下一步计划]</li><li>...</li></ul><h3>问题与挑战：</h3><ul><li>[问题1]：[描述遇到的问题及当前解决方案或需要的支持]</li><li>[问题2]：[描述遇到的问题及当前解决方案或需要的支持]</li><li>...</li></ul><hr /><h2>下周工作计划</h2><h3>计划开展工作：</h3><ul><li>[任务1名称]：[简要描述下周计划开始的任务内容]</li><li>[任务2名称]：[简要描述下周计划开始的任务内容]</li><li>...</li></ul><h3>需要支持与资源：</h3><ul><li>[资源1]：[描述需要的资源或支持]</li><li>[资源2]：[描述需要的资源或支持]</li><li>...</li></ul>',
-  },
-]
 const options = $ref({
   locale: 'en-US',
-  toolbar: {
-    // defaultMode: 'classic',
-    // menus: ['base'],
-  },
   document: {
     title: 'file-identifier',
     // Deliberately empty on start. Restoring the last document from localStorage made every reload
     // begin from whatever happened to be cached, which hid bugs behind state nobody could describe
     // and made "I cannot reproduce it" the usual answer. Opening a document is now always an
-    // explicit act, through Buka / Load. The cache is still written on save and is still readable
-    // through that menu.
+    // explicit act, through the Open dialog. The cache is still written on save and is still
+    // readable through that menu.
     content: '',
-    // structure: 'heading block*',
   },
   page: {
     layouts: ['page', 'web'],
     showBookmark: true,
   },
-  templates,
+  // Where the video player, the formula dialog's KaTeX and the file type icons are fetched from at
+  // run time. It is a third party this page depends on while it is open; leaving it out falls back
+  // to an unpinned `@latest` on unpkg, which is worse. Serving those files beside the document
+  // server would remove the dependency altogether.
   cdnUrl: 'https://cdn.umodoc.com',
-  shareUrl: 'https://www.umodoc.com',
-  file: {
-    // allowedMimeTypes: [
-    //   'application/pdf',
-    //   'image/svg+xml',
-    //   'video/mp4',
-    //   'audio/*',
-    // ],
-  },
-  user: {
-    id: 'practicaldocs',
-    label: 'PracticalDocs',
-    avatar: 'https://tdesign.gtimg.com/site/avatar.jpg',
-  },
-  users: [
-    {
-      id: 'umodoc',
-      label: 'PracticalDocs',
-      bio: '核心开发者',
-      avatar: 'https://s1.umodoc.com/images/favicon.png',
-      color: 'var(--pdoc-primary-color)',
-    },
-    {
-      id: 'china-wangxu',
-      label: 'china-wangxu',
-      bio: '重要贡献者',
-      color: 'var(--pdoc-primary-color)',
-    },
-    {
-      id: 'Cassielxd',
-      label: 'Cassielxd',
-      bio: '重要贡献者',
-      color: 'var(--pdoc-primary-color)',
-    },
-    { id: 'Goldziher', label: "Na'aman Hirschfeld" },
-    { id: 'SerRashin', label: 'SerRashin' },
-    { id: 'ChenErik', label: 'ChenErik' },
-    { id: 'china-wangxu', label: 'china-wangxu' },
-    { id: 'Sherman Xu', label: 'xuzhenjun130' },
-    { id: 'testuser', label: '测试用户' },
-  ],
-  async onMentionSearch(query) {
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    return remoteMentionUsers.filter((user) =>
-      user.label.toLowerCase().includes(query.toLowerCase()),
-    )
-  },
-  // https://dev.umodoc.com/cn/docs/options/extensions#disableextensions
-  disableExtensions: [],
-  // No `onSave` and no `onFileUpload` here. Saving to the practicaldocs-server and keeping uploaded
-  // bytes are what the editor does by default now, so this demo host would only be repeating it -
-  // and a copy here is a copy that can drift from the one every other host gets.
-  onFileDelete(id, url, type) {
-    console.log(id, url, type)
+  // Nothing else is set here, on purpose. Saving, uploading and the document server's address are
+  // the editor's own business now (`src/utils/save-to-server.js`), and mention suggestions,
+  // templates and the user list are left empty because this deployment has no directory behind
+  // them - the ones that used to be here were invented names, and they would have been shown to
+  // real readers.
+  onFileDelete() {
+    // Nothing to do. Removing a picture from the document is enough: the next save sends only the
+    // assets the document still refers to, and the server drops the rest from the document's folder.
   },
 })
 </script>
@@ -134,25 +49,15 @@ const options = $ref({
 <style>
 html,
 body {
+  height: 100vh;
   padding: 0;
   margin: 0;
-}
-.examples {
-  margin: 20px;
-  display: flex;
-  height: calc(100vh - 40px);
-}
-.box {
-  border: solid 1px #ddd;
-  box-sizing: border-box;
-  position: relative;
-  width: 100%;
-  height: 100%;
+  overflow: hidden;
 }
 
-html,
-body {
+.pdoc-app {
+  position: relative;
+  width: 100%;
   height: 100vh;
-  overflow: hidden;
 }
 </style>
