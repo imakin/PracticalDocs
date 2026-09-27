@@ -38,14 +38,35 @@ export const parseAssetPath = (value) => {
 export const assetUrl = (baseUrl, documentId, name) =>
   `${baseUrl}/api/documents/${encodeURIComponent(documentId)}/assets/${encodeURIComponent(name)}`
 
-// The document the url belongs to is part of the answer, not just the filename. A save under a
-// second name has to know that the bytes it is pointing at live in somebody else's folder.
+/**
+ * The server a Server API URL points at, as the part before `/api/documents/save`.
+ *
+ * One rule for both directions: the Open dialog builds image urls on this base, and a save compares
+ * those urls against it. Two derivations would let a document opened and saved on the same server
+ * look as if it had moved.
+ */
+export const serverBaseUrl = (saveUrl) =>
+  String(saveUrl || '').replace(/\/api\/documents\/save\/?$/, '')
+
+// The same server written two ways - a trailing slash, a host in capitals - is the same server.
+const normaliseBase = (base) => {
+  try {
+    const url = new URL(base)
+    return `${url.protocol}//${url.host.toLowerCase()}${url.pathname.replace(/\/+$/, '')}`
+  } catch {
+    return String(base || '').replace(/\/+$/, '')
+  }
+}
+
+// The server and the document the url belongs to are both part of the answer, not just the
+// filename. A save under a second name, or to a second server, has to know that the bytes it is
+// pointing at live in a folder it is not writing.
 const parseAssetUrl = (value) => {
-  const match = String(value || '').match(
-    /\/api\/documents\/([^/]+)\/assets\/([^/?#]+)$/,
-  )
+  const text = String(value || '')
+  const match = text.match(/\/api\/documents\/([^/]+)\/assets\/([^/?#]+)$/)
   return match
     ? {
+        base: text.slice(0, match.index),
         documentId: decodeURIComponent(match[1]),
         name: decodeURIComponent(match[2]),
       }
@@ -152,7 +173,13 @@ const describeSource = (value) => {
   }
   const fromUrl = parseAssetUrl(raw)
   return fromUrl
-    ? { name: fromUrl.name, bytes: null, url: raw, documentId: fromUrl.documentId }
+    ? {
+        name: fromUrl.name,
+        bytes: null,
+        url: raw,
+        base: fromUrl.base,
+        documentId: fromUrl.documentId,
+      }
     : null
 }
 
@@ -230,14 +257,28 @@ const collectBlobUrls = (payload) => {
  * Folds every media source back to `./assets/<name>` and lists what the save has to carry.
  *
  * Bytes are attached for sources this session holds, and for an image whose only copy is in another
- * document's folder - that one is fetched, because a folder cannot be written from a file that is
- * not in it. An image already in the folder being written is named by hash alone, so an unchanged
- * one still survives autosave without travelling.
+ * folder - that one is fetched, because a folder cannot be written from a file that is not in it. An
+ * image already in the folder being written is named alone, so an unchanged one still survives
+ * autosave without travelling.
+ *
+ * "The folder being written" is a server **and** a document. Comparing the document alone sent a
+ * document opened from one server and saved under the same name to another with names and no
+ * bytes: the second server looked in its own folder, found none of them, and the writer was told
+ * fifteen images could not be stored. Bytes are left behind only when the url is certainly on the
+ * server being written to and in the folder being written; anything less certain carries them,
+ * because an image sent twice costs a request and an image not sent is lost.
  *
  * @param payload the document about to be saved
- * @param documentId the folder being written to
+ * @param destination `{ documentId, serverUrl }`: the folder and the Server API URL being saved to
  */
-export const collectAssets = async (payload, documentId = null) => {
+export const collectAssets = async (payload, destination = {}) => {
+  const { documentId = null, serverUrl = null } = destination || {}
+  const destinationBase = serverUrl ? normaliseBase(serverBaseUrl(serverUrl)) : null
+  const alreadyThere = (found) =>
+    destinationBase !== null &&
+    found.documentId === documentId &&
+    normaliseBase(found.base) === destinationBase
+
   for (const url of collectBlobUrls(payload)) {
     if (uploaded.has(url)) {
       continue
@@ -257,8 +298,8 @@ export const collectAssets = async (payload, documentId = null) => {
     if (!found) {
       continue
     }
-    // The folder being written to is not the one holding these bytes, so they have to be carried.
-    if (!found.bytes && found.url && found.documentId !== documentId) {
+    // The folder being written to is not certainly the one holding these bytes, so they are carried.
+    if (!found.bytes && found.url && !alreadyThere(found)) {
       const fetched = await fetchAssetBytes(found.url)
       if (fetched) {
         found.bytes = fetched.bytes

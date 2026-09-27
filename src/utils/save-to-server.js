@@ -103,9 +103,10 @@ export const saveDocumentToServer = async (content, page, document) => {
     const filename = storedFilename(title)
 
     // Media sources are folded back to portable markers, and the bytes travel with them unless this
-    // very folder already holds them. Saving under a second name has to copy the images into it;
-    // pointing at the first document's folder is how they used to be lost.
-    const packed = await collectAssets(content, filename)
+    // very folder, on this very server, already holds them. Saving under a second name or to a
+    // second server has to copy the images into it; pointing at the first folder is how they used
+    // to be lost.
+    const packed = await collectAssets(content, { documentId: filename, serverUrl })
     // The stored file carries its own stylesheet, so it renders correctly opened straight from the
     // folder with no editor and no server.
     const documentHtml = composeDocumentHtml(packed.html, content.profiles || [])

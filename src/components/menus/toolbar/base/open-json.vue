@@ -83,7 +83,7 @@
 
 <script setup>
 import { useDocumentDialogs } from '@/composables/document-dialogs'
-import { resolveAssets } from '@/utils/document-assets'
+import { resolveAssets, serverBaseUrl } from '@/utils/document-assets'
 import { extractDocumentHtml } from '@/utils/profile-stylesheet'
 
 const openDocumentFile = inject('openDocumentFile')
@@ -97,10 +97,13 @@ let searchQuery = $ref('')
 let loadingServerDocs = $ref(false)
 let serverDocuments = $ref([])
 
-const getServerBaseUrl = () => {
-  const fullUrl = localStorage.getItem('practicaldocs:server-url') || 'http://localhost:3001/api/documents/save'
-  return fullUrl.replace(/\/api\/documents\/save\/?$/, '')
-}
+// The same rule the save compares image urls with, so a document opened and saved on one server is
+// recognised as staying there.
+const getServerBaseUrl = () =>
+  serverBaseUrl(
+    localStorage.getItem('practicaldocs:server-url') ||
+      'http://localhost:3001/api/documents/save',
+  )
 
 const formatDate = (isoString) => {
   if (!isoString) return '-'
