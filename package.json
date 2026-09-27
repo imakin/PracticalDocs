@@ -105,7 +105,8 @@
     "build:app": "vite build --mode app",
     "test:e2e:math-export-parity": "node tests/e2e/math-export-parity.cdp.mjs",
     "test:e2e:sections-same-paper-export": "node tests/e2e/sections-same-paper-export.cdp.mjs",
-    "test:e2e:columns-never-split-export": "node tests/e2e/columns-never-split-export.cdp.mjs"
+    "test:e2e:columns-never-split-export": "node tests/e2e/columns-never-split-export.cdp.mjs",
+    "test:e2e:markdown-code": "node tests/e2e/markdown-code.cdp.mjs"
   },
   "dependencies": {
     "@eslint/object-schema": "3.0.2",

@@ -90,6 +90,10 @@ export const MARKDOWN_STYLE_TARGETS = [
   { key: 'listItem', name: 'List Item', selector: 'li' },
   { key: 'inlineMath', name: 'Inline Math', selector: '[data-type="inline-math"]', inline: true },
   { key: 'blockMath', name: 'Block Math', selector: '[data-type="block-math"]' },
+  // A fenced block renders as `pre > code`. The `pre` is the block, so it is what takes the margins.
+  { key: 'codeBlock', name: 'Code Block', selector: 'pre' },
+  // Only code that is not a code block's own. The `code` inside a `pre` is always its direct child.
+  { key: 'inlineCode', name: 'Inline Code', selector: ':not(pre) > code', inline: true },
 ]
 
 // The container every rule is scoped inside. A markdown block's rendered half, and nothing else.

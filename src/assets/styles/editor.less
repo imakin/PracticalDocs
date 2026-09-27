@@ -324,6 +324,42 @@
     line-height: 1;
   }
 
+  // Code inside a markdown block wears nothing the writer did not set. No tint, no colour, no padding,
+  // no margin and no box - spacing and chrome nobody can reach are what this product exists to avoid.
+  // How it looks is the Markdown Styles dialog's `Code Block` and `Inline Code` sections. What is left
+  // is what markdown means by code: a monospace face, and a block that keeps its line breaks and
+  // wraps at the edge of the column rather than running off the page.
+  //
+  // Inside `:where()`, so these weigh no more than the plain `code` rule above and every rule the
+  // dialog generates outweighs them.
+  :where(.pdoc-markdown-rendered) {
+    pre {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      font-family: var(--pdoc-content-code-family);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    code {
+      color: inherit;
+      background: none;
+      border-radius: 0;
+      padding: 0;
+      margin: 0;
+    }
+
+    // The code of a code block is the block's text, so it takes the face and the line height the
+    // `Code Block` section sets on the `pre`, not the ones the plain `code` rule gives inline code.
+    pre code {
+      font-family: inherit;
+      line-height: inherit;
+    }
+  }
+
   blockquote {
     border-left: 3px solid var(--pdoc-primary-color);
     padding: 0.5em 1em;

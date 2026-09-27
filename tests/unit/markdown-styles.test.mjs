@@ -153,3 +153,24 @@ test('a document that sets no indent anywhere gets no indent rule', () => {
   const css = markdownStyleRules({ h1: { fontSize: '24pt' } }, '.scope')
   assert.doesNotMatch(css, /text-indent/)
 })
+
+test('a code block is styled on its pre, inline code only outside one', () => {
+  const css = markdownStyleRules(
+    {
+      codeBlock: { fontFamily: 'Courier New', marginTop: '1em' },
+      inlineCode: { fontSize: '10pt', marginTop: '5em' },
+    },
+    '.scope',
+  )
+  assert.match(
+    css,
+    /\.scope \.pdoc-markdown-rendered pre \{\n {2}font-family: Courier New;\n {2}margin-top: 1em;\n\}/,
+  )
+  // The code inside a code block is the block's own text and must not be caught by Inline Code.
+  assert.match(
+    css,
+    /\.scope \.pdoc-markdown-rendered :not\(pre\) > code \{\n {2}font-size: 10pt;\n\}/,
+  )
+  // Inline, so no margins are offered or emitted for it.
+  assert.doesNotMatch(css, /margin-top: 5em/)
+})
