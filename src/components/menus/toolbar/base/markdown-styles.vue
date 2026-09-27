@@ -80,6 +80,7 @@
 import {
   defaultMarkdownStyles,
   fieldsFor,
+  isCustomised,
   MARKDOWN_STYLE_TARGETS,
   NESTED_INDENT_FIELD,
   withMarkdownStyleDefaults,
@@ -121,10 +122,9 @@ let stored = $ref(defaultMarkdownStyles())
 // The section being edited, held locally so the inputs own their own text while it is being typed.
 let draft = $ref({})
 
-const isSet = (key) =>
-  Object.values(stored[key] || {}).some(
-    (value) => value !== undefined && value !== null && String(value).trim() !== '',
-  )
+// A dot for a section the writer has changed. Its defaults alone do not count, or Block Math would
+// wear a dot in every document.
+const isSet = (key) => isCustomised(key, stored[key])
 
 const loadDraft = () => {
   stored = readStyles()
@@ -145,7 +145,9 @@ const commitField = (key, value) => {
   draft = { ...draft, [key]: value ?? '' }
   const next = { ...readStyles(), [activeKey]: { ...draft } }
   editor.value?.commands.setNumberingConfig({ markdownStyles: next })
-  stored = next
+  // Read back rather than kept: a field emptied by the writer returns to its default in the storage,
+  // and the field has to show the value that is now in force, not the blank that was typed.
+  loadDraft()
 }
 
 // Reload when the dialog opens and when the writer moves to another section, so the fields always

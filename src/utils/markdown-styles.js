@@ -76,6 +76,10 @@ export const NESTED_INDENT_FIELD = {
  *
  * `selector` is matched inside a markdown block's rendered content, so it can be as plain as the tag.
  * `inline` drops the block-only fields. `nested` adds the nesting indent setting.
+ *
+ * `defaults` are values a section starts with. They are ordinary settings, not hidden styling: they
+ * are shown in the dialog, stored with the document, and changed like anything the writer typed. A
+ * field left empty goes back to its default, so `0` is how a default is switched off.
  */
 export const MARKDOWN_STYLE_TARGETS = [
   { key: 'paragraph', name: 'Normal Paragraph', selector: 'p' },
@@ -89,7 +93,14 @@ export const MARKDOWN_STYLE_TARGETS = [
   { key: 'orderedList', name: 'Numbered List', selector: 'ol', nested: true },
   { key: 'listItem', name: 'List Item', selector: 'li' },
   { key: 'inlineMath', name: 'Inline Math', selector: '[data-type="inline-math"]', inline: true },
-  { key: 'blockMath', name: 'Block Math', selector: '[data-type="block-math"]' },
+  // The space around a display formula used to be padding inside it, which nothing could change.
+  // It is a margin here instead, so it shows in the dialog and the writer sets it.
+  {
+    key: 'blockMath',
+    name: 'Block Math',
+    selector: '[data-type="block-math"]',
+    defaults: { marginTop: '0.5em', marginBottom: '0.5em' },
+  },
   // A fenced block renders as `pre > code`. The `pre` is the block, so it is what takes the margins.
   { key: 'codeBlock', name: 'Code Block', selector: 'pre' },
   // Only code that is not a code block's own. The `code` inside a `pre` is always its direct child.
@@ -102,31 +113,44 @@ export const MARKDOWN_SCOPE = '.pdoc-markdown-rendered'
 export const fieldsFor = (target) =>
   MARKDOWN_STYLE_FIELDS.filter((field) => !field.block || !target?.inline)
 
-export const defaultMarkdownStyles = () => {
-  const styles = {}
+const isSet = (value) =>
+  value !== undefined && value !== null && String(value).trim() !== ''
+
+export const defaultMarkdownStyles = () => withMarkdownStyleDefaults(null)
+
+/**
+ * A stored object with every section present, and nothing invented beyond the table's defaults.
+ *
+ * Empty everywhere else, which is the point: until the writer sets something, markdown renders as
+ * markdown. A default fills a field only while that field is empty, so what the writer typed always
+ * wins. A section this version does not know about is carried through untouched, so a document
+ * written by a later version does not lose its settings by being opened here.
+ */
+export function withMarkdownStyleDefaults(saved) {
+  const styles = { ...(saved && typeof saved === 'object' ? saved : {}) }
   for (const target of MARKDOWN_STYLE_TARGETS) {
-    styles[target.key] = {}
+    const section = { ...(styles[target.key] || {}) }
+    for (const [key, value] of Object.entries(target.defaults || {})) {
+      if (!isSet(section[key])) {
+        section[key] = value
+      }
+    }
+    styles[target.key] = section
   }
   return styles
 }
 
 /**
- * A stored object with every section present, and nothing invented.
- *
- * Empty everywhere by default, which is the point: until the writer sets something, markdown renders
- * as markdown. A section this version does not know about is carried through untouched, so a
- * document written by a later version does not lose its settings by being opened here.
+ * Whether a section holds anything other than its defaults - what the dialog marks with a dot.
  */
-export const withMarkdownStyleDefaults = (saved) => {
-  const styles = { ...(saved && typeof saved === 'object' ? saved : {}) }
-  for (const target of MARKDOWN_STYLE_TARGETS) {
-    styles[target.key] = { ...(styles[target.key] || {}) }
-  }
-  return styles
+export const isCustomised = (targetKey, values = {}) => {
+  const defaults =
+    MARKDOWN_STYLE_TARGETS.find((target) => target.key === targetKey)?.defaults || {}
+  return Object.entries(values || {}).some(
+    ([key, value]) =>
+      isSet(value) && String(value).trim() !== String(defaults[key] ?? '').trim(),
+  )
 }
-
-const isSet = (value) =>
-  value !== undefined && value !== null && String(value).trim() !== ''
 
 /**
  * The CSS for one markdown styling object.

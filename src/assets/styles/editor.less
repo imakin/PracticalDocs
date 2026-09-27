@@ -748,14 +748,15 @@
         padding: 0 0.25em;
       }
 
-      &[data-type='block-math'] {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        .block-math-inner {
-          padding: 0.5em;
-        }
+      // A display formula is centred by `text-align`, which the writer can set, and never by a flex
+      // container, which they cannot: `justify-content: center` placed the formula in the middle
+      // whatever alignment Markdown Styles gave it. Inside `:where()` so the default weighs less
+      // than any rule the dialog generates.
+      //
+      // No padding. The space around a formula is Block Math's Top and Bottom Margin in Markdown
+      // Styles, which start at 0.5em, and outside markdown the block's own Margin.
+      &:where([data-type='block-math']) {
+        text-align: center;
       }
     }
 

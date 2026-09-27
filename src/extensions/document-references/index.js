@@ -240,6 +240,9 @@ const profileStyleScope = (editor) => {
   return `[${PROFILE_STYLE_ATTR}="${id}"]`
 }
 
+// `markdownStyles` belongs in every call. The markdown rules live in the same stylesheet, so a call
+// without them rebuilds it without them: markdown styling vanished from the screen whenever a profile
+// was added, edited or deleted, and a fresh editor never showed Block Math's default margins.
 const syncProfileStylesheet = (editor, profiles, markdownStyles) => {
   if (typeof document === 'undefined' || !editor?.view?.dom) return
   const scope = profileStyleScope(editor)
@@ -909,7 +912,7 @@ export const DocumentReferences = Extension.create({
       }
     } catch {}
     // Unconditional: a fresh editor with no saved profiles still needs the defaults on screen.
-    syncProfileStylesheet(this.editor, this.storage.profiles)
+    syncProfileStylesheet(this.editor, this.storage.profiles, this.storage.markdownStyles)
     setTimeout(() => {
       if (!this.editor.isDestroyed) {
         this.editor.commands.syncDocumentReferences()
@@ -1085,7 +1088,7 @@ export const DocumentReferences = Extension.create({
             level: profile.targetType === 'heading' ? profile.level || 1 : undefined,
           }
           this.storage.profiles = [...this.storage.profiles, newProfile]
-          syncProfileStylesheet(this.editor, this.storage.profiles)
+          syncProfileStylesheet(this.editor, this.storage.profiles, this.storage.markdownStyles)
           try {
             localStorage.setItem('practicaldocs:profiles', JSON.stringify(this.storage.profiles))
           } catch {}
@@ -1104,7 +1107,7 @@ export const DocumentReferences = Extension.create({
             }
             return p
           })
-          syncProfileStylesheet(this.editor, this.storage.profiles)
+          syncProfileStylesheet(this.editor, this.storage.profiles, this.storage.markdownStyles)
           try {
             localStorage.setItem('practicaldocs:profiles', JSON.stringify(this.storage.profiles))
           } catch {}
@@ -1154,7 +1157,7 @@ export const DocumentReferences = Extension.create({
           this.storage.profiles = this.storage.profiles.filter(
             (p) => p.id !== id,
           )
-          syncProfileStylesheet(this.editor, this.storage.profiles)
+          syncProfileStylesheet(this.editor, this.storage.profiles, this.storage.markdownStyles)
           try {
             localStorage.setItem('practicaldocs:profiles', JSON.stringify(this.storage.profiles))
           } catch {}

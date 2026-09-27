@@ -4,16 +4,37 @@ import test from 'node:test'
 import {
   defaultMarkdownStyles,
   fieldsFor,
+  isCustomised,
   markdownStyleRules,
   MARKDOWN_STYLE_FIELDS,
   MARKDOWN_STYLE_TARGETS,
   withMarkdownStyleDefaults,
 } from '../../src/utils/markdown-styles.js'
 
-test('nothing set means no rules at all', () => {
-  // Until the writer sets something, markdown renders as markdown.
-  assert.equal(markdownStyleRules(defaultMarkdownStyles(), '.scope'), '')
-  assert.equal(markdownStyleRules(null, '.scope'), '')
+test('nothing set means only the defaults the table states', () => {
+  // Until the writer sets something, markdown renders as markdown - but for the space around a
+  // display formula, which starts at 0.5em and is shown in the dialog as a setting.
+  const expected =
+    '.scope .pdoc-markdown-rendered [data-type="block-math"] {\n  margin-top: 0.5em;\n  margin-bottom: 0.5em;\n}'
+  assert.equal(markdownStyleRules(defaultMarkdownStyles(), '.scope'), expected)
+  assert.equal(markdownStyleRules(null, '.scope'), expected)
+})
+
+test('a default fills an empty field and never one the writer set', () => {
+  assert.deepEqual(defaultMarkdownStyles().blockMath, { marginTop: '0.5em', marginBottom: '0.5em' })
+  // Emptied by the writer: back to the default.
+  assert.equal(withMarkdownStyleDefaults({ blockMath: { marginTop: '' } }).blockMath.marginTop, '0.5em')
+  // Set by the writer, including to nothing at all: theirs.
+  const set = withMarkdownStyleDefaults({ blockMath: { marginTop: '0', marginBottom: '2em' } })
+  assert.deepEqual(set.blockMath, { marginTop: '0', marginBottom: '2em' })
+  assert.match(markdownStyleRules(set, '.scope'), /margin-top: 0;\n {2}margin-bottom: 2em;/)
+})
+
+test('a section holding only its defaults is not marked as changed', () => {
+  assert.equal(isCustomised('blockMath', defaultMarkdownStyles().blockMath), false)
+  assert.equal(isCustomised('blockMath', { marginTop: '0.5em', textAlign: 'left' }), true)
+  assert.equal(isCustomised('blockMath', { marginTop: '1em' }), true)
+  assert.equal(isCustomised('paragraph', {}), false)
 })
 
 test('a setting becomes a rule scoped inside a markdown block', () => {
@@ -47,7 +68,9 @@ test('inline sections are not offered block-only settings, and never emit them',
     '.scope',
   )
   assert.match(css, /font-size: 11pt;/)
-  assert.doesNotMatch(css, /margin-top/)
+  // Only the formula's own rule: Block Math's default margins are a different section.
+  const inlineRule = css.split('\n\n').find((rule) => rule.includes('inline-math'))
+  assert.doesNotMatch(inlineRule, /margin-top/)
 })
 
 test('a block section keeps every setting', () => {
@@ -67,13 +90,14 @@ test('nesting indent is only offered where nesting means something', () => {
   const nested = MARKDOWN_STYLE_TARGETS.filter((t) => t.nested).map((t) => t.key)
   assert.deepEqual(nested, ['bulletList', 'orderedList'])
   const css = markdownStyleRules({ paragraph: { nestedIndent: '2em' } }, '.scope')
-  assert.equal(css, '')
+  assert.equal(css, markdownStyleRules(null, '.scope'))
 })
 
 test('an empty string is not a setting', () => {
   // The difference between "not set" and "set to nothing" decides whether a rule exists at all.
-  assert.equal(markdownStyleRules({ h1: { fontSize: '   ' } }, '.scope'), '')
-  assert.equal(markdownStyleRules({ h1: { fontSize: null } }, '.scope'), '')
+  const nothing = markdownStyleRules(null, '.scope')
+  assert.equal(markdownStyleRules({ h1: { fontSize: '   ' } }, '.scope'), nothing)
+  assert.equal(markdownStyleRules({ h1: { fontSize: null } }, '.scope'), nothing)
 })
 
 test('every section is present after defaults are applied', () => {
