@@ -3,6 +3,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
 import { documentSections } from '@/extensions/page-break'
+import { measuringRange } from '@/utils/measuring-range'
 import {
   computePageNumbers,
   defaultPageNumberSettings,
@@ -40,15 +41,16 @@ const now = () =>
     : Date.now()
 
 const MAX_SHEETS = 500
-// Quiet period before re-paginating, so typing does not repaginate on every keystroke.
-const RECOMPUTE_DELAY = 200
 /**
- * The longest the engine will wait before laying the page out again.
+ * Quiet period before re-paginating: two seconds, as the writer asked - more than once.
  *
- * A cap, so a document whose solve has become very slow still settles while the writer is looking at
- * it rather than feeling abandoned.
+ * Every change restarts it, so a writer who keeps typing, or keeps dragging a picture's handle, pays
+ * for no solve at all until they stop for two seconds. A solve on a thesis holds the main thread for
+ * seconds, and each one that starts in a pause between keystrokes is time the writer cannot type or
+ * open a menu. It was 200ms, then "as long as the last solve took", capped at two seconds; both were
+ * shorter than the writer wanted, and the writer decides this.
  */
-const MAX_RECOMPUTE_DELAY = 2000
+const RECOMPUTE_DELAY = 2000
 
 /**
  * Run something after the browser has had a chance to paint.
@@ -68,6 +70,17 @@ const paintThen = (work) => {
   }
   requestAnimationFrame(() => requestAnimationFrame(work))
 }
+/**
+ * Hand the thread back to the browser for a moment: input, menus, scrolling, a paint.
+ *
+ * `scheduler.yield` where there is one, because it resumes this work ahead of other queued tasks once
+ * the input has been handled; a zero timer elsewhere.
+ */
+const yieldToBrowser = () =>
+  typeof globalThis.scheduler?.yield === 'function'
+    ? globalThis.scheduler.yield()
+    : new Promise((resolve) => setTimeout(resolve, 0))
+
 // Sub-pixel slack: line boxes and cm-to-px conversion both round.
 const TOLERANCE = 1
 
@@ -296,6 +309,22 @@ class SheetLayout {
     this.tops.length = 1
   }
 
+  /**
+   * The sections opened so far, to be put back with `restoreOpens` - a prediction the next
+   * measurement disproves takes back the sections it opened along with its breaks.
+   */
+  saveOpens() {
+    return new Map(this.opens)
+  }
+
+  restoreOpens(saved) {
+    this.opens = new Map(saved)
+    this.boundaries = [...this.opens.entries()]
+      .map(([index, at]) => ({ section: index, sheet: at }))
+      .sort((a, b) => a.sheet - b.sheet || a.section - b.section)
+    this.tops.length = 1
+  }
+
   /** One record per sheet, for everything that needs to know where the sheets are. */
   publish(count) {
     const out = []
@@ -464,6 +493,29 @@ const collectLines = (view, originTop) => {
     }
   }
 
+  /**
+   * The fragments of text that make up lines, grouped once they have all been read.
+   *
+   * They used to be keyed by `Math.round(rect.top)`, which is not the same grouping wherever the page
+   * happens to sit: two fragments of one line at 100.4 and 100.6 are two lines, the same two at 137.7
+   * and 137.9 are one. A block's count of lines feeds the widow and orphan rule, so moving the whole
+   * document by a fraction of a pixel could move a break. The solver predicts where lines go after a
+   * break instead of measuring them (`PredictedLayout`), and a grouping that changes with the offset
+   * made its answer differ from the one measured line by line.
+   *
+   * Nor by closeness of their tops, which was the first replacement. Inline code draws its glyph box
+   * a pixel above the text around it, a tall inline formula many pixels, so a line holding either was
+   * two "lines" to the solver. On the writer's tesis8ag the solver then saw `ap_fixed` - the code at
+   * the end of a line reading "sejumlah skalar ap_fixed yang lebar..." - overflow on its own, and
+   * anchored a break at the code, in the middle of the line. The line split, "sejumlah skalar" stayed
+   * behind still crossing the foot of the sheet, its own break now lay above the last one placed, and
+   * the solver gave up: `no-anchor-below-the-last-break`, and every page after it unpaginated. The
+   * PDF was right, because print breaks between real lines.
+   *
+   * So a fragment belongs to a line when their extents **overlap** by at least half the height of the
+   * shorter - which is what sharing a line box means - wherever on the page the line sits.
+   */
+  const textFragments = []
   const walker = document.createTreeWalker(view.dom, NodeFilter.SHOW_TEXT, null)
   let node
   while ((node = walker.nextNode())) {
@@ -484,20 +536,44 @@ const collectLines = (view, originTop) => {
       // the export is a band with `page-break-after: always` before any content - **an empty first
       // page in the PDF**. Through the text node the anchor resolves to the formula's own position,
       // which is where the break belongs.
-      add(
-        rect,
-        inline ? blockOf(atom) : atom,
-        node,
-        inline ? `${Math.round(rect.top)}` : atomKeys.get(atom),
-      )
+      if (inline) {
+        textFragments.push({ rect, block: blockOf(atom), node })
+      } else {
+        add(rect, atom, node, atomKeys.get(atom))
+      }
       continue
     }
     const block = blockOf(node)
-    const range = document.createRange()
+    const range = measuringRange()
     range.selectNodeContents(node)
     for (const rect of range.getClientRects()) {
-      add(rect, block, node, `${Math.round(rect.top)}`)
+      textFragments.push({ rect, block, node })
     }
+  }
+  // Stable, so fragments at one height keep document order and the leftmost-wins rule in `add` sees
+  // them as it always did.
+  textFragments.sort((a, b) => a.rect.top - b.rect.top)
+  let lineIndex = -1
+  let lineTop = Number.NEGATIVE_INFINITY
+  let lineBottom = Number.NEGATIVE_INFINITY
+  let lineHeight = 0
+  for (const fragment of textFragments) {
+    const { rect } = fragment
+    if (rect.height <= 0 || rect.width <= 0) {
+      continue
+    }
+    const overlap = Math.min(rect.bottom, lineBottom) - Math.max(rect.top, lineTop)
+    if (overlap < Math.min(rect.height, lineHeight) / 2) {
+      lineIndex += 1
+      lineTop = rect.top
+      lineBottom = rect.bottom
+      lineHeight = rect.height
+    } else {
+      lineTop = Math.min(lineTop, rect.top)
+      lineBottom = Math.max(lineBottom, rect.bottom)
+      lineHeight = Math.min(lineHeight, rect.height)
+    }
+    add(rect, fragment.block, fragment.node, `line-${lineIndex}`)
   }
   for (const element of view.dom.querySelectorAll(
     'img, video, iframe, canvas, svg',
@@ -606,6 +682,161 @@ const endOfTopLevelBlock = (view, pos) => {
   }
 }
 
+/**
+ * The document as it will be once the breaks decided so far are applied, worked out rather than laid
+ * out.
+ *
+ * A solve used to place one break, dispatch it, and measure the whole document again before placing
+ * the next: 51 breaks on the writer's thesis cost 52 full relayouts, which is where a solve's seconds
+ * went (`adr/0026`). A break only pushes the content after its anchor down by the spacer's height, so
+ * the lines of one measurement can be moved by that amount instead of asking the browser where they
+ * went. The next measurement checks the answer (`deviationFrom`) and the solver takes back whatever
+ * the arithmetic got wrong.
+ *
+ * Copies, never the measured lines themselves: `base` is where a line was measured, `top` and `bottom`
+ * where it is predicted to be. `source` and `clientTop` stay as measured, because the DOM they point
+ * into is the one that was measured - nothing is dispatched until the batch is complete.
+ */
+class PredictedLayout {
+  constructor(lines, forced) {
+    this.lines = lines.map((line) => ({ ...line, base: line.top }))
+    this.forced = forced.map((item) => ({ ...item, base: item.top }))
+  }
+
+  /** Everything measured at or below `from` moves down by `amount`. */
+  shift(from, amount) {
+    for (const line of this.lines) {
+      if (line.base >= from - 0.5) {
+        line.top += amount
+        line.bottom += amount
+      }
+    }
+    for (const item of this.forced) {
+      if (item.base >= from - 0.5) {
+        item.top += amount
+      }
+    }
+  }
+}
+
+/**
+ * Where the content a spacer pushes begins, and how much further it moves than the spacer is tall.
+ *
+ * Anchored inside a paragraph, the spacer pushes the line it is anchored at and everything after it,
+ * by exactly its own height. Anchored between blocks, it pushes the whole block after it - whose box
+ * can begin above the line that was chosen, a list item or a row of columns for one - and it separates
+ * two margins that used to collapse into one: the block after it then moves by the spacer **plus** the
+ * smaller of the two margins. Anything this misses is caught by the next measurement.
+ */
+// Structures a spacer cannot push uniformly. Inside one cell of a table it pushes that cell's content
+// and leaves the cells beside it where they were, while the rows below move by however much the row
+// grew - measured on tesis8ag, headings in the next row predicted 36px lower than they landed.
+const UNPREDICTABLE_ANCESTORS = new Set(['tableCell', 'tableHeader', 'tableRow', 'table'])
+
+const shiftFromAnchor = (view, pos, lineBase, originTop, scale) => {
+  try {
+    const $pos = view.state.doc.resolve(pos)
+    for (let depth = $pos.depth; depth > 0; depth -= 1) {
+      if (UNPREDICTABLE_ANCESTORS.has($pos.node(depth).type.name)) {
+        return { from: lineBase, extra: 0, predictable: false }
+      }
+    }
+    if ($pos.parent.isTextblock) {
+      return { from: lineBase, extra: 0 }
+    }
+    const dom = view.nodeDOM(pos)
+    if (!(dom instanceof Element)) {
+      return { from: lineBase, extra: 0 }
+    }
+    const from = Math.min(lineBase, dom.getBoundingClientRect().top - originTop)
+    const previous = dom.previousElementSibling
+    if (!previous) {
+      return { from, extra: 0 }
+    }
+    const below = Number.parseFloat(getComputedStyle(previous).marginBottom) || 0
+    const above = Number.parseFloat(getComputedStyle(dom).marginTop) || 0
+    return {
+      from,
+      extra: below > 0 && above > 0 ? Math.min(below, above) * scale : 0,
+    }
+  } catch {
+    return { from: lineBase, extra: 0 }
+  }
+}
+
+// How far a measured line may sit from its prediction and still count as predicted. A decision turns
+// on a line crossing the foot of a column by more than `TOLERANCE`, so a prediction allowed to be a
+// pixel out could decide differently from a measurement. Half a pixel: the browser rounds each
+// spacer's height to its layout unit, and a quarter was measured being exceeded by that rounding
+// alone, 800px below the break, costing a rollback and a relayout for nothing.
+const PREDICTION_TOLERANCE = 0.5
+
+// Index of the first value in a sorted list that is at least `value`.
+const lowerBound = (sorted, value) => {
+  let low = 0
+  let high = sorted.length
+  while (low < high) {
+    const middle = (low + high) >> 1
+    if (sorted[middle] < value) {
+      low = middle + 1
+    } else {
+      high = middle
+    }
+  }
+  return low
+}
+
+const hasNear = (sorted, value) => {
+  const index = lowerBound(sorted, value - PREDICTION_TOLERANCE)
+  return index < sorted.length && sorted[index] <= value + PREDICTION_TOLERANCE
+}
+
+/**
+ * The highest point, in the previous measurement's coordinates, where the new measurement disagrees
+ * with what was predicted for it - or null when every line and every forced break landed where it was
+ * predicted to.
+ *
+ * Compared by position, not by index. `collectLines` merges the fragments of a line by their rounded
+ * top, and moving a line by a fraction of a pixel can round two fragments together or apart - the
+ * count of lines changes although nothing moved anywhere it should not have. Matched by index, every
+ * line after that one read as wrong: measured, deviations of 2634px and eight breaks taken back for
+ * nothing. So each measured line must have a predicted one where it is, and each predicted line a
+ * measured one where it was predicted.
+ */
+const deviationFrom = (predicted, lines, forced) => {
+  let lowest = null
+  const note = (base) => {
+    if (lowest === null || base < lowest) {
+      lowest = base
+    }
+  }
+  const predictedTops = predicted.lines.map((line) => line.top).sort((a, b) => a - b)
+  const measuredTops = lines.map((line) => line.top).sort((a, b) => a - b)
+  for (const line of predicted.lines) {
+    if (!hasNear(measuredTops, line.top)) {
+      note(line.base)
+      break
+    }
+  }
+  // A measured line nobody predicted belongs to the region of the predicted line just above it.
+  const byTop = [...predicted.lines].sort((a, b) => a.top - b.top)
+  for (const line of lines) {
+    if (!hasNear(predictedTops, line.top)) {
+      const above = lowerBound(predictedTops, line.top) - 1
+      note(above >= 0 ? byTop[above].base : Number.NEGATIVE_INFINITY)
+      break
+    }
+  }
+  const measured = new Map(forced.map((item) => [item.pos, item]))
+  for (const item of predicted.forced) {
+    const landed = measured.get(item.pos)
+    if (!landed || Math.abs(landed.top - item.top) > PREDICTION_TOLERANCE) {
+      note(item.base)
+    }
+  }
+  return lowest
+}
+
 const firstOverflowing = (lines, layout) => {
   // The lines are sorted down the page, so the sheet only ever moves forward: walking it here keeps
   // the whole pass linear in the number of lines rather than in lines times sheets.
@@ -656,7 +887,7 @@ const respectWidowsAndOrphans = (lines, overflow) => {
 }
 
 const charTop = (node, index) => {
-  const range = document.createRange()
+  const range = measuringRange()
   range.setStart(node, index)
   range.setEnd(node, index + 1)
   const rects = range.getClientRects()
@@ -928,7 +1159,7 @@ const firstTextTop = (element) => {
     if (!node.textContent || !node.textContent.trim()) {
       continue
     }
-    const range = document.createRange()
+    const range = measuringRange()
     range.selectNodeContents(node)
     for (const rect of range.getClientRects()) {
       if (rect.height > 0 && rect.width > 0) {
@@ -1114,6 +1345,12 @@ class PaginationDriver {
     this.editor = editor
     this.timer = null
     this.solving = false
+    // Set when the document or the page geometry changes while a solve is paused between batches:
+    // the breaks it holds were worked out for a document that no longer exists.
+    this.interrupted = false
+    // A solve was asked for while one was still running. It starts when that one ends.
+    this.rerun = false
+    this.destroyed = false
     this.lastSignature = null
     // When the wait the writer is sitting through began. Null while nothing is pending.
     this.runStartedAt = null
@@ -1124,20 +1361,21 @@ class PaginationDriver {
 
   update(view, previousState) {
     this.view = view
-    // Ignore the transactions this driver dispatches itself; reacting to them is what turned the
-    // previous engine into a loop that never settled.
+    const changed =
+      view.state.doc !== previousState.doc ||
+      paginationPluginKey.getState(previousState)?.refresh !==
+        paginationPluginKey.getState(view.state)?.refresh
+    if (!changed) {
+      return
+    }
+    // The driver's own dispatches change neither the document nor the refresh counter, so reacting to
+    // a change never reacts to them - which is what turned the previous engine into a loop that never
+    // settled. A change that arrives while a solve is paused between batches is the writer's, and the
+    // solve in progress is working on a document that is gone.
     if (this.solving) {
-      return
+      this.interrupted = true
     }
-    if (view.state.doc !== previousState.doc) {
-      this.schedule()
-      return
-    }
-    const before = paginationPluginKey.getState(previousState)?.refresh
-    const after = paginationPluginKey.getState(view.state)?.refresh
-    if (before !== after) {
-      this.schedule()
-    }
+    this.schedule()
   }
 
   schedule() {
@@ -1163,24 +1401,20 @@ class PaginationDriver {
       clearTimeout(this.timer)
     }
     /**
-     * Wait as long as the last solve took, and never less than the old 200ms.
+     * Wait two seconds of quiet (`RECOMPUTE_DELAY`), restarted by every change.
      *
-     * A fixed 200ms is fine while a solve is quick and ruinous once it is not, because the wait has
-     * to outlast the pause between two keystrokes or every keystroke buys its own solve. Measured on
-     * a 44 sheet thesis, typing five characters with 400ms between them: **nine solves, 18.7 seconds
-     * of blocked main thread**, each one longer than the last. That is also why the toolbar felt
-     * slow - a menu cannot open while the thread is inside a solve.
-     *
-     * Waiting the length of the last solve keeps the engine to about half its time at worst, and on a
-     * document where a solve is 30ms nothing changes: the floor still governs. The writer stops
-     * typing, and it lays out once.
+     * The wait has to outlast the pause between two keystrokes or every keystroke buys its own solve.
+     * Measured on a 44 sheet thesis with a 200ms wait, typing five characters with 400ms between them:
+     * **nine solves, 18.7 seconds of blocked main thread**, each one longer than the last. That is
+     * also why the toolbar felt slow - a menu cannot open while the thread is inside a solve.
      */
-    const wait = Math.min(
-      MAX_RECOMPUTE_DELAY,
-      Math.max(RECOMPUTE_DELAY, this.storage?.solve?.ms || 0),
-    )
     this.timer = setTimeout(() => {
       this.timer = null
+      // Never two solves at once: they would dispatch over each other's breaks.
+      if (this.solving) {
+        this.rerun = true
+        return
+      }
       /**
        * Said here, one painted frame before the work, and not a moment earlier.
        *
@@ -1193,8 +1427,10 @@ class PaginationDriver {
        * So: announce, give the browser one frame to paint it, then take the thread.
        */
       this.editor?.emit?.('layoutStart')
-      paintThen(() => this.solve())
-    }, wait)
+      paintThen(() => {
+        this.solve().catch((error) => console.error(error))
+      })
+    }, RECOMPUTE_DELAY)
   }
 
   applyBreaks(breaks, scale = 1) {
@@ -1208,8 +1444,21 @@ class PaginationDriver {
     this.view.dispatch(tr)
   }
 
-  solve() {
-    const startedAt = now()
+  /**
+   * Lay the document out, handing the thread back to the browser between batches.
+   *
+   * The writer asked for the layout to stop getting in the way of the menus and of scrolling. It
+   * pauses only where the page is whole: right after a batch of breaks has been applied, when the
+   * document shows the pagination the solver expects. The unpaginated layout a solve starts from, and
+   * the partial one a rollback leaves, are each followed at once by the next batch in the same stretch
+   * of work, so neither is ever painted.
+   *
+   * `ms` is the work, the stretches added together, not the pauses between them (`adr/0028`).
+   */
+  async solve() {
+    let startedAt = now()
+    let workMs = 0
+    this.interrupted = false
     const sections = documentSections(this.view.state.doc, this.storage?.page)
     const geometry = readGeometry(this.view, sections)
     if (!geometry) {
@@ -1231,130 +1480,235 @@ class PaginationDriver {
       let stopped = 'ran-out-of-sheets'
       let skipped = 0
       let tried = []
+      // How many times the document was measured. Each one is a full relayout, which is what a solve
+      // costs (`adr/0026`), so this is the number worth watching.
+      let layouts = 0
+      // How many times a measurement disproved a prediction and breaks were taken back.
+      let rollbacks = 0
+      // The breaks decided from the previous measurement, and what it predicted they would do.
+      let batch = null
+      // What the solver could not anchor, when it steps over a block or gives up: the lines it tried
+      // and how far it had got. A solve that gives up looks from outside exactly like one that
+      // finished, so this is what the next reader asks instead of guessing.
+      const unanchored = []
+      // The last measurement, when nothing was dispatched after it.
+      let settledLines = null
+      const { scale } = geometry
+      const stateBefore = () => ({
+        breaks: breaks.length,
+        lastPos,
+        skipped,
+        opens: layout.saveOpens(),
+      })
+
       for (let guard = 0; guard < MAX_SHEETS; guard += 1) {
+        layouts += 1
         const originTop = geometry.host.getBoundingClientRect().top
         const lines = collectLines(this.view, originTop)
-        const overflow = firstOverflowing(lines, layout)
-        const forced = forcedBreaks(this.view, originTop).find(
-          (item) => item.pos > lastPos,
-        )
-        if (!overflow && !forced) {
-          stopped = 'settled'
-          break
-        }
-        let chosen = null
-        // Whichever comes first down the page wins. A forced break above the overflow has to be
-        // taken first, or the sheet it lands on is already the wrong one.
-        if (forced && (!overflow || forced.top <= overflow.top)) {
-          const sheet = layout.sheetAt(forced.top)
-          // Already opening a column: print would not push it either, and a spacer here would
-          // insert a whole blank sheet. The section it opens is still recorded - otherwise every
-          // sheet below would be drawn at the geometry of the section before it - and the solver
-          // moves past it.
-          //
-          // Recorded here rather than while the breaks are being measured. Measuring used to open a
-          // section for **every** break that happened to look column aligned, including ones far
-          // below where the solver had got to - and opening a section changes the height of every
-          // sheet after it, which silently invalidated breaks the solver had already placed. It then
-          // met an overflow above its own last break, could not anchor it, and gave up, leaving the
-          // rest of the document sitting in the margin band. Measured on a real document: the last
-          // break was at position 25541 and the overflow it could not place was at 23039.
-          const opened =
-            forced.top <= layout.columnTop(sheet) + TOLERANCE
-              ? sheet
-              : sheet + 1
-          layout.open(opened, forced.section)
-          if (opened === sheet) {
-            lastPos = forced.pos
-            continue
-          }
-          chosen = { top: forced.top, pos: forced.pos, opened }
-        } else if (overflow) {
-          // A block long enough to span several sheets gets broken more than once, and the widow and
-          // orphan adjustment counts from the start of the block, so it can point at a line above the
-          // previous break. Breaking exactly at the overflow is then the only way forward; giving up
-          // here would leave the rest of the document unpaginated.
-          const candidates = [
-            respectWidowsAndOrphans(lines, overflow),
-            overflow,
-          ]
-          tried = []
-          for (const candidate of candidates) {
-            const at = positionAtLineStart(this.view, candidate)
-            tried.push({
-              at,
-              top: Math.round(candidate.top),
-              index: candidate.indexInBlock,
-              of: candidate.blockLineCount,
-              text: String(
-                candidate.source?.textContent ||
-                  candidate.source?.tagName ||
-                  '',
-              ).slice(0, 30),
-            })
-            if (at !== null && at > lastPos) {
-              chosen = { top: candidate.top, pos: at }
-              break
+        const forcedAll = forcedBreaks(this.view, originTop)
+
+        /**
+         * Check the last batch against what the browser actually did.
+         *
+         * Every step of a batch was decided from lines moved by the steps before it. The first line
+         * that did not land where it was predicted marks the first step whose own shift was wrong;
+         * that step's decision was sound, because it was made above the error, but every step after
+         * it was made from lines that were not where the solver thought. Those are taken back -
+         * breaks, the sections they opened, how far the solver had got - and the document is laid out
+         * again with the breaks that stand. At least the batch's first break always stands: it was
+         * decided from a real measurement with nothing predicted, which is the old one-break-at-a-time
+         * step exactly, so every measurement moves the solve forward.
+         */
+        if (batch) {
+          const deviation = deviationFrom(batch.predicted, lines, forcedAll)
+          if (deviation !== null) {
+            const shifting = batch.log
+              .map((step, index) => ({ ...step, index }))
+              .filter((step) => step.from !== null)
+            const sound = shifting.filter((step) => step.from <= deviation + 0.5)
+            const lastSound = sound.length > 0 ? sound[sound.length - 1] : shifting[0]
+            const firstDropped = lastSound ? batch.log[lastSound.index + 1] : null
+            if (firstDropped) {
+              rollbacks += 1
+              breaks.length = firstDropped.before.breaks
+              lastPos = firstDropped.before.lastPos
+              skipped = firstDropped.before.skipped
+              layout.restoreOpens(firstDropped.before.opens)
+              batch = null
+              this.applyBreaks(breaks, scale)
+              continue
             }
           }
+          batch = null
         }
-        // Nothing here can be moved. Step over the block rather than abandon the document: a table
-        // whose cells the engine cannot anchor inside used to stop the solve dead, and everything
-        // below it - a hundred lines on a real document - was left sitting in the margin band. One
-        // block laid out badly is a much smaller wrong than the rest of the document unpaginated.
-        if (!chosen) {
-          const after = endOfTopLevelBlock(
-            this.view,
-            tried.find((item) => item.at !== null)?.at ?? lastPos,
-          )
-          // Only when stepping over actually gets somewhere. Advancing by one position instead
-          // would crawl the whole document a position at a time, re-measuring every line each time,
-          // which is slower and no more correct than stopping.
-          if (after > lastPos && after < this.view.state.doc.content.size) {
-            skipped += 1
-            lastPos = after
-            continue
+
+        // Decide as many breaks as this one measurement allows.
+        const predicted = new PredictedLayout(lines, forcedAll)
+        const log = []
+        let ended = null
+        for (let step = 0; step < MAX_SHEETS; step += 1) {
+          const overflow = firstOverflowing(predicted.lines, layout)
+          const forced = predicted.forced.find((item) => item.pos > lastPos)
+          if (!overflow && !forced) {
+            ended = 'settled'
+            break
           }
-          stopped = 'no-anchor-below-the-last-break'
+          const before = stateBefore()
+          let chosen = null
+          // Whichever comes first down the page wins. A forced break above the overflow has to be
+          // taken first, or the sheet it lands on is already the wrong one.
+          if (forced && (!overflow || forced.top <= overflow.top)) {
+            const sheet = layout.sheetAt(forced.top)
+            // Already opening a column: print would not push it either, and a spacer here would
+            // insert a whole blank sheet. The section it opens is still recorded - otherwise every
+            // sheet below would be drawn at the geometry of the section before it - and the solver
+            // moves past it.
+            //
+            // Recorded here rather than while the breaks are being measured. Measuring used to open a
+            // section for **every** break that happened to look column aligned, including ones far
+            // below where the solver had got to - and opening a section changes the height of every
+            // sheet after it, which silently invalidated breaks the solver had already placed. It then
+            // met an overflow above its own last break, could not anchor it, and gave up, leaving the
+            // rest of the document sitting in the margin band. Measured on a real document: the last
+            // break was at position 25541 and the overflow it could not place was at 23039.
+            const opened =
+              forced.top <= layout.columnTop(sheet) + TOLERANCE
+                ? sheet
+                : sheet + 1
+            layout.open(opened, forced.section)
+            if (opened === sheet) {
+              lastPos = forced.pos
+              log.push({ before, from: null })
+              continue
+            }
+            chosen = { top: forced.top, base: forced.base, pos: forced.pos, opened }
+          } else if (overflow) {
+            // A block long enough to span several sheets gets broken more than once, and the widow and
+            // orphan adjustment counts from the start of the block, so it can point at a line above the
+            // previous break. Breaking exactly at the overflow is then the only way forward; giving up
+            // here would leave the rest of the document unpaginated.
+            const candidates = [
+              respectWidowsAndOrphans(predicted.lines, overflow),
+              overflow,
+            ]
+            tried = []
+            for (const candidate of candidates) {
+              const at = positionAtLineStart(this.view, candidate)
+              tried.push({
+                at,
+                top: Math.round(candidate.top),
+                index: candidate.indexInBlock,
+                of: candidate.blockLineCount,
+                text: String(
+                  candidate.source?.textContent ||
+                    candidate.source?.tagName ||
+                    '',
+                ).slice(0, 30),
+              })
+              if (at !== null && at > lastPos) {
+                chosen = { top: candidate.top, base: candidate.base, pos: at }
+                break
+              }
+            }
+          }
+          // Nothing here can be moved. Step over the block rather than abandon the document: a table
+          // whose cells the engine cannot anchor inside used to stop the solve dead, and everything
+          // below it - a hundred lines on a real document - was left sitting in the margin band. One
+          // block laid out badly is a much smaller wrong than the rest of the document unpaginated.
+          if (!chosen) {
+            const after = endOfTopLevelBlock(
+              this.view,
+              tried.find((item) => item.at !== null)?.at ?? lastPos,
+            )
+            // Only when stepping over actually gets somewhere. Advancing by one position instead
+            // would crawl the whole document a position at a time, re-measuring every line each time,
+            // which is slower and no more correct than stopping.
+            unanchored.push({ lastPos, after, tried })
+            if (after > lastPos && after < this.view.state.doc.content.size) {
+              skipped += 1
+              lastPos = after
+              log.push({ before, from: null })
+              continue
+            }
+            ended = 'no-anchor-below-the-last-break'
+            break
+          }
+          // A forced break has already recorded the sheet it opens, because the column it has to
+          // reach belongs to the section it opens rather than to the one it closes.
+          const opened = chosen.opened ?? layout.sheetAt(chosen.top) + 1
+          // And a forced break the **overflow** branch swallowed has not.
+          //
+          // When a page break sits on a page with only a line or two to spare, the first line that
+          // overflows is the one the break itself pushes down, so the overflow is at or above the
+          // break and the overflow branch takes it. The break is placed at exactly the position the
+          // page break opens - the same boundary, so the pagination is right - but `lastPos` then
+          // steps to that position, `pos > lastPos` never matches the break again, and the section it
+          // opens is **never recorded at all**.
+          //
+          // Measured on a fixture of three sections and three sheets: `storage.sheets` reported their
+          // sections as `0,0,2`. Section 1 owned no sheet, because only section 2 ever reached
+          // `layout.open`. Nothing on screen showed it while the two sections happened to be drawn
+          // alike - but the export names a band per section, so the page name ran s0 -> s1 -> s0 -> s2
+          // and every change of page name is a forced break: two pages gained in the PDF, and PDF
+          // bookmarks refused to write because the counts no longer matched.
+          if (chosen.opened === undefined && forced && forced.pos <= chosen.pos) {
+            layout.open(opened, forced.section)
+          }
+          const height = layout.columnTop(opened) - chosen.top
+          if (height <= 0) {
+            ended = 'next-column-is-not-below-the-line'
+            break
+          }
+          lastPos = chosen.pos
+          breaks.push({ pos: chosen.pos, height })
+          const { from, extra, predictable = true } = shiftFromAnchor(
+            this.view,
+            chosen.pos,
+            chosen.base,
+            originTop,
+            scale,
+          )
+          predicted.shift(from, height + extra)
+          log.push({ before, from })
+          // Past a break whose effect cannot be worked out, every later decision would be a guess that
+          // the next measurement throws away. Stop here and let it measure instead.
+          if (!predictable) {
+            break
+          }
+        }
+
+        // Nothing new to lay out: what this measurement says is the answer.
+        if (!log.some((step) => step.from !== null)) {
+          stopped = ended ?? stopped
+          // Nothing is dispatched after this, so these lines are the document as it will be drawn.
+          settledLines = lines
           break
         }
-        // A forced break has already recorded the sheet it opens, because the column it has to
-        // reach belongs to the section it opens rather than to the one it closes.
-        const opened = chosen.opened ?? layout.sheetAt(chosen.top) + 1
-        // And a forced break the **overflow** branch swallowed has not.
-        //
-        // When a page break sits on a page with only a line or two to spare, the first line that
-        // overflows is the one the break itself pushes down, so the overflow is at or above the
-        // break and the overflow branch takes it. The break is placed at exactly the position the
-        // page break opens - the same boundary, so the pagination is right - but `lastPos` then
-        // steps to that position, `pos > lastPos` never matches the break again, and the section it
-        // opens is **never recorded at all**.
-        //
-        // Measured on a fixture of three sections and three sheets: `storage.sheets` reported their
-        // sections as `0,0,2`. Section 1 owned no sheet, because only section 2 ever reached
-        // `layout.open`. Nothing on screen showed it while the two sections happened to be drawn
-        // alike - but the export names a band per section, so the page name ran s0 -> s1 -> s0 -> s2
-        // and every change of page name is a forced break: two pages gained in the PDF, and PDF
-        // bookmarks refused to write because the counts no longer matched.
-        if (chosen.opened === undefined && forced && forced.pos <= chosen.pos) {
-          layout.open(opened, forced.section)
+        this.applyBreaks(breaks, scale)
+        batch = { predicted, log }
+
+        // The page is whole here, so this is where the browser gets its turn.
+        workMs += now() - startedAt
+        await yieldToBrowser()
+        startedAt = now()
+        if (this.interrupted || this.destroyed) {
+          // The breaks already shown stay, mapped through the change by the plugin, until the solve
+          // the change scheduled replaces them. Nothing is published from a stale answer.
+          this.storage.interruptions = (this.storage.interruptions || 0) + 1
+          return
         }
-        const height = layout.columnTop(opened) - chosen.top
-        if (height <= 0) {
-          stopped = 'next-column-is-not-below-the-line'
-          break
-        }
-        lastPos = chosen.pos
-        breaks.push({ pos: chosen.pos, height })
-        this.applyBreaks(breaks, geometry.scale)
       }
       this.storage.solve = {
         stopped,
         breaks: breaks.length,
         skipped,
-        ms: Math.round(now() - startedAt),
+        layouts,
+        rollbacks,
+        at: breaks.map((item) => item.pos),
+        unanchored: unanchored.slice(-4),
+        ms: Math.round(workMs + now() - startedAt),
       }
-      this.runMs += now() - startedAt
+      this.runMs += workMs + now() - startedAt
       /**
        * Solve again until two solves agree.
        *
@@ -1378,7 +1732,7 @@ class PaginationDriver {
       const signature = `${stopped}:${breaks.map((item) => item.pos).join(',')}`
       const settled = signature === this.lastSignature
       this.lastSignature = signature
-      const sheets = this.padToWholeSheets(geometry, layout)
+      const sheets = this.padToWholeSheets(geometry, layout, settledLines)
       this.publishPages(geometry, layout, sheets)
       this.renderSheets(geometry, layout, sheets)
       this.renderPageNumbers(geometry, layout)
@@ -1390,6 +1744,10 @@ class PaginationDriver {
       }
     } finally {
       this.solving = false
+      if (this.rerun) {
+        this.rerun = false
+        this.schedule()
+      }
     }
   }
 
@@ -1563,9 +1921,12 @@ class PaginationDriver {
    * fragment. Measured from the last laid-out box rather than from the element height, which would
    * feed back into the very property being set.
    */
-  padToWholeSheets(geometry, layout) {
-    const originTop = geometry.host.getBoundingClientRect().top
-    const lines = collectLines(this.view, originTop)
+  padToWholeSheets(geometry, layout, measured = null) {
+    // The solve's own last measurement when it has one: measuring again would be one more relayout of
+    // the whole document to learn what is already known.
+    const lines =
+      measured ??
+      collectLines(this.view, geometry.host.getBoundingClientRect().top)
     const lastBottom = lines.length > 0 ? lines[lines.length - 1].bottom : 0
     const sheets = Math.max(1, layout.sheetAt(lastBottom) + 1)
     geometry.host.style.setProperty(
@@ -1576,6 +1937,7 @@ class PaginationDriver {
   }
 
   destroy() {
+    this.destroyed = true
     this.view?.dom
       ?.closest('.pdoc-page-content')
       ?.querySelectorAll(

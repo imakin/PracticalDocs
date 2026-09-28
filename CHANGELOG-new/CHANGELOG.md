@@ -1,3 +1,23 @@
+### Pages Are Laid Out From One Measurement, In Steps, Two Seconds After You Stop
+
+- `Asked For By The User`: could laying out the page run in the background. Two ways were offered - (A) cut the solve into slices, or (B) place every break from **one** measurement instead of measuring again after each break. The writer chose B, then asked for A on top of it.
+- `B: Predict Every Break, Then Check`: the natural layout is measured once; every break is decided on a model of the lines, the lines below each break shifted by the height of its spacer arithmetically, as `adr/0026` suggested; the whole batch is applied; one more measurement compares every line with where it was predicted. From the first line that disagrees, the steps are rolled back and the old one-break-at-a-time loop takes over. The decision is `adr/0032`.
+- `The Same Breaks, Far Fewer Layouts`: on a copy of a 53 sheet thesis, 51 breaks took **52 layouts and 2633 ms** before and take **2 layouts and 85 ms** now, and the two engines place identical breaks. The status bar read `Layout 136 ms` for opening the whole document.
+- `A: The Solve Stops Between Batches`: a solve now pauses only right after a batch is applied, where the page is whole. A change made during a pause abandons that solve and the change's own solve replaces it; two solves never overlap. Measured on the writer's thesis, the solve holds the main thread for 56 to 110 ms at a time.
+- `Reported By The User`: pages 55 to 57 of `tesis8ag` were wrong on screen and every page after them was off, while the PDF was right. **Not caused by B**: the old engine failed the same way on the same copy. A line with inline code in it was two lines to the engine, because the code's glyph box sits 1px above the text around it and fragments were grouped by their top. The engine placed a break in the middle of that line, the other half was left crossing the foot of the sheet, and the solver gave up. Fragments are grouped by **vertical overlap** now, at least half of the shorter one. The thesis settles at 80 sheets with no cut line.
+- `One Range, Not One Per Text Node`: a CPU profile showed **5.2 s in `removeChild`**. Measuring created a new `Range` for every text node and every step of a binary search, and the browser updates every live range on every change to the page, so each solve made the next one slower. One shared range now, in `src/utils/measuring-range.js`, used by the engine and by the list item node view.
+- `The Whole Open`: `Layout 1465 ms` on the thesis, where the old engine took 12858 ms and got it wrong.
+- `A Break Inside A Table Ends The Batch`: a spacer in one cell does not move the cells beside it, so a prediction across it was measured 36px off.
+- `The Wait Is Two Seconds`, as the writer asked: `RECOMPUTE_DELAY` is a fixed 2000ms, and "wait as long as the last solve took" is gone. This replaces decision 1 of `adr/0028`.
+- `What The Engine Keeps`: `storage.solve` records `layouts`, `rollbacks`, `at` (the break positions) and `unanchored` (the last things the solver could not place), so the next fault can be read rather than guessed.
+- `Test script`: no new test. The existing parity tests all pass on this engine - `pagination-pdf-parity`, `block-pagination` 11/11, `page-sections`, `page-sections-export`, `page-break`, `page-number-section`, `page-numbers-export`, `math-block-pagination`, `math-export-parity`, `toc-multipage-export`, `sections-same-paper-export`, `columns-never-split-export`, `markdown-math-align`, `markdown-code`, `list-marker-font` - and unit 208/208. Not checked: the PDF page count of `tesis8ag` against its 80 sheets.
+
+  ```bash
+  npm run test:e2e:pagination-pdf
+  npm run test:e2e:block-pagination
+  npm run test:e2e:columns-never-split-export
+  ```
+
 ### A Paragraph's First Line Indent Stops At The Edge Of A List
 
 - `Reported By The User`: setting First Line Indent to 2em on Normal Paragraph indented every bullet and numbered item too, and setting the list's own indent to 0 did nothing about it.

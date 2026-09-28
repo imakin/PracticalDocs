@@ -220,6 +220,8 @@
 <script setup>
 import { NodeViewContent, nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3'
 
+import { measuringRange } from '@/utils/measuring-range'
+
 import {
   DEFAULT_MARKER_TEMPLATE,
   formatOrderedValue,
@@ -347,12 +349,13 @@ const getMarkerTextMetrics = (element) => {
     }
     const characters = currentTextNode.textContent.trim().length
 
-    const range = document.createRange()
+    // One shared range: a new one per text node stays live until collected and slows every DOM
+    // change in the document. See `src/utils/measuring-range.js`.
+    const range = measuringRange()
     range.selectNodeContents(currentTextNode)
     const textRects = Array.from(range.getClientRects()).filter(
       (rect) => rect.height > 0,
     )
-    range.detach?.()
 
     textRects.forEach((rect) => {
       // Grouped by overlapping the line, not by starting at the same height. A fragment set larger
