@@ -938,8 +938,39 @@ const outsideAnyColumns = (view, pos) => {
 const positionAtLineStart = (view, line) =>
   outsideAnyColumns(view, positionAtLineStartInside(view, line))
 
+/**
+ * The position just before a formula, for a line that begins with one.
+ *
+ * A formula is one atom in the document; the text KaTeX draws inside it has no position of its own.
+ * The search below looks for the first character at or under the line's top - and a line that begins
+ * with a formula has the formula's box as its top, which KaTeX's glyphs can stand a fraction of a pixel
+ * above. Whether they do depends on the geometry: measured on a copy of tesis8ag, at a device pixel
+ * ratio of 1.2 the "T" of an inline T_max stood above its box, the search found nothing, the solver
+ * stepped over the block 362 times and gave up - and the writer saw the same page break the same way
+ * in one Chrome on one computer and nowhere else. The formula's own position is the answer, whatever
+ * the pixels do.
+ */
+const MATH_ATOM_SELECTOR = '[data-type="block-math"], [data-type="inline-math"]'
+
+const beforeMathAtom = (view, node) => {
+  const atom = node?.parentElement?.closest?.(MATH_ATOM_SELECTOR)
+  if (!atom || !view.dom.contains(atom) || !atom.parentNode) {
+    return undefined
+  }
+  try {
+    const index = Array.prototype.indexOf.call(atom.parentNode.childNodes, atom)
+    return beforeBlockIfAtItsStart(view, view.posAtDOM(atom.parentNode, index))
+  } catch {
+    return undefined
+  }
+}
+
 const positionAtLineStartInside = (view, line) => {
   const node = line.source
+  const formula = beforeMathAtom(view, node)
+  if (formula !== undefined) {
+    return formula
+  }
   if (!node || node.nodeType !== Node.TEXT_NODE) {
     // An element line is a whole block of its own - an image, a video, a canvas. `posAtDOM` on it
     // returns a position **inside** the node, and a spacer anchored there is rendered inside the
