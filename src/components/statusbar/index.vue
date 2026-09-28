@@ -161,7 +161,7 @@
         size="small"
         @click="about = !about"
       >
-        <icon name="copyright" /> PracticalDocs
+        <icon name="copyright" /> PracticalDocs {{ version }}
       </t-button>
     </div>
     <div class="pdoc-status-bar-right">
@@ -355,6 +355,7 @@
 </template>
 
 <script setup>
+import { version } from '@/utils/copyright'
 import { getShortcut } from '@/utils/shortcut'
 
 const { locale } = useI18n()

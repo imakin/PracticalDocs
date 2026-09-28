@@ -1,3 +1,10 @@
+### The Status Bar Button Shows The Version
+
+- `Asked For By The User`: the version, the same one `package.json` carries, beside (c) PracticalDocs in the same button.
+- `One Source`: the button reads `version` from `src/utils/copyright.js`, which takes it from `package.json` - the same value the build banner and the console greeting already use. Bumping the package is the only step; nothing else has to be kept in step with it.
+- `Version 12.2.1`: the writer's own bump rides along in this commit, as `12.1.0` did in `ab3d834`.
+- `Test script`: no test. Checked once in a tab of its own: the button reads `PracticalDocs 12.2.1` on one line, 18px high. Screenshot `tests/screenshots/statusbar-version.png`.
+
 ### Pages Are Laid Out From One Measurement, In Steps, Two Seconds After You Stop
 
 - `Asked For By The User`: could laying out the page run in the background. Two ways were offered - (A) cut the solve into slices, or (B) place every break from **one** measurement instead of measuring again after each break. The writer chose B, then asked for A on top of it.
