@@ -1,3 +1,11 @@
+### The Layout Switch Says Page View And Web View Again
+
+- `Reported By The User`: the status bar showed the raw key `layout.page` beside the character count, and the console warned that `layout.page` and `layout.web` were missing from the English messages.
+- `Where They Went`: `ad026f6`, which added the layout timing to the status bar, wrote its two strings into the `layout` group of `en-US.json` by replacing the group instead of adding to it. `web` and `page` were deleted with no one noticing, because the Chinese messages still carried them.
+- `Restored As Page View And Web View`, the English they had before and the meaning of the Chinese `页面视图` and `Web 视图`. The same words label the status bar switch and the two buttons under View.
+- `Version 12.2.3`: the writer's own bump rides along.
+- `Test script`: no test. Checked once in a tab of its own: the status bar reads `Page View`, and the console carries no warning for either key.
+
 ### The Status Bar Button Shows The Version
 
 - `Asked For By The User`: the version, the same one `package.json` carries, beside (c) PracticalDocs in the same button.

@@ -843,6 +843,8 @@
     "licence": "Read the MIT licence"
   },
   "layout": {
+    "page": "Page View",
+    "web": "Web View",
     "working": "Layouting...",
     "took": "Layout"
   },
