@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 
 import Vue from '@vitejs/plugin-vue'
 import ReactivityTransform from '@vue-macros/reactivity-transform/vite'
@@ -82,6 +82,65 @@ const licenseFile = () => ({
   },
 })
 
+/**
+ * What the editor loads at run time - diagram renderers, charts, the media player, file icons - served
+ * by the site itself instead of by upstream's CDN.
+ *
+ * These were fetched from `https://cdn.umodoc.com`, a third party, whenever a document used them. The
+ * same files are in `@umoteam/editor-external`, already a dependency, so the site carries the ones it
+ * uses: a few megabytes out of a 60 MB package, copied at build time and never committed. The KaTeX
+ * stylesheet that CDN also served is deliberately not among them - it overrode the bundled one and
+ * moved every formula wherever the CDN happened to answer (`src/components/editor/index.vue`).
+ *
+ * `cdnUrl` in `src/app.vue` is `./editor-external`, which resolves next to `index.html` in the built
+ * site and to `/editor-external` beside `/practicaldocs` in development.
+ */
+const EXTERNAL_ROOT = `${process.cwd()}/node_modules/@umoteam/editor-external`
+const EXTERNAL_FILES = [
+  'libs/mermaid/mermaid.min.js',
+  'libs/echarts/echarts.min.js',
+  'libs/plyr/plyr.css',
+  'libs/plyr/plyr.min.js',
+  'libs/plyr/plyr.svg',
+  'libs/flowchart/raphael.min.js',
+  'libs/flowchart/flowchart.js',
+  'libs/plantuml/plantuml-encoder.min.js',
+  ...readdirSync(`${EXTERNAL_ROOT}/icons/file`).map((name) => `icons/file/${name}`),
+]
+const CONTENT_TYPES = {
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+}
+const editorExternal = (mode) => ({
+  name: 'pdoc-editor-external',
+  configureServer(server) {
+    server.middlewares.use('/editor-external', (request, response, next) => {
+      const file = decodeURIComponent((request.url || '').split('?')[0]).replace(/^\//, '')
+      if (!EXTERNAL_FILES.includes(file)) {
+        next()
+        return
+      }
+      const extension = file.slice(file.lastIndexOf('.'))
+      response.setHeader('Content-Type', CONTENT_TYPES[extension] || 'application/octet-stream')
+      response.end(readFileSync(`${EXTERNAL_ROOT}/${file}`))
+    })
+  },
+  generateBundle() {
+    // The library that npm publishes leaves this to the host, which sets its own `cdnUrl`.
+    if (mode !== 'app') {
+      return
+    }
+    for (const file of EXTERNAL_FILES) {
+      this.emitFile({
+        type: 'asset',
+        fileName: `editor-external/${file}`,
+        source: readFileSync(`${EXTERNAL_ROOT}/${file}`),
+      })
+    }
+  },
+})
+
 const appBuildConfig = {
   target: 'es2018',
   outDir: 'dist-app',
@@ -156,6 +215,7 @@ export default defineConfig(({ mode }) => ({
     ReactivityTransform(),
     ...Object.values(vuePlugins),
     licenseFile(),
+    editorExternal(mode),
   ],
   css: cssConfig,
   build: mode === 'app' ? appBuildConfig : buildConfig,

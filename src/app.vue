@@ -29,11 +29,11 @@ const options = $ref({
     layouts: ['page', 'web'],
     showBookmark: true,
   },
-  // Where the video player, the formula dialog's KaTeX and the file type icons are fetched from at
-  // run time. It is a third party this page depends on while it is open; leaving it out falls back
-  // to an unpinned `@latest` on unpkg, which is worse. Serving those files beside the document
-  // server would remove the dependency altogether.
-  cdnUrl: 'https://cdn.umodoc.com',
+  // Where the diagram renderers, charts, media player and file type icons are fetched from at run
+  // time: the site's own copy of what upstream's CDN used to serve (`editorExternal` in
+  // `vite.config.js`). Nothing is fetched from cdn.umodoc.com, and leaving this out would fall back
+  // to an unpinned `@latest` on unpkg.
+  cdnUrl: './editor-external',
   // Nothing else is set here, on purpose. Saving, uploading and the document server's address are
   // the editor's own business now (`src/utils/save-to-server.js`), and mention suggestions,
   // templates and the user list are left empty because this deployment has no directory behind

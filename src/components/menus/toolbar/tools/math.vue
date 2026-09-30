@@ -82,7 +82,10 @@
 </template>
 
 <script setup>
-import { loadResource } from '@/utils/load-resource'
+// The KaTeX this repository depends on, not a copy fetched from `cdnUrl`. A second KaTeX loaded from
+// the upstream CDN drew formulas at its own metrics, wherever that CDN happened to answer - see
+// `src/components/editor/index.vue`. Where it did not answer, this dialog never finished loading.
+import katex from 'katex'
 
 const props = defineProps({
   type: {
@@ -96,7 +99,6 @@ const props = defineProps({
 })
 
 const editor = inject('editor')
-const options = inject('options')
 
 const templates = [
   '\\times',
@@ -189,14 +191,9 @@ const containerRef = $ref()
 let latexLoaded = $ref(false)
 let latexValue = $ref('')
 
+// Bundled, so there is nothing to wait for; kept as a step so the dialog's loading state still has
+// a moment to give way to the rendered templates.
 const loadKatex = async () => {
-  const { cdnUrl } = options.value
-  await loadResource(
-    `${cdnUrl}/libs/katex/katex.min.js`,
-    'script',
-    'katex-script',
-  )
-  await loadResource(`${cdnUrl}/libs/katex/katex.min.css`, 'css', 'katex-style')
   setTimeout(() => {
     latexLoaded = true
   }, 100)

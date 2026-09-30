@@ -41,7 +41,6 @@ import { Editor, EditorContent } from '@tiptap/vue-3'
 import { getDefaultExtensions, inputAndPasteRules } from '@/extensions'
 import { contentTransform } from '@/utils/content-transform'
 import { addHistory } from '@/utils/history-record'
-import { loadResource } from '@/utils/load-resource'
 
 const destroyed = inject('destroyed')
 const page = inject('page')
@@ -160,15 +159,15 @@ watch(
 )
 
 onMounted(() => {
-  const { disableExtensions, cdnUrl } = options.value
-  const has = (name) => !disableExtensions.includes(name)
-  const libUrl = `${cdnUrl}/libs`
-  if (has('math')) {
-    loadResource(`${libUrl}/katex/katex.min.css`, 'css', 'katex-style')
-  }
-  if (has('mermaid')) {
-    loadResource(`${libUrl}/mermaid/mermaid.min.js`, 'script', 'mermaid-script')
-  }
+  // Nothing is preloaded from `cdnUrl` any more. Mermaid was, for every reader on every page load;
+  // the diagram dialog and the diagram image now load it themselves when they are used.
+  //
+  // And no KaTeX stylesheet from `cdnUrl`. The application bundles the KaTeX it renders with
+  // (`src/main.js`), and a second stylesheet from the upstream CDN overrode it wherever that CDN
+  // answered - reported by the writer as pages breaking wrongly on screen and blank pages in the PDF,
+  // on one computer, one browser and one address only, because only there did the CDN reply. The
+  // document's layout must not depend on whether a third party answers. A host that embeds the npm
+  // package imports `katex/dist/katex.min.css` itself.
   window.addEventListener('beforeunload', flushSyncDocumentContent)
   window.addEventListener('pagehide', flushSyncDocumentContent)
   document.addEventListener('visibilitychange', flushSyncDocumentContent)

@@ -73,6 +73,8 @@
 </template>
 
 <script setup>
+import { loadResource } from '@/utils/load-resource'
+
 import { getSelectionNode } from '@/utils/selection'
 import { shortId } from '@/utils/short-id'
 import { svgToDataURL } from '@/utils/file'
@@ -92,6 +94,16 @@ const props = defineProps({
 
 const editor = inject('editor')
 const container = inject('container')
+const options = inject('options')
+
+// Loaded when the dialog opens, from the site's own copy (`cdnUrl`), rather than preloaded for every
+// reader on every page load whether or not they ever draw a diagram.
+const loadMermaid = () =>
+  loadResource(
+    `${options.value.cdnUrl}/libs/mermaid/mermaid.min.js`,
+    'script',
+    'mermaid-script',
+  )
 
 let dialogVisible = $ref(false)
 
@@ -161,6 +173,7 @@ watch(
     if (visible) {
       localConfig = { ...props.config }
       mermaidCode = props.content || 'graph TB\na-->b'
+      await loadMermaid()
       await nextTick()
       mermaidInit()
       renderMermaid()

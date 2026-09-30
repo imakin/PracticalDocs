@@ -83,6 +83,8 @@ export const player = async (container, cdnUrl) => {
   await loadResource(`${cdnUrl}/libs/plyr/plyr.min.js`, 'script', 'plyr-script')
   return new Plyr(container, {
     i18n: locales[locale.value],
+    // The icon sprite from the same place as the player, not Plyr's own default of cdn.plyr.io.
+    iconUrl: `${cdnUrl}/libs/plyr/plyr.svg`,
     settings: [],
     tooltips: { controls: true },
     storage: { key: 'practicaldocs:player' },
