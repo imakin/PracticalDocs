@@ -35,8 +35,8 @@ vite.config.js.timestamp*
 types/imports.d.ts
 types/components.d.ts
 
-# Lock files
-package-lock.json
+# Lock files. npm's is tracked, so every machine builds the same dependencies (`npm ci`); the
+# others belong to package managers this project does not use.
 yarn.lock
 pnpm-lock.yaml
 

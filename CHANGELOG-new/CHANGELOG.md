@@ -1,3 +1,9 @@
+### The Lockfile Is Tracked, So Every Machine Builds The Same Editor
+
+- `Why`: `package-lock.json` had been ignored since the upstream code, so each machine resolved its own dependencies on the day it ran `npm install`. Compared on 2026-10-05, the Linux machine's lock and computer A's differed in 207 packages - among them `prosemirror-view` 1.42.2 against 1.42.6, the version that changed how a list item's marker maps to a position and broke pagination on computer A only.
+- `What`: the lock written on computer A is tracked, the one every test of that day ran on, with its root version synced to 12.3.1 by `npm install --package-lock-only` (no package changed). Install from it with `npm ci`, which installs exactly what it records instead of resolving again.
+- `Across Systems`: it records the Linux and Windows builds of every native package (esbuild, rollup, rolldown, lightningcss, oxc-resolver, oxfmt, oxlint). Nothing in it installs on one system and fails on the other; the only Linux-only entry, `@napi-rs/lzma-linux-x64-gnu`, is optional and skipped on Windows.
+
 ### The Server API URLs Used Last Are One Press Away, And The Popup's Buttons Are Large
 
 - `Asked For By The User`: every press of Save or Open Document... in the save status popup remembers the Server API URL in use. Under the field, a list of buttons shows them, the one used last on top, five at most, never one twice. A press on a button puts its URL in the field. The list is kept in this browser's localStorage, as `practicaldocs:server-url-history`.
