@@ -121,6 +121,19 @@
               <div v-if="saveTarget === 'practicaldocs-server'" class="pdoc-server-url-field">
                 <div class="pdoc-server-url-label">Server API URL:</div>
                 <t-input v-model="serverUrl" placeholder="http://localhost:3001/api/documents/save" size="small" />
+                <div v-if="serverUrlHistory.length" class="pdoc-server-url-history">
+                  <t-button
+                    v-for="url in serverUrlHistory"
+                    :key="url"
+                    class="pdoc-server-url-history-item"
+                    size="small"
+                    theme="default"
+                    variant="outline"
+                    @click="serverUrl = url"
+                  >
+                    {{ url }}
+                  </t-button>
+                </div>
               </div>
             </div>
           </div>
@@ -169,6 +182,10 @@
 </template>
 
 <script setup>
+import {
+  rememberServerUrl,
+  SERVER_URL_HISTORY_KEY,
+} from '@/utils/server-url-history'
 import { timeAgo } from '@/utils/time-ago'
 const emits = defineEmits(['menu-change'])
 
@@ -206,10 +223,16 @@ const { openLoadDialog } = useDocumentDialogs()
 
 const saveTarget = useStorage('practicaldocs:save-target', 'practicaldocs-server')
 const serverUrl = useStorage('practicaldocs:server-url', 'http://localhost:3001/api/documents/save')
+const serverUrlHistory = useStorage(SERVER_URL_HISTORY_KEY, [])
+const rememberCurrentServerUrl = () => {
+  serverUrlHistory.value = rememberServerUrl(serverUrlHistory.value, serverUrl.value)
+}
 
 // Asks the dialog to open rather than hunting for a button to click. The button it used to click is
 // gone, and the old `if (btn)` guard would have made this quietly do nothing.
 const triggerLoadModal = () => {
+  // The Open dialog always lists the documents of the Server API URL, whatever the save destination.
+  rememberCurrentServerUrl()
   statusPopup = false
   openLoadDialog()
 }
@@ -302,6 +325,9 @@ const toggleToolbarMode = ({ value }) => {
 // 保存文档
 const saveContentMethod = inject('saveContent')
 const saveContent = () => {
+  if (saveTarget.value === 'practicaldocs-server') {
+    rememberCurrentServerUrl()
+  }
   saveContentMethod()
   statusPopup = false
 }
@@ -430,6 +456,36 @@ const setContentFromCache = () => {
     margin: 8px 0 4px;
     display: flex;
     gap: 8px;
+  }
+  // Asked for by the writer: every button in this popup is a large target, 1em above and below its
+  // text, so it is easy to hit.
+  .pdoc-document-button-container .pdoc-button,
+  .pdoc-server-url-history-item {
+    height: auto;
+    padding-top: 1em;
+    padding-bottom: 1em;
+    line-height: 1.4;
+  }
+}
+.pdoc-server-url-history {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+// The text is the URL itself, so all of it is shown, wrapped where it has to be. A light grey ground,
+// asked for by the writer, so a remembered URL does not read as a second input field.
+.pdoc-server-url-history .pdoc-server-url-history-item {
+  background-color: var(--pdoc-container-background);
+  width: 100%;
+  margin: 0;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  word-break: break-all;
+  :deep(.pdoc-button__text) {
+    white-space: normal;
+    word-break: break-all;
   }
 }
 .pdoc-save-target-container {

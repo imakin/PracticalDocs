@@ -1,3 +1,16 @@
+### The Server API URLs Used Last Are One Press Away, And The Popup's Buttons Are Large
+
+- `Asked For By The User`: every press of Save or Open Document... in the save status popup remembers the Server API URL in use. Under the field, a list of buttons shows them, the one used last on top, five at most, never one twice. A press on a button puts its URL in the field. The list is kept in this browser's localStorage, as `practicaldocs:server-url-history`.
+- `When A URL Counts As Used`: Open Document... always lists the documents of the Server API URL, so it always counts. Save counts only while the Save Destination is practicaldocs-server, because a save to Local Storage does not use the URL. Choosing a URL from the list only fills the field; it moves to the top when it is next used.
+- `Large Targets`, as asked: Save, Open Document..., New Document and every URL button have 1em above and below their text (first built at 1.5em; the writer asked for less). A long URL wraps rather than being cut off.
+- `A Grey Ground For The List`, as asked, so a remembered URL does not read as a second input field. It is the editor's container background, so it follows the dark theme too.
+- `Version 12.3.1`: the writer's own bump rides along.
+- `Test script`: `tests/unit/server-url-history.test.mjs` (the list rule, seven cases) and `tests/e2e/server-url-history.cdp.mjs`, driven by the mouse through the popup against two storage servers of the test's own (`STORAGE_A_URL`, `STORAGE_B_URL`), because Save writes. Screenshot `tests/screenshots/server-url-history.png`.
+
+  ```bash
+  npm run test:e2e:server-url-history
+  ```
+
 ### The Export Dialog Warns About Browser Zoom
 
 - `Reported By The User`: the PDF of `tesis8ag` exported through the tunnel had 88 pages for 81 sheets, with pages holding nothing but a page number.
