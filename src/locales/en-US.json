@@ -1052,6 +1052,8 @@
     "title": "Print Document",
     "message": "Before printing the document, please ensure that all images on the pages have finished loading. To ensure that all content is displayed correctly, please check the 'Background graphics' option in the print dialog box and set the 'Margins' to 'None.'",
     "confirm": "Print Now",
+    "zoomAdvice": "Keep the browser zoom at 100% (Ctrl+0). A zoomed browser lays text out differently from the printer, and the PDF can gain pages that hold nothing but a page number. To see the page larger, use the editor's own zoom in the status bar.",
+    "zoomWarning": "This browser is zoomed to about {zoom}%. Save, press Ctrl+0, reload the page, and export again.",
     "language": "Document language",
     "languageHint": "The language the document is written in, as a tag like en-US or id-ID. It is written into the exported file, where a screen reader reads it."
   },

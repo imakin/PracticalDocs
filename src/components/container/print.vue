@@ -14,6 +14,15 @@
         {{ printing ? t('print.message') : t('export.pdf.message') }}
       </p>
       <!--
+        Browser zoom changes how text is laid out, and Chrome prints unzoomed, so a zoomed tab prints
+        longer pages than it shows (`utils/browser-zoom.js`). Said every time, and said louder when the
+        zoom can be seen.
+      -->
+      <p class="pdoc-print-dialog-message">{{ t('print.zoomAdvice') }}</p>
+      <p v-if="zoomPercent" class="pdoc-print-dialog-warning">
+        {{ t('print.zoomWarning', { zoom: zoomPercent }) }}
+      </p>
+      <!--
         The language the document is written in, not the language of this interface. It reaches the
         exported file as `<html lang>`, which is what a screen reader and an accessibility checker
         believe - and it was hardcoded to Chinese for every document this editor ever exported.
@@ -26,6 +35,7 @@
 
 <script setup>
 import { documentSections } from '@/extensions/page-break'
+import { browserZoom } from '@/utils/browser-zoom'
 import { sameGeometry, sheetSizeOf } from '@/utils/page-sections'
 
 const container = inject('container')
@@ -766,6 +776,8 @@ const getIframeCode = () => {
 
 let askVisible = $ref(false)
 let draftLanguage = $ref('en-US')
+// The browser's zoom in per cent when it is known not to be 100, otherwise null.
+let zoomPercent = $ref(null)
 
 /**
  * Ask before printing, and let the writer say what the document is written in.
@@ -777,6 +789,8 @@ let draftLanguage = $ref('en-US')
 const printPage = () => {
   editor.value?.commands.blur()
   draftLanguage = page.value.language || 'en-US'
+  const zoom = browserZoom()
+  zoomPercent = zoom && zoom !== 1 ? Math.round(zoom * 100) : null
   // Built when the dialog opens, not only when it is confirmed. The export document is what the
   // pagination and bookmark tests read to see what would be printed, and they must not have to press
   // a button that opens Chrome's print preview to get it. It is built again on confirm, because by
@@ -830,6 +844,13 @@ watch(
   .pdoc-print-dialog-message {
     margin: 0 0 16px;
     line-height: 1.6;
+  }
+
+  .pdoc-print-dialog-warning {
+    margin: 0 0 16px;
+    line-height: 1.6;
+    color: var(--td-warning-color, #e37318);
+    font-weight: 600;
   }
 
   .pdoc-print-dialog-hint {

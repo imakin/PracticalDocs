@@ -1,3 +1,15 @@
+### The Export Dialog Warns About Browser Zoom
+
+- `Reported By The User`: the PDF of `tesis8ag` exported through the tunnel had 88 pages for 81 sheets, with pages holding nothing but a page number.
+- `The Cause Was The Browser Zoom`: that host was at 110% in Chrome, which remembers zoom per host. The same export printed 88 pages from a tab at 110% and 82 from one at 100%; an emulated display scaling of 1.1 still printed 82. Zoom lays text out at the zoomed size and fonts do not scale exactly, so the engine paginates one layout and Chrome prints another. At 100% the copy of the thesis printed 81 pages for 81 sheets.
+- `Asked For By The User`: a warning beside the advice the dialog already gives. The Export PDF and Print dialogs now always say to keep the browser at 100% and use the editor's own zoom, and when the zoom can be seen they say how far it is zoomed and to save, press Ctrl+0, reload and export again.
+- `How The Zoom Is Seen`: no browser reports it. `src/utils/browser-zoom.js` compares the window's outer and inner widths and reports a zoom only when what is left of the pixel ratio is a display scaling Windows offers, so display scaling and an open side panel are not called a zoom. When it cannot tell, it says nothing beyond the advice.
+- `Test script`: `tests/unit/browser-zoom.test.mjs`, seven cases built from the two windows measured on the writer's computer. The dialog was checked in a tab of its own at 100% (no warning) and with a 110% window faked for the probe, because CDP cannot set Chrome's zoom. Screenshots `tests/screenshots/export-zoom-100.png` and `export-zoom-110.png`.
+
+  ```bash
+  node --test tests/unit/browser-zoom.test.mjs
+  ```
+
 ### A List Item At The Foot Of A Page Moves Whole Again
 
 - `Reported By The User`: on the build made on computer A, the pages of `tesis8ag` ran through the foot of the sheet from chapter 1.5 on, while the tunnel's build of the same source paginated the same document.
