@@ -42,6 +42,7 @@
   },
   "scripts": {
     "quickstart": "npm install && npm run build:app && screen -dm -S practicaldocs-server npm --prefix storage-server start && screen -dm -S practicaldocs-frontend npx http-server ./dist-app",
+    "quickstart:win": "npm install && npm run build:app && wt -d . cmd /k \"npm --prefix storage-server start\" ; split-pane -d . cmd /k \"npx http-server ./dist-app\"",
     "build": "vite build",
     "dev": "vite --port 9000 --open --force",
     "package": "npm run build && npm pack",
