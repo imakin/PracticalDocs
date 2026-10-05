@@ -41,6 +41,7 @@
     }
   },
   "scripts": {
+    "quickstart": "npm install && npm run build:app && screen -dm -S practicaldocs-server npm --prefix storage-server start && screen -dm -S practicaldocs-frontend npx http-server ./dist-app",
     "build": "vite build",
     "dev": "vite --port 9000 --open --force",
     "package": "npm run build && npm pack",
@@ -171,6 +172,7 @@
     "@vitejs/plugin-vue": "^6.0.4",
     "@vue-macros/reactivity-transform": "^3.1.2",
     "esbuild": "^0.28.1",
+    "http-server": "^14.1.1",
     "husky": "^9.1.7",
     "less": "^4.5.1",
     "less-loader": "^12.3.1",

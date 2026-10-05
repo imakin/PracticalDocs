@@ -4,8 +4,12 @@ A document editor for long, page-accurate documents, with its own storage server
 
 Needs Node 20.19+ or 22.12+.
 
+# QuickStart
+
+it will install and run on screen to host frontend at localhost:8080 and storage server at localhost:3001
 ```bash
-npm install
+npm run quickstart
+screen -ls # show list of `screen` session. servers ran on `screen`
 ```
 
 ## 1. Build the editor
