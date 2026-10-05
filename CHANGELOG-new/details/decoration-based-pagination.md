@@ -363,3 +363,23 @@ Covered by four checks in `tests/unit/document-file.test.mjs` and by
 `tests/e2e/page-number-persistence.cdp.mjs`, which sets the numbers, saves through the real save path,
 clears them, opens the saved file and confirms the numbers are drawn again in the format the file
 asked for.
+
+
+## A list item's marker anchored the break after the item
+
+The engine anchors a break at the first character of the line that overflows, found through
+`posAtDOM`. A list item's first line is owned by its marker, the leftmost fragment on it, and the
+marker is drawn by the node view outside the item's content element. For such a point ProseMirror
+picks the start or the end of the node by a heuristic, and `prosemirror-view` 1.42.6 reversed it: a
+point before the content element now answers with the node's end. Measured in the writer's tab: the
+marker of every list item resolved to the item's last position.
+
+The break was then placed after the item, the overflowing line did not move, the next measurement
+asked for the same position, and the solver gave up. A one line item at the foot of a sheet was
+enough, which is what `tesis8ag` had in chapter 1.
+
+`positionAtDOM` in `extensions/pagination/index.js` resolves a point outside the content element
+through the content element itself - its start when the point comes before it, its end when after -
+and leaves every other point to `posAtDOM`. The marker of an item now resolves to the item's start, as
+it did under the old heuristic, and `beforeBlockIfAtItsStart` carries the break out in front of the
+item and every list it begins.

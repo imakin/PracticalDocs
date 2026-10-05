@@ -965,6 +965,40 @@ const beforeMathAtom = (view, node) => {
   }
 }
 
+/**
+ * The document position of a DOM point, read through the node view's content element when the point
+ * lies outside it.
+ *
+ * A list item's marker is drawn by its node view beside the content, not in it, and `posAtDOM` on a
+ * point like that answers with either the start or the end of the node by a heuristic of
+ * ProseMirror's own - which `prosemirror-view` 1.42.6 turned around: a point *before* the content
+ * now resolves to the node's **end**. The marker is the leftmost fragment of an item's first line,
+ * so it is what that line is anchored by. Measured on the writer's tesis8ag, in a build that
+ * installed 1.42.6: a one line bullet item overflowed, the break was anchored after the item rather
+ * than before it, nothing moved, and the solver gave up at break 10 with every page below it
+ * unpaginated. The tunnel's build, installed earlier with the old heuristic, paginated the same
+ * document. Asking the content element itself does not depend on which way the heuristic points.
+ */
+const NODE_VIEW_WRAPPER = '[data-node-view-wrapper]'
+const NODE_VIEW_CONTENT = '[data-node-view-content]'
+
+const positionAtDOM = (view, node, offset) => {
+  const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node
+  const wrapper = element?.closest?.(NODE_VIEW_WRAPPER)
+  const content =
+    wrapper && view.dom.contains(wrapper)
+      ? [...wrapper.querySelectorAll(NODE_VIEW_CONTENT)].find(
+          (candidate) => candidate.closest(NODE_VIEW_WRAPPER) === wrapper,
+        )
+      : null
+  if (!content || content.contains(node)) {
+    return view.posAtDOM(node, offset)
+  }
+  const before =
+    content.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_PRECEDING
+  return view.posAtDOM(content, before ? 0 : content.childNodes.length)
+}
+
 const positionAtLineStartInside = (view, line) => {
   const node = line.source
   const formula = beforeMathAtom(view, node)
@@ -982,7 +1016,7 @@ const positionAtLineStartInside = (view, line) => {
     // on than the last one, and the solve gave up - leaving 101 lines of the document sitting in
     // the margin band. This is real bug 1.
     try {
-      return outsideTheBlockItBegins(view, view.posAtDOM(node, 0))
+      return outsideTheBlockItBegins(view, positionAtDOM(view, node, 0))
     } catch {
       return null
     }
@@ -1009,7 +1043,7 @@ const positionAtLineStartInside = (view, line) => {
     return null
   }
   try {
-    return beforeBlockIfAtItsStart(view, view.posAtDOM(node, answer))
+    return beforeBlockIfAtItsStart(view, positionAtDOM(view, node, answer))
   } catch {
     return null
   }

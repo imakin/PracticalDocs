@@ -1,3 +1,16 @@
+### A List Item At The Foot Of A Page Moves Whole Again
+
+- `Reported By The User`: on the build made on computer A, the pages of `tesis8ag` ran through the foot of the sheet from chapter 1.5 on, while the tunnel's build of the same source paginated the same document.
+- `What Changed Underneath`: `prosemirror-view` 1.42.6 (2026-09-25) turned around how `posAtDOM` answers for a point outside a node view's content element. A point **before** the content - a list item's marker - now resolves to the node's **end**. `package-lock.json` is not tracked, so a fresh `npm install` picked it up on one machine and not the other.
+- `Why It Broke Pagination`: the marker is the leftmost fragment of an item's first line, so it is what that line is anchored by. The break landed after the item instead of before it, nothing moved, and the solver gave up at break 10 with everything below it unpaginated (`no-anchor-below-the-last-break`).
+- `The Fix`: a point outside the content element is resolved through the content element itself, which does not depend on which way ProseMirror's heuristic points. Both versions now give the same anchor.
+- `Measured On A Copy Of tesis8ag`, at 100%: `settled`, 78 breaks, 81 sheets, no cut line, and the PDF has 81 pages. The unfixed build in the same conditions stopped at break 10 with 594 lines cut.
+- `Test script`: no new test. `block-pagination` already catches it under 1.42.6 - 3 checks fail without the fix, 11/11 pass with it.
+
+  ```bash
+  npm run test:e2e:block-pagination
+  ```
+
 ### The Layout Switch Says Page View And Web View Again
 
 - `Reported By The User`: the status bar showed the raw key `layout.page` beside the character count, and the console warned that `layout.page` and `layout.web` were missing from the English messages.
