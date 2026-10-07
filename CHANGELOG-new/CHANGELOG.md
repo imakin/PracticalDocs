@@ -1,3 +1,17 @@
+### A Second Server API URL: Every Save Writes To Both
+
+- `Asked For By The User`: a second Server API URL under the first in the save status popup, empty by default. When it is filled, every save - the Save button, Ctrl+S, and autosave, which go through the same save - writes the document to both servers. Open Document... still reads the first server only.
+- `Its Own List`: the second field has a list of the URLs used last under it, the same list as the first field's. A press in a list fills only the field above it. A save puts the second URL in the list too, under the first, so the server Open reads stays on top.
+- `The Toast Names Both`, as the writer asked: "Document 'tesis8ag' saved to 192.168.18.44 and freemock.top." - host names only, no path. The port is added only when both servers share a host name, the one case where the names alone cannot tell them apart (`src/utils/server-names.js`).
+- `When One Server Fails`: the save is reported as an error that names the server, and the document stays unsaved, so the next save tries both again. Measured: with the second server unreachable, the first still received the change and the message read "Saved to the first server only. Second server: Failed to save to server (...)". The same URL in both fields is one server, written once.
+- `The Popup Scrolls`, asked for by the writer once two fields and two lists made it run past the bottom of the window: it is never taller than the viewport less 49px (it opens 41px down, plus its 8px offset) and scrolls inside. Measured in a 600px window: 551px tall, ending at 600, and the wheel brings its last button into view.
+- `Images Go To Both`: whether an image's bytes travel is decided per server, as `ab3d834` made it, so the second server gets the pictures it does not hold.
+- `Test script`: `tests/unit/server-names.test.mjs`, and `tests/e2e/second-server-save.cdp.mjs`, driven by the mouse and the keyboard against two storage servers of the test's own (`STORAGE_A_URL`, `STORAGE_B_URL`); what each server holds is read from its own API. `server-url-history.cdp.mjs` now reads the first field's list only, and gained a case for the short window. Screenshot `tests/screenshots/second-server-popup.png`.
+
+  ```bash
+  npm run test:e2e:second-server-save
+  ```
+
 ### The Lockfile Is Tracked, So Every Machine Builds The Same Editor
 
 - `Why`: `package-lock.json` had been ignored since the upstream code, so each machine resolved its own dependencies on the day it ran `npm install`. Compared on 2026-10-05, the Linux machine's lock and computer A's differed in 207 packages - among them `prosemirror-view` 1.42.2 against 1.42.6, the version that changed how a list item's marker maps to a position and broke pagination on computer A only.

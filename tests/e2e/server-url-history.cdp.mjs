@@ -4,7 +4,8 @@
  * Asked for by the writer, who moves between storage servers: each press of Save or Open Document...
  * in the save status popup puts the Server API URL in use at the top of a list of buttons under the
  * field - five at most, never one twice, kept in localStorage - and a press on one fills the field
- * with the URL it shows. Every button in the popup has 1em of padding above and below its text, and
+ * with the URL it shows. In a short window the popup scrolls rather than running off the bottom.
+ * Every button in the popup has 1em of padding above and below its text, and
  * the URL buttons a grey ground of their own, so they do not read as a second input field.
  *
  * Driven by the mouse through the popup. Save writes the current document under a file name of the
@@ -219,7 +220,10 @@ const URL_FIELD = `[...document.querySelectorAll('input')].find((el) => el.offse
 const TITLE_FIELD = `[...document.querySelectorAll('.pdoc-server-url-field')].find((el) => el.offsetParent && /File Name/.test(el.textContent))?.querySelector('input')`
 const button = (text) =>
   `[...document.querySelectorAll('button')].find((el) => el.offsetParent && el.textContent.trim() === ${JSON.stringify(text)})`
-const ITEMS = `[...document.querySelectorAll('.pdoc-server-url-history-item')].filter((el) => el.offsetParent)`
+// The list under the first field. The second field has a list of its own with the same entries
+// (`second-server-save.cdp.mjs`).
+const FIRST_FIELD = `[...document.querySelectorAll('.pdoc-server-url-field')].find((el) => el.offsetParent && (el.querySelector('.pdoc-server-url-label')?.textContent || '').startsWith('Server API URL'))`
+const ITEMS = `[...((${FIRST_FIELD})?.querySelectorAll('.pdoc-server-url-history-item') || [])].filter((el) => el.offsetParent)`
 const history = () => evaluate(`${ITEMS}.map((el) => el.innerText.trim())`)
 
 const openPopup = async () => {
@@ -333,6 +337,52 @@ await openPopup()
 check('the same list after a reload', JSON.stringify(await history()) === JSON.stringify([U1, U2]), JSON.stringify(await history()))
 check('stored under practicaldocs:server-url-history',
   (await evaluate(`localStorage.getItem('practicaldocs:server-url-history')`)) === JSON.stringify([U1, U2]))
+
+// ---------------------------------------------------------------------------------------------
+console.log('\nCase G: in a short window the popup scrolls instead of running off the bottom')
+
+await closePopup()
+await call('Emulation.setDeviceMetricsOverride', {
+  width: 1600, height: 600, deviceScaleFactor: 1, mobile: false,
+}, sessionId)
+await sleep(800)
+await openPopup()
+const fit = await evaluate(`(() => {
+  const box = document.querySelector('.pdoc-document-status-container')
+  const r = box.getBoundingClientRect()
+  return {
+    viewport: innerHeight,
+    bottom: Math.round(r.bottom),
+    height: Math.round(r.height),
+    maxHeight: getComputedStyle(box).maxHeight,
+    overflowY: getComputedStyle(box).overflowY,
+    scrolls: box.scrollHeight > box.clientHeight + 1,
+  }
+})()`)
+check('the popup ends inside the window', fit.bottom <= fit.viewport, JSON.stringify(fit))
+check('no taller than the window less 49px', fit.maxHeight === `${fit.viewport - 49}px` && fit.height <= fit.viewport - 49, JSON.stringify(fit))
+check('its content scrolls', fit.overflowY === 'auto' && fit.scrolls, JSON.stringify(fit))
+// Scrolled by the wheel over the popup, the way anyone reaches the bottom of it.
+const over = await evaluate(`(() => { const r = document.querySelector('.pdoc-document-status-container').getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) } })()`)
+// The pointer is brought over the popup first, as a hand on a mouse would; a wheel event with no
+// pointer move before it, while the popup was still fading in, scrolled nothing.
+await call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: over.x, y: over.y }, sessionId)
+await sleep(300)
+const target = await evaluate(`(() => { const at = document.elementFromPoint(${over.x}, ${over.y}); return at ? at.tagName + '.' + String(at.className).slice(0, 50) : null })()`)
+await call('Input.dispatchMouseEvent', { type: 'mouseWheel', x: over.x, y: over.y, deltaX: 0, deltaY: 2000 }, sessionId)
+await sleep(1500)
+const reach = await evaluate(`(() => {
+  const box = document.querySelector('.pdoc-document-status-container').getBoundingClientRect()
+  // The bottom-most button in the whole popup: the last entry of the second field's list.
+  const last = [...document.querySelectorAll('.pdoc-document-status-container .pdoc-server-url-history-item')].filter((el) => el.offsetParent).pop()
+  const r = last?.getBoundingClientRect()
+  return { scrolled: document.querySelector('.pdoc-document-status-container').scrollTop, last: r && Math.round(r.bottom), box: Math.round(box.bottom), under: ${JSON.stringify(target)} }
+})()`)
+check('the wheel brings the bottom-most button into view', reach.scrolled > 0 && reach.last !== undefined && reach.last <= reach.box, JSON.stringify(reach))
+await closePopup()
+await call('Emulation.setDeviceMetricsOverride', {
+  width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false,
+}, sessionId)
 
 console.log('')
 if (failures.length) {

@@ -135,6 +135,28 @@
                   </t-button>
                 </div>
               </div>
+              <!--
+                Asked for by the writer: every save also writes to this server when it is filled in.
+                Opening reads the first server only. Its list is the same list as the first field's;
+                a press here fills this field and leaves the first alone.
+              -->
+              <div v-if="saveTarget === 'practicaldocs-server'" class="pdoc-server-url-field">
+                <div class="pdoc-server-url-label">Second Server API URL (optional, saves only):</div>
+                <t-input v-model="secondServerUrl" placeholder="Empty: save to the first server only" size="small" clearable />
+                <div v-if="serverUrlHistory.length" class="pdoc-server-url-history">
+                  <t-button
+                    v-for="url in serverUrlHistory"
+                    :key="url"
+                    class="pdoc-server-url-history-item"
+                    size="small"
+                    theme="default"
+                    variant="outline"
+                    @click="secondServerUrl = url"
+                  >
+                    {{ url }}
+                  </t-button>
+                </div>
+              </div>
             </div>
           </div>
         </template>
@@ -186,6 +208,7 @@ import {
   rememberServerUrl,
   SERVER_URL_HISTORY_KEY,
 } from '@/utils/server-url-history'
+import { SECOND_SERVER_URL_KEY } from '@/utils/save-to-server'
 import { timeAgo } from '@/utils/time-ago'
 const emits = defineEmits(['menu-change'])
 
@@ -223,6 +246,7 @@ const { openLoadDialog } = useDocumentDialogs()
 
 const saveTarget = useStorage('practicaldocs:save-target', 'practicaldocs-server')
 const serverUrl = useStorage('practicaldocs:server-url', 'http://localhost:3001/api/documents/save')
+const secondServerUrl = useStorage(SECOND_SERVER_URL_KEY, '')
 const serverUrlHistory = useStorage(SERVER_URL_HISTORY_KEY, [])
 const rememberCurrentServerUrl = () => {
   serverUrlHistory.value = rememberServerUrl(serverUrlHistory.value, serverUrl.value)
@@ -326,6 +350,8 @@ const toggleToolbarMode = ({ value }) => {
 const saveContentMethod = inject('saveContent')
 const saveContent = () => {
   if (saveTarget.value === 'practicaldocs-server') {
+    // The second first, so the first server, the one Open reads, ends up on top.
+    serverUrlHistory.value = rememberServerUrl(serverUrlHistory.value, secondServerUrl.value)
     rememberCurrentServerUrl()
   }
   saveContentMethod()
@@ -452,6 +478,12 @@ const setContentFromCache = () => {
   color: var(--pdoc-text-color);
   min-width: 260px;
   cursor: default;
+  // Asked for by the writer: with two server fields and their lists the popup grew past the bottom of
+  // the window. It scrolls instead, never taller than the viewport less the 49px above it (the popup
+  // opens 41px down, plus its 8px offset).
+  box-sizing: border-box;
+  max-height: calc(100vh - 49px);
+  overflow-y: auto;
   .pdoc-document-button-container {
     margin: 8px 0 4px;
     display: flex;
